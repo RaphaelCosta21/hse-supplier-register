@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "hse-supplier-register-client-side-solution",
+    "id": "10b745e1-a913-44f4-832f-4aba7dff92c1",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.20.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "hse-supplier-register description"
+      },
+      "longDescription": {
+        "default": "hse-supplier-register description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "hse-supplier-register Feature",
+        "description": "The feature that activates elements of the hse-supplier-register solution.",
+        "id": "67d2b0bc-7e22-4cf2-98f2-7afa2541122a",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/hse-supplier-register.sppkg"
+  }
+}

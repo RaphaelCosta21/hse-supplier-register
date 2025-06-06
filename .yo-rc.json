@@ -1,0 +1,21 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "18.20.7",
+    "sdksVersions": {
+      "@microsoft/microsoft-graph-client": "3.0.2",
+      "@microsoft/teams-js": "2.24.0"
+    },
+    "version": "1.20.0",
+    "libraryName": "hse-supplier-register",
+    "libraryId": "10b745e1-a913-44f4-832f-4aba7dff92c1",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "hse-supplier-register",
+    "solutionShortDescription": "hse-supplier-register description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}
