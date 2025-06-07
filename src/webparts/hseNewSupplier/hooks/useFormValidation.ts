@@ -1,43 +1,32 @@
 import { useState, useCallback } from "react";
 import { IValidationError, IValidationResult } from "../types/IValidationError";
-import { IHSEFormData } from "../types/IHSEFormData";
+import {
+  IHSEFormData,
+  IAnexosFormulario,
+  IConformidadeLegal,
+} from "../types/IHSEFormData";
+import { validators } from "../utils/validators";
 
-export const useFormValidation = () => {
+export const useFormValidation = (): {
+  errors: IValidationError[];
+  validateStep1: (formData: IHSEFormData) => IValidationResult;
+  validateStep2: (formData: IHSEFormData) => IValidationResult;
+  validateStep3: (attachments: IAnexosFormulario) => IValidationResult;
+  validateCompleteForm: (
+    formData: IHSEFormData,
+    attachments: IAnexosFormulario
+  ) => IValidationResult;
+  clearErrors: () => void;
+} => {
   const [errors, setErrors] = useState<IValidationError[]>([]);
-
-  const validateCNPJ = useCallback((cnpj: string): boolean => {
-    const cleanCNPJ = cnpj.replace(/\D/g, "");
-    if (cleanCNPJ.length !== 14) return false;
-
-    // Validação básica de dígitos verificadores
-    const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-    const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-
-    const calculateDigit = (digits: string, weights: number[]): number => {
-      const sum = digits
-        .split("")
-        .reduce(
-          (acc, digit, index) => acc + parseInt(digit) * weights[index],
-          0
-        );
-      const remainder = sum % 11;
-      return remainder < 2 ? 0 : 11 - remainder;
-    };
-
-    const firstDigit = calculateDigit(cleanCNPJ.substr(0, 12), weights1);
-    const secondDigit = calculateDigit(cleanCNPJ.substr(0, 13), weights2);
-
-    return (
-      cleanCNPJ[12] === firstDigit.toString() &&
-      cleanCNPJ[13] === secondDigit.toString()
-    );
-  }, []);
 
   const validateStep1 = useCallback(
     (formData: IHSEFormData): IValidationResult => {
       const stepErrors: IValidationError[] = [];
+      const dados = formData.dadosGerais;
 
-      if (!formData.empresa?.trim()) {
+      // Validações obrigatórias do Bloco A
+      if (!validators.required(dados.empresa)) {
         stepErrors.push({
           field: "empresa",
           message: "Nome da empresa é obrigatório",
@@ -45,17 +34,17 @@ export const useFormValidation = () => {
         });
       }
 
-      if (!formData.cnpj?.trim()) {
+      if (!validators.required(dados.cnpj)) {
         stepErrors.push({
           field: "cnpj",
           message: "CNPJ é obrigatório",
           step: 1,
         });
-      } else if (!validateCNPJ(formData.cnpj)) {
+      } else if (!validators.cnpj(dados.cnpj)) {
         stepErrors.push({ field: "cnpj", message: "CNPJ inválido", step: 1 });
       }
 
-      if (!formData.numeroContrato?.trim()) {
+      if (!validators.required(dados.numeroContrato)) {
         stepErrors.push({
           field: "numeroContrato",
           message: "Número do contrato é obrigatório",
@@ -63,7 +52,7 @@ export const useFormValidation = () => {
         });
       }
 
-      if (!formData.dataInicioContrato) {
+      if (!dados.dataInicioContrato) {
         stepErrors.push({
           field: "dataInicioContrato",
           message: "Data de início é obrigatória",
@@ -71,7 +60,7 @@ export const useFormValidation = () => {
         });
       }
 
-      if (!formData.dataTerminoContrato) {
+      if (!dados.dataTerminoContrato) {
         stepErrors.push({
           field: "dataTerminoContrato",
           message: "Data de término é obrigatória",
@@ -79,10 +68,13 @@ export const useFormValidation = () => {
         });
       }
 
-      if (formData.dataInicioContrato && formData.dataTerminoContrato) {
-        const startDate = new Date(formData.dataInicioContrato);
-        const endDate = new Date(formData.dataTerminoContrato);
-        if (endDate <= startDate) {
+      if (dados.dataInicioContrato && dados.dataTerminoContrato) {
+        if (
+          !validators.dateRange(
+            dados.dataInicioContrato as unknown as string,
+            dados.dataTerminoContrato as unknown as string
+          )
+        ) {
           stepErrors.push({
             field: "dataTerminoContrato",
             message: "Data de término deve ser posterior à data de início",
@@ -91,44 +83,108 @@ export const useFormValidation = () => {
         }
       }
 
+      if (!validators.required(dados.responsavelTecnico)) {
+        stepErrors.push({
+          field: "responsavelTecnico",
+          message: "Responsável técnico é obrigatório",
+          step: 1,
+        });
+      }
+
+      if (
+        !dados.grauRisco ||
+        Number(dados.grauRisco) < 1 ||
+        Number(dados.grauRisco) > 4
+      ) {
+        stepErrors.push({
+          field: "grauRisco",
+          message: "Grau de risco deve ser entre 1 e 4",
+          step: 1,
+        });
+      }
+
+      if (!validators.required(dados.gerenteContratoMarine)) {
+        stepErrors.push({
+          field: "gerenteContratoMarine",
+          message: "Gerente do contrato é obrigatório",
+          step: 1,
+        });
+      }
+
       return {
         isValid: stepErrors.length === 0,
         errors: stepErrors,
       };
     },
-    [validateCNPJ]
+    []
   );
 
-  const validateCompleteForm = useCallback(
-    (formData: IHSEFormData, attachments: any): IValidationResult => {
-      const allErrors: IValidationError[] = [];
+  const validateStep2 = useCallback(
+    (formData: IHSEFormData): IValidationResult => {
+      const stepErrors: IValidationError[] = [];
+      const conformidade: IConformidadeLegal = formData.conformidadeLegal;
 
-      // Validar etapa 1
-      const step1Result = validateStep1(formData);
-      allErrors.push(...step1Result.errors);
-
-      // Validar anexo REM obrigatório
-      const remAttachments = attachments["rem"] || [];
-      if (remAttachments.length === 0) {
-        allErrors.push({
-          field: "rem",
-          message: "REM (Resumo Estatístico Mensal) é obrigatório",
-          step: 1,
+      // Exemplo: validar se pelo menos uma NR foi respondida
+      const nrKeys = Object.keys(conformidade);
+      if (nrKeys.length < 1) {
+        stepErrors.push({
+          field: "conformidadeLegal",
+          message: "É necessário responder pelo menos uma NR",
+          step: 2,
         });
       }
 
-      // Validar evidências obrigatórias
-      const requiredEvidences = ["sesmt", "cipa", "ppra", "pcmso", "aso"];
-      requiredEvidences.forEach((evidence) => {
-        const evidenceAttachments = attachments[evidence] || [];
-        if (evidenceAttachments.length === 0) {
-          allErrors.push({
-            field: evidence,
-            message: `Documento ${evidence.toUpperCase()} é obrigatório`,
-            step: 3,
-          });
-        }
-      });
+      // Adicione validações específicas conforme necessário
+
+      return {
+        isValid: stepErrors.length === 0,
+        errors: stepErrors,
+      };
+    },
+    []
+  );
+
+  const validateStep3 = useCallback(
+    (attachments: IAnexosFormulario): IValidationResult => {
+      const stepErrors: IValidationError[] = [];
+
+      // Exemplo: validar anexos obrigatórios
+      if (!attachments.evidencias?.sesmt) {
+        stepErrors.push({
+          field: "sesmt",
+          message: "Documento SESMT é obrigatório",
+          step: 3,
+        });
+      }
+      if (!attachments.evidencias?.cipa) {
+        stepErrors.push({
+          field: "cipa",
+          message: "Documento CIPA é obrigatório",
+          step: 3,
+        });
+      }
+
+      // Adicione outras validações de anexos obrigatórios
+
+      return {
+        isValid: stepErrors.length === 0,
+        errors: stepErrors,
+      };
+    },
+    []
+  );
+
+  const validateCompleteForm = useCallback(
+    (
+      formData: IHSEFormData,
+      attachments: IAnexosFormulario
+    ): IValidationResult => {
+      const allErrors: IValidationError[] = [];
+      const step1 = validateStep1(formData);
+      const step2 = validateStep2(formData);
+      const step3 = validateStep3(attachments);
+
+      allErrors.push(...step1.errors, ...step2.errors, ...step3.errors);
 
       setErrors(allErrors);
 
@@ -137,12 +193,14 @@ export const useFormValidation = () => {
         errors: allErrors,
       };
     },
-    [validateStep1]
+    [validateStep1, validateStep2, validateStep3]
   );
 
   return {
     errors,
     validateStep1,
+    validateStep2,
+    validateStep3,
     validateCompleteForm,
     clearErrors: () => setErrors([]),
   };

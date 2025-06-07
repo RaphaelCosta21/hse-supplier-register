@@ -1,16 +1,10 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
-  "id": "0f0fd23b-7ff4-403a-8c96-368d5169b83b",
+  "id": "2c1d1234-5678-90ab-cdef-1234567890ab",
   "alias": "HseNewSupplierWebPart",
   "componentType": "WebPart",
-
-  // The "*" signifies that the version should be taken from the package.json
   "version": "*",
   "manifestVersion": 2,
-
-  // If true, the component can only be installed on sites where Custom Script is allowed.
-  // Components that allow authors to embed arbitrary script code should set this to true.
-  // https://support.office.com/en-us/article/Turn-scripting-capabilities-on-or-off-1f2c515f-5d7e-448a-9fd7-835da935584f
   "requiresCustomScript": false,
   "supportedHosts": [
     "SharePointWebPart",
@@ -19,20 +13,22 @@
     "SharePointFullPage"
   ],
   "supportsThemeVariants": true,
-
   "preconfiguredEntries": [
     {
-      "groupId": "5c03119e-3074-46fd-976b-c60198311f70", // Advanced
+      "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
       "group": { "default": "Advanced" },
-      "title": { "default": "hse-new-supplier" },
-      "description": { "default": "hse-new-supplier description" },
-      "officeFabricIconFontName": "Page",
+      "title": { "default": "Formulário HSE - Nova Contratada" },
+      "description": {
+        "default": "Formulário de auto-avaliação de HSE para contratadas da Oceaneering"
+      },
+      "officeFabricIconFontName": "Form",
       "properties": {
-        "description": "hse-new-supplier",
-        "azureStorageAccount": "hse-storage-account",
+        "title": "Formulário HSE - Nova Contratada",
+        "azureStorageAccount": "hsestorageaccount",
         "azureContainerName": "hse-attachments",
-        "sharePointListName": "HSE_Fornecedores",
-        "maxFileSize": 104857600
+        "sharePointListName": "hsenewregister",
+        "maxFileSize": 50,
+        "enableDebugMode": false
       }
     }
   ]

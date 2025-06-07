@@ -1,165 +1,195 @@
-import { IHSEFormState, IHSEFormAction } from "../types/IHSEFormData";
+import type {
+  IFormState,
+  IHSEFormData,
+  IAnexosFormulario,
+  IConformidadeLegal,
+  IEvidencias,
+  IServicosEspeciais,
+  IAttachmentMetadata,
+  IValidationError,
+} from "../../types/IHSEFormData";
 
-export const initialState: IHSEFormState = {
+export type { IFormState };
+
+export type FormAction =
+  | { type: "UPDATE_FIELD"; payload: { field: string; value: unknown } }
+  | { type: "SET_STEP"; payload: number }
+  | { type: "SET_FORM_DATA"; payload: IHSEFormData }
+  | { type: "SET_CURRENT_STEP"; payload: number }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_SUBMITTING"; payload: boolean }
+  | { type: "SAVE_SUCCESS"; payload: Date }
+  | {
+      type: "ADD_ATTACHMENT";
+      payload: { category: string; attachment: IAttachmentMetadata };
+    }
+  | {
+      type: "REMOVE_ATTACHMENT";
+      payload: { category: string; attachmentId: string };
+    }
+  | { type: "SET_VALIDATION_ERRORS"; payload: IValidationError[] }
+  | { type: "CLEAR_VALIDATION_ERRORS" }
+  | { type: "RESET_FORM" };
+
+export const initialFormState: IFormState = {
   currentStep: 1,
   formData: {
-    empresa: "",
-    cnpj: "",
-    numeroContrato: "",
-    dataInicioContrato: null,
-    dataTerminoContrato: null,
-    escopoServico: "",
-    responsavelTecnico: "",
-    atividadePrincipalCNAE: "",
-    totalEmpregados: 0,
-    empregadosParaServico: 0,
-    grauRisco: 1,
-    possuiSESMT: false,
-    numeroComponentesSESMT: 0,
-    gerenteContratoMarine: "",
-    conformidadeLegal: {},
-    fornecedorEmbarcacoes: false,
-    fornecedorIcamento: false,
-    embarcacoesData: {},
-    icamentoData: {},
-  },
+    dadosGerais: {
+      empresa: "",
+      cnpj: "",
+      numeroContrato: "",
+      dataInicioContrato: undefined,
+      dataTerminoContrato: undefined,
+      escopoServico: "",
+      responsavelTecnico: "",
+      atividadePrincipalCNAE: "",
+      totalEmpregados: undefined,
+      empregadosParaServico: undefined,
+      grauRisco: "1",
+      possuiSESMT: false,
+      numeroComponentesSESMT: undefined,
+      gerenteContratoMarine: "",
+    },
+    conformidadeLegal: {} as IConformidadeLegal,
+    evidencias: {} as IEvidencias,
+    servicosEspeciais: {
+      fornecedorEmbarcacoes: false,
+      fornecedorIcamento: false,
+    } as IServicosEspeciais,
+    anexos: {} as IAnexosFormulario,
+  } as IHSEFormData,
   attachments: {},
   validationErrors: [],
   isSubmitting: false,
   isLoading: false,
-  lastSaved: null,
+  lastSaved: undefined,
+  errors: {},
+  isDirty: false,
 };
 
 export const formReducer = (
-  state: IHSEFormState,
-  action: IHSEFormAction
-): IHSEFormState => {
+  state: IFormState,
+  action: FormAction
+): IFormState => {
   switch (action.type) {
-    case "UPDATE_FIELD":
+    case "UPDATE_FIELD": {
       return {
         ...state,
         formData: {
           ...state.formData,
           [action.payload.field]: action.payload.value,
         },
+        isDirty: true,
       };
-
-    case "SET_STEP":
+    }
+    case "SET_STEP": {
       return {
         ...state,
         currentStep: action.payload,
       };
-
-    case "ADD_ATTACHMENT":
-      const currentAttachments =
-        state.attachments[action.payload.category] || [];
+    }
+    case "SET_FORM_DATA": {
+      return {
+        ...state,
+        formData: action.payload,
+        isDirty: false,
+      };
+    }
+    case "SET_CURRENT_STEP": {
+      return {
+        ...state,
+        currentStep: action.payload,
+      };
+    }
+    case "SET_LOADING": {
+      return {
+        ...state,
+        isLoading: action.payload,
+      };
+    }
+    case "SET_SUBMITTING": {
+      return {
+        ...state,
+        isSubmitting: action.payload,
+      };
+    }
+    case "SAVE_SUCCESS": {
+      return {
+        ...state,
+        lastSaved: action.payload,
+        isDirty: false,
+      };
+    }
+    case "ADD_ATTACHMENT": {
       return {
         ...state,
         attachments: {
           ...state.attachments,
           [action.payload.category]: [
-            ...currentAttachments,
+            ...(state.attachments[action.payload.category] || []),
             action.payload.attachment,
           ],
         },
+        isDirty: true,
       };
-
-    case "REMOVE_ATTACHMENT":
-      const filteredAttachments = (
-        state.attachments[action.payload.category] || []
-      ).filter((att) => att.id !== action.payload.attachmentId);
+    }
+    case "REMOVE_ATTACHMENT": {
       return {
         ...state,
         attachments: {
           ...state.attachments,
-          [action.payload.category]: filteredAttachments,
+          [action.payload.category]: (
+            state.attachments[action.payload.category] || []
+          ).filter((a) => a.id !== action.payload.attachmentId),
         },
+        isDirty: true,
       };
-
-    case "SET_VALIDATION_ERRORS":
+    }
+    case "SET_VALIDATION_ERRORS": {
       return {
         ...state,
         validationErrors: action.payload,
       };
-
-    case "CLEAR_VALIDATION_ERRORS":
+    }
+    case "CLEAR_VALIDATION_ERRORS": {
       return {
         ...state,
         validationErrors: [],
       };
-
-    case "SET_LOADING":
-      return {
-        ...state,
-        isLoading: action.payload,
-      };
-
-    case "SET_SUBMITTING":
-      return {
-        ...state,
-        isSubmitting: action.payload,
-      };
-
-    case "LOAD_FORM_DATA":
-      return {
-        ...state,
-        formData: { ...state.formData, ...action.payload.formData },
-        attachments: { ...state.attachments, ...action.payload.attachments },
-      };
-
-    case "MARK_SAVED":
-      return {
-        ...state,
-        lastSaved: new Date().toISOString(),
-      };
-
+    }
+    case "RESET_FORM": {
+      return initialFormState;
+    }
     default:
       return state;
   }
 };
 
+// Seletor de progresso do formulário
 export const formSelectors = {
-  getCompletionPercentage: (state: IHSEFormState): number => {
-    const requiredFields = [
-      "empresa",
-      "cnpj",
-      "numeroContrato",
-      "dataInicioContrato",
-      "dataTerminoContrato",
-      "responsavelTecnico",
-    ];
-
-    const completedFields = requiredFields.filter(
-      (field) => state.formData[field as keyof typeof state.formData]
-    ).length;
-
-    const conformidadeCompleted = Object.keys(
-      state.formData.conformidadeLegal || {}
-    ).length;
-    const evidenciasCompleted = Object.keys(state.attachments).length;
-
-    const totalRequiredItems = requiredFields.length + 10 + 5; // estimativa
-    const completedItems =
-      completedFields +
-      Math.min(conformidadeCompleted, 10) +
-      Math.min(evidenciasCompleted, 5);
-
-    return Math.round((completedItems / totalRequiredItems) * 100);
+  getCompletionPercentage: (state: IFormState): number => {
+    // Exemplo: calcula progresso baseado em steps preenchidos
+    let completed = 0;
+    if (state.formData.dadosGerais.empresa) completed++;
+    if (state.formData.conformidadeLegal) completed++;
+    if (state.formData.evidencias) completed++;
+    if (state.formData.servicosEspeciais) completed++;
+    return Math.round((completed / 4) * 100);
   },
-
-  hasRequiredAttachments: (state: IHSEFormState): boolean => {
+  hasRequiredAttachments: (state: IFormState): boolean => {
     const requiredCategories = ["rem", "sesmt", "cipa", "ppra", "pcmso", "aso"];
     return requiredCategories.every(
       (category) => (state.attachments[category] || []).length > 0
     );
   },
-
-  canProceedToStep: (state: IHSEFormState, targetStep: number): boolean => {
+  canProceedToStep: (state: IFormState, targetStep: number): boolean => {
     switch (targetStep) {
       case 1:
         return true;
       case 2:
-        return !!(state.formData.empresa && state.formData.cnpj);
+        return !!(
+          state.formData.dadosGerais.empresa && state.formData.dadosGerais.cnpj
+        );
       case 3:
         return (
           state.currentStep >= 2 &&

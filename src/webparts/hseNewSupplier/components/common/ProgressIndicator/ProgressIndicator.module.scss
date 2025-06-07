@@ -1,0 +1,32 @@
+.progressIndicator {
+  width: 100%;
+  margin: 10px 0;
+}
+.label {
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+.barContainer {
+  background: #e3e8ee;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+  margin-bottom: 4px;
+}
+.bar {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.description {
+  color: #5c6f7c;
+  font-size: 0.98rem;
+  margin-top: 2px;
+}
+.percent {
+  font-weight: 500;
+  color: #2196f3;
+  margin-top: 2px;
+  font-size: 1.1em;
+}

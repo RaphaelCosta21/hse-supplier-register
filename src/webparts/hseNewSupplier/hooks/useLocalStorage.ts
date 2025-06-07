@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
-export const useLocalStorage = <T>(key: string, defaultValue: T) => {
+export const useLocalStorage = <T>(
+  key: string,
+  defaultValue: T
+): [T, (value: T | ((val: T) => T)) => void, () => void] => {
   const [value, setValue] = useState<T>(() => {
     try {
       const item = localStorage.getItem(key);
@@ -11,9 +14,10 @@ export const useLocalStorage = <T>(key: string, defaultValue: T) => {
     }
   });
 
-  const setStoredValue = (value: T | ((val: T) => T)) => {
+  const setStoredValue = (newValue: T | ((val: T) => T)): void => {
     try {
-      const valueToStore = value instanceof Function ? value(value) : value;
+      const valueToStore =
+        newValue instanceof Function ? newValue(value) : newValue;
       setValue(valueToStore);
       localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
@@ -21,7 +25,7 @@ export const useLocalStorage = <T>(key: string, defaultValue: T) => {
     }
   };
 
-  const removeStoredValue = () => {
+  const removeStoredValue = (): void => {
     try {
       localStorage.removeItem(key);
       setValue(defaultValue);
@@ -30,5 +34,5 @@ export const useLocalStorage = <T>(key: string, defaultValue: T) => {
     }
   };
 
-  return [value, setStoredValue, removeStoredValue] as const;
+  return [value, setStoredValue, removeStoredValue];
 };

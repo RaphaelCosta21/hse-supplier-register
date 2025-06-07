@@ -3,26 +3,24 @@ import { WebPartContext } from "@microsoft/sp-webpart-base";
 import {
   formReducer,
   initialFormState,
-  IHSEFormState,
-  HSEFormAction,
-  formSelectors,
+  IFormState,
+  FormAction,
 } from "./formReducer";
-import { SharePointService } from "../services/SharePointService";
-import { AzureBlobService } from "../services/AzureBlobService";
-import { IWebPartProperties } from "../components/IHseNewSupplierProps";
-import { IAzureBlobConfig } from "../types/IAzureBlobConfig";
-import { IHSEFormData } from "../types/IHSEFormData";
+import { SharePointService } from "../../services/SharePointService";
+import { SharePointFileService } from "../../services/SharePointFileService";
+import { IHSEFormData, IValidationError } from "../../types/IHSEFormData";
+import { IAttachmentMetadata } from "../../types/IAttachmentMetadata";
 
 export interface IHSEFormContext {
-  state: IHSEFormState;
-  dispatch: React.Dispatch<HSEFormAction>;
+  state: IFormState;
+  dispatch: React.Dispatch<FormAction>;
   sharePointService: SharePointService;
-  azureBlobService: AzureBlobService;
+  sharePointFileService: SharePointFileService;
   actions: {
     loadFormData: (formId?: number) => Promise<void>;
     saveFormData: () => Promise<boolean>;
     submitForm: () => Promise<boolean>;
-    uploadAttachment: (file: File, category: string) => Promise<string>;
+    uploadAttachment: (file: File, category: string, subcategory?: string) => Promise<IAttachmentMetadata>;
     removeAttachment: (category: string, attachmentId: string) => Promise<void>;
     validateStep: (stepNumber: number) => Promise<boolean>;
     goToNextStep: () => void;
@@ -33,7 +31,13 @@ export interface IHSEFormContext {
 
 interface IHSEFormProviderProps {
   context: WebPartContext;
-  webPartProperties: IWebPartProperties;
+  sharePointConfig: {
+    siteUrl: string;
+    listName: string;
+    documentLibraryName: string;
+  };
+  maxFileSize: number;
+  debugMode: boolean;
   children: React.ReactNode;
 }
 
@@ -54,27 +58,23 @@ export const useHSEForm = (): IHSEFormContext => {
 // Componente Provider
 export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
   context,
-  webPartProperties,
+  sharePointConfig,
+  maxFileSize,
+  debugMode,
   children,
 }) => {
   const [state, dispatch] = React.useReducer(formReducer, initialFormState);
 
-  // Inicialização dos serviços
+  // Inicialização dos serviços SharePoint
   const sharePointService = React.useMemo(() => {
-    return new SharePointService(context, webPartProperties.sharePointListName);
-  }, [context, webPartProperties.sharePointListName]);
-
-  const azureBlobService = React.useMemo(() => {
-    const azureConfig: IAzureBlobConfig = {
-      accountName: webPartProperties.azureStorageAccount,
-      containerName: webPartProperties.azureContainerName,
-      sasToken: "", // Será gerado dinamicamente
-      maxFileSize: webPartProperties.maxFileSize * 1024 * 1024, // Converter para bytes
-      allowedFileTypes: webPartProperties.allowedFileTypes.split(","),
-    };
-
-    return new AzureBlobService(azureConfig);
-  }, [webPartProperties]);
+    return new SharePointService(context, sharePointConfig.listName);
+  }, [context, sharePointConfig.listName]);
+  const sharePointFileService = React.useMemo(() => {
+    return new SharePointFileService(
+      context,
+      sharePointConfig.documentLibraryName
+    );
+  }, [context, sharePointConfig.documentLibraryName]);
 
   // Carregar dados do formulário do SharePoint (se existir)
   const loadFormData = React.useCallback(
@@ -84,7 +84,9 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         if (formId) {
           // Carregar formulário existente
           const loadedFormData = await sharePointService.getFormById(formId);
-          dispatch({ type: "SET_FORM_DATA", payload: loadedFormData });
+          if (loadedFormData) {
+            dispatch({ type: "SET_FORM_DATA", payload: loadedFormData });
+          }
         } else {
           // Tentar carregar do localStorage (rascunho)
           const savedFormData = localStorage.getItem("hse_form_draft");
@@ -102,7 +104,6 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     },
     [sharePointService]
   );
-
   // Salvar dados do formulário (como rascunho ou no SharePoint)
   const saveFormData = React.useCallback(async (): Promise<boolean> => {
     dispatch({ type: "SET_SUBMITTING", payload: true });
@@ -123,121 +124,6 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     }
   }, [sharePointService, state.formData, state.attachments]);
 
-  // Enviar formulário (versão final)
-  const submitForm = React.useCallback(async (): Promise<boolean> => {
-    dispatch({ type: "SET_SUBMITTING", payload: true });
-
-    // Validação completa antes do envio
-    const allStepsValid = await Promise.all(
-      [1, 2, 3, 4, 5].map((step) => validateStep(step))
-    ).then((results) => results.every(Boolean));
-
-    if (!allStepsValid) {
-      dispatch({ type: "SET_SUBMITTING", payload: false });
-      return false;
-    }
-
-    try {
-      // Marcar como "Enviado" no SharePoint
-      await sharePointService.submitFormData(
-        {
-          ...state.formData,
-          statusFormulario: "Enviado",
-        },
-        state.attachments
-      );
-
-      // Limpar rascunho local após envio bem-sucedido
-      localStorage.removeItem("hse_form_draft");
-
-      // Notificar sobre o envio bem-sucedido
-      if (webPartProperties.enableEmailNotifications) {
-        await sharePointService.sendNotificationEmail(
-          webPartProperties.notificationEmail,
-          state.formData.empresa,
-          state.formData.cnpj
-        );
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Erro ao enviar formulário:", error);
-      return false;
-    } finally {
-      dispatch({ type: "SET_SUBMITTING", payload: false });
-    }
-  }, [
-    sharePointService,
-    state.formData,
-    state.attachments,
-    webPartProperties,
-    validateStep,
-  ]);
-
-  // Upload de anexo
-  const uploadAttachment = React.useCallback(
-    async (file: File, category: string): Promise<string> => {
-      try {
-        // Gerar nome único para o arquivo
-        const fileName = `${category}_${Date.now()}_${file.name.replace(
-          /[^a-zA-Z0-9.]/g,
-          "_"
-        )}`;
-
-        // Fazer upload para Azure Blob Storage
-        const blobUrl = await azureBlobService.uploadFile(file, fileName);
-
-        // Registrar o anexo no estado do formulário
-        dispatch({
-          type: "ADD_ATTACHMENT",
-          payload: {
-            category,
-            attachment: {
-              id: fileName,
-              name: file.name,
-              url: blobUrl,
-              size: file.size,
-              type: file.type,
-              uploadDate: new Date().toISOString(),
-            },
-          },
-        });
-
-        return blobUrl;
-      } catch (error) {
-        console.error("Erro ao fazer upload do anexo:", error);
-        throw error;
-      }
-    },
-    [azureBlobService]
-  );
-
-  // Remover anexo
-  const removeAttachment = React.useCallback(
-    async (category: string, attachmentId: string): Promise<void> => {
-      try {
-        // Verificar se o anexo existe
-        const attachments = state.attachments[category] || [];
-        const attachment = attachments.find((a) => a.id === attachmentId);
-
-        if (attachment) {
-          // Remover do Azure Blob Storage (se necessário)
-          await azureBlobService.deleteFile(attachmentId);
-
-          // Remover do estado
-          dispatch({
-            type: "REMOVE_ATTACHMENT",
-            payload: { category, attachmentId },
-          });
-        }
-      } catch (error) {
-        console.error("Erro ao remover anexo:", error);
-        throw error;
-      }
-    },
-    [azureBlobService, state.attachments]
-  );
-
   // Validar uma etapa específica
   const validateStep = React.useCallback(
     async (stepNumber: number): Promise<boolean> => {
@@ -245,28 +131,33 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       const errors: IValidationError[] = [];
 
       // Função auxiliar para adicionar erro
-      const addError = (field: string, message: string) => {
-        errors.push({ field, message, step: stepNumber });
+      const addError = (field: string, message: string): void => {
+        errors.push({ field, message, section: `Step ${stepNumber}` });
       };
 
       // Validação específica para cada etapa
       switch (stepNumber) {
         case 1: {
           // Validar Dados Gerais
-          if (!formData.empresa)
+          if (!formData.dadosGerais.empresa)
             addError("empresa", "O nome da empresa é obrigatório");
-          if (!formData.cnpj) addError("cnpj", "O CNPJ é obrigatório");
-          else if (!/^\d{2}\.\d{3}\.\d{3}\/\d{4}\-\d{2}$/.test(formData.cnpj))
+          if (!formData.dadosGerais.cnpj)
+            addError("cnpj", "O CNPJ é obrigatório");
+          else if (
+            !/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(
+              formData.dadosGerais.cnpj
+            )
+          )
             addError("cnpj", "CNPJ inválido");
 
-          if (!formData.numeroContrato)
+          if (!formData.dadosGerais.numeroContrato)
             addError("numeroContrato", "O número do contrato é obrigatório");
-          if (!formData.dataInicioContrato)
+          if (!formData.dadosGerais.dataInicioContrato)
             addError(
               "dataInicioContrato",
               "A data de início do contrato é obrigatória"
             );
-          if (!formData.dataTerminoContrato)
+          if (!formData.dadosGerais.dataTerminoContrato)
             addError(
               "dataTerminoContrato",
               "A data de término do contrato é obrigatória"
@@ -274,10 +165,10 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
 
           // Validar que data de término é posterior à de início
           if (
-            formData.dataInicioContrato &&
-            formData.dataTerminoContrato &&
-            new Date(formData.dataInicioContrato) >=
-              new Date(formData.dataTerminoContrato)
+            formData.dadosGerais.dataInicioContrato &&
+            formData.dadosGerais.dataTerminoContrato &&
+            new Date(formData.dadosGerais.dataInicioContrato) >=
+              new Date(formData.dadosGerais.dataTerminoContrato)
           ) {
             addError(
               "dataTerminoContrato",
@@ -286,7 +177,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           }
 
           // Validar anexo REM
-          const remAttachments = attachments["rem"] || [];
+          const remAttachments = attachments.rem || [];
           if (remAttachments.length === 0) {
             addError("rem", "O Resumo Estatístico Mensal (REM) é obrigatório");
           }
@@ -320,9 +211,8 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
 
         case 4: {
           // Validação dos Serviços Especializados
-
           // Validar embarcações
-          if (formData.fornecedorEmbarcacoes) {
+          if (formData.servicosEspeciais.fornecedorEmbarcacoes) {
             // Verificar certificados marítimos obrigatórios
             const requiredCertificates = [
               "iopp",
@@ -342,7 +232,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           }
 
           // Validar içamento
-          if (formData.fornecedorIcamento) {
+          if (formData.servicosEspeciais.fornecedorIcamento) {
             // Verificar documentos técnicos obrigatórios
             const requiredDocuments = ["testeCarga", "registroCREA", "art"];
 
@@ -380,6 +270,106 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     [state]
   );
 
+  // Enviar formulário (versão final)
+  const submitForm = React.useCallback(async (): Promise<boolean> => {
+    dispatch({ type: "SET_SUBMITTING", payload: true });
+
+    // Validação completa antes do envio
+    const allStepsValid = await Promise.all(
+      [1, 2, 3, 4, 5].map((step) => validateStep(step))
+    ).then((results) => results.every(Boolean));
+
+    if (!allStepsValid) {
+      dispatch({ type: "SET_SUBMITTING", payload: false });
+      return false;
+    }
+
+    try {
+      // Marcar como "Enviado" no SharePoint
+      await sharePointService.submitFormData(
+        {
+          ...state.formData,
+          statusFormulario: "Enviado",
+        },
+        state.attachments
+      );
+
+      // Limpar rascunho local após envio bem-sucedido
+      localStorage.removeItem("hse_form_draft");
+
+      return true;
+    } catch (error) {
+      console.error("Erro ao enviar formulário:", error);
+      return false;
+    } finally {
+      dispatch({ type: "SET_SUBMITTING", payload: false });
+    }
+  }, [sharePointService, state.formData, state.attachments, validateStep]);// Fazer upload de anexo usando SharePoint
+  const uploadAttachment = React.useCallback(
+    async (file: File, category: string, subcategory?: string): Promise<IAttachmentMetadata> => {
+      try {
+        const cnpj = state.formData.dadosGerais.cnpj || "temp";
+        const empresa = state.formData.dadosGerais.empresa || "Empresa";
+
+        // Fazer upload para SharePoint Document Library
+        const uploadResult = await sharePointFileService.uploadFile(
+          file,
+          cnpj,
+          empresa,
+          category,
+          subcategory
+        );
+
+        // Registrar o anexo no estado do formulário
+        dispatch({
+          type: "ADD_ATTACHMENT",
+          payload: {
+            category,
+            attachment: uploadResult,
+          },
+        });
+
+        return uploadResult;
+      } catch (error) {
+        console.error("Erro ao fazer upload do anexo:", error);
+        if (debugMode) {
+          console.error("Debug - Upload Error:", error);
+        }
+        throw error;
+      }
+    },
+    [sharePointFileService, state.formData.dadosGerais.cnpj, state.formData.dadosGerais.empresa, debugMode]
+  );  // Remover anexo
+  const removeAttachment = React.useCallback(
+    async (category: string, attachmentId: string): Promise<void> => {
+      try {
+        // Verificar se o anexo existe
+        const attachments = state.attachments[category] || [];
+        const attachment = attachments.find(
+          (a: IAttachmentMetadata) => a.id === attachmentId
+        );
+
+        if (attachment && attachment.sharepointItemId) {
+          // Remover do SharePoint Document Library
+          await sharePointFileService.deleteFile(attachment.sharepointItemId);
+
+          // Remover do estado
+          dispatch({
+            type: "REMOVE_ATTACHMENT",
+            payload: { category, attachmentId },
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao remover anexo:", error);
+        if (debugMode) {
+          console.error("Debug - Remove Attachment Error:", error);
+        }
+        throw error;
+      }
+    },
+    [sharePointFileService, state.attachments, debugMode]
+  );
+
   // Navegação de etapas
   const goToNextStep = React.useCallback(() => {
     const { currentStep } = state;
@@ -394,52 +384,18 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       dispatch({ type: "SET_CURRENT_STEP", payload: currentStep - 1 });
     }
   }, [state.currentStep]);
-
   // Reset do formulário
   const resetForm = React.useCallback(() => {
     dispatch({ type: "RESET_FORM" });
     localStorage.removeItem("hse_form_draft");
   }, []);
-
-  // Efeito para auto-salvamento
-  React.useEffect(() => {
-    if (!webPartProperties.enableAutoSave || !state.isDirty) {
-      return;
-    }
-
-    const autoSaveInterval =
-      webPartProperties.autoSaveInterval * 1000 || 120000; // Padrão: 2 minutos
-
-    const autoSaveTimer = setTimeout(() => {
-      saveFormData()
-        .then((success) => {
-          if (success) {
-            console.log(
-              "Auto-salvamento realizado com sucesso:",
-              new Date().toLocaleTimeString()
-            );
-          }
-        })
-        .catch((error) => {
-          console.error("Erro no auto-salvamento:", error);
-        });
-    }, autoSaveInterval);
-
-    return () => clearTimeout(autoSaveTimer);
-  }, [
-    state.isDirty,
-    webPartProperties.enableAutoSave,
-    webPartProperties.autoSaveInterval,
-    saveFormData,
-  ]);
-
   // Expor ações e estado para os componentes filhos
   const contextValue = React.useMemo<IHSEFormContext>(
     () => ({
       state,
       dispatch,
       sharePointService,
-      azureBlobService,
+      sharePointFileService,
       actions: {
         loadFormData,
         saveFormData,
@@ -456,7 +412,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       state,
       dispatch,
       sharePointService,
-      azureBlobService,
+      sharePointFileService,
       loadFormData,
       saveFormData,
       submitForm,

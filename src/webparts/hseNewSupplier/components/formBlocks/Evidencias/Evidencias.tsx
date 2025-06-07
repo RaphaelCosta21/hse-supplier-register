@@ -8,9 +8,9 @@ import {
   Separator,
   Icon,
 } from "@fluentui/react";
-import { useHSEForm } from "../../../context/HSEFormContext";
-import { HSEFileUpload } from "../../common/HSEFileUpload/HSEFileUpload";
-import { REQUIRED_EVIDENCES } from "../../../types/IHSEFormData";
+import { useHSEForm } from "../../context/HSEFormContext";
+import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
+import { REQUIRED_EVIDENCES } from "../../../utils/formConstants";
 import styles from "./Evidencias.module.scss";
 
 export const Evidencias: React.FC = () => {
@@ -54,14 +54,14 @@ export const Evidencias: React.FC = () => {
             </div>
           </div>
           {hasAttachment && <div className={styles.statusBadge}>✓ Anexado</div>}
-        </div>
-
-        <HSEFileUpload
+        </div>{" "}        <HSEFileUpload
+          label={evidence.name}
           category={evidence.category}
+          subcategory="evidencias"
           required={evidence.isRequired}
           accept=".pdf,.docx,.xlsx,.jpg,.png"
           maxFileSize={50}
-          multiple={true}
+          allowMultiple={true}
           helpText={`${
             evidence.isRequired ? "Obrigatório" : "Opcional"
           } - Formatos aceitos: PDF, Word, Excel, Imagens`}

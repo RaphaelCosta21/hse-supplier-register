@@ -1,4 +1,5 @@
-import { IAttachmentMetadata } from "../utils/azureConfig";
+// Import for type usage
+import { IAttachmentMetadata } from "./IAttachmentMetadata";
 
 // Interface principal para os dados do formulário HSE
 export interface IHSEFormData {
@@ -31,7 +32,7 @@ export interface IHSEFormData {
   comentariosFinais?: string;
   justificativasNA?: string;
 
-  // Anexos (metadados dos arquivos no Azure Blob)
+  // Anexos (metadados dos arquivos no SharePoint Document Library)
   anexos: IAnexosFormulario;
 }
 
@@ -40,16 +41,16 @@ export interface IDadosGerais {
   empresa: string;
   cnpj: string;
   numeroContrato: string;
-  dataInicioContrato: Date | null;
-  dataTerminoContrato: Date | null;
+  dataInicioContrato: Date | undefined;
+  dataTerminoContrato: Date | undefined;
   escopoServico: string;
   responsavelTecnico: string;
   atividadePrincipalCNAE: string;
-  totalEmpregados: number | null;
-  empregadosParaServico: number | null;
+  totalEmpregados: number | undefined;
+  empregadosParaServico: number | undefined;
   grauRisco: "1" | "2" | "3" | "4" | "";
   possuiSESMT: boolean;
-  numeroComponentesSESMT: number | null;
+  numeroComponentesSESMT: number | undefined;
   gerenteContratoMarine: string;
 }
 
@@ -297,10 +298,13 @@ export interface IAnexosFormulario {
 export interface IFormState {
   currentStep: number;
   formData: IHSEFormData;
+  attachments: { [category: string]: IAttachmentMetadata[] };
+  validationErrors: IValidationError[];
+  isSubmitting: boolean;
   isLoading: boolean;
+  lastSaved?: Date;
   errors: { [key: string]: string };
   isDirty: boolean;
-  lastSaved?: Date;
 }
 
 // Interface para validação de erros
@@ -318,3 +322,6 @@ export interface IFormProgress {
   servicosEspeciais: number;
   total: number;
 }
+
+// Import IAttachmentMetadata from dedicated file
+export { IAttachmentMetadata } from "./IAttachmentMetadata";

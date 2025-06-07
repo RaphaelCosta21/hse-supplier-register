@@ -1,447 +1,305 @@
-import { sp } from "@pnp/sp/presets/all";
-import { IItemAddResult, IItemUpdateResult } from "@pnp/sp/items";
 import { WebPartContext } from "@microsoft/sp-webpart-base";
-import { IHSEFormData, IFormState } from "../types/IHSEFormData";
+import { spfi, SPFx } from "@pnp/sp";
+import "@pnp/sp/webs";
+import "@pnp/sp/lists";
+import "@pnp/sp/items";
+import "@pnp/sp/fields";
+import { IHSEFormData } from "../types/IHSEFormData";
 
 export class SharePointService {
-  private context: WebPartContext;
+  private sp: any;
   private listName: string;
-  private siteUrl: string;
 
-  constructor(context: WebPartContext, listName: string = "hsenewregister") {
-    this.context = context;
+  constructor(context: WebPartContext, listName: string) {
+    this.sp = spfi().using(SPFx(context));
     this.listName = listName;
-    this.siteUrl = context.pageContext.web.absoluteUrl;
+  }
 
-    // Configurar PnPjs
-    sp.setup({
-      spfxContext: context,
-    });
+  public async ensureListExists(): Promise<void> {
+    try {
+      // Verificar se a lista existe
+      await this.sp.web.lists.getByTitle(this.listName).select("Id")();
+      console.log(`Lista ${this.listName} já existe`);
+    } catch (error) {
+      // Lista não existe, criar
+      console.log(`Criando lista ${this.listName}...`);
+      await this.createHSEList();
+    }
+
+    // Garantir que a Document Library também existe
+    await this.ensureDocumentLibraryExists();
   }
 
   /**
-   * Salva um novo formulário HSE na lista SharePoint
-   * @param formData Dados do formulário
+   * Garante que a Document Library HSEAttachments existe
    */
-  public async saveForm(
-    formData: IHSEFormData
-  ): Promise<{ success: boolean; id?: number; error?: string }> {
+  public async ensureDocumentLibraryExists(): Promise<void> {
+    const documentLibraryName = "HSEAttachments";
+
     try {
-      // Preparar dados para salvar na lista
-      const listItem = this.prepareListItem(formData);
+      // Verificar se a biblioteca existe
+      await this.sp.web.lists.getByTitle(documentLibraryName).select("Id")();
+      console.log(`Document Library ${documentLibraryName} já existe`);
+    } catch (error) {
+      // Biblioteca não existe, criar
+      console.log(`Criando Document Library ${documentLibraryName}...`);
+      await this.createDocumentLibrary(documentLibraryName);
+    }
+  }
 
-      // Salvar na lista SharePoint
-      const result: IItemAddResult = await sp.web.lists
-        .getByTitle(this.listName)
-        .items.add(listItem);
+  /**
+   * Cria a Document Library para anexos HSE
+   */
+  private async createDocumentLibrary(libraryName: string): Promise<void> {
+    const libraryCreationInfo = {
+      Title: libraryName,
+      Description: "Biblioteca de documentos para anexos do formulário HSE",
+      BaseTemplate: 101, // Document Library template
+    };
 
-      if (result.data) {
-        return {
-          success: true,
-          id: result.data.Id,
-        };
-      } else {
-        return {
-          success: false,
-          error: "Erro ao salvar: resposta inválida do SharePoint",
-        };
+    const library = await this.sp.web.lists.add(libraryCreationInfo);
+
+    // Adicionar campos customizados para metadados
+    await this.addDocumentLibraryFields(library);
+  }
+
+  /**
+   * Adiciona campos customizados à Document Library
+   */
+  private async addDocumentLibraryFields(library: any): Promise<void> {
+    const fields = [
+      { name: "CNPJFornecedor", type: "Text", required: false },
+      { name: "NomeFornecedor", type: "Text", required: false },
+      { name: "NumeroContrato", type: "Text", required: false },
+      { name: "CategoriaAnexo", type: "Text", required: false },
+      { name: "SubcategoriaAnexo", type: "Text", required: false },
+      { name: "FormularioID", type: "Number", required: false },
+      { name: "TamanhoArquivo", type: "Number", required: false },
+      { name: "DataUpload", type: "DateTime", required: false },
+    ];
+
+    for (const field of fields) {
+      try {
+        await library.fields.add(field.name, field.type, {
+          Required: field.required || false,
+        });
+      } catch (error) {
+        console.error(`Erro ao criar campo ${field.name} na Document Library:`, error);
       }
-    } catch (error) {
-      console.error("Erro ao salvar formulário no SharePoint:", error);
-      return {
-        success: false,
-        error: `Erro ao salvar: ${error.message || "Erro desconhecido"}`,
-      };
     }
   }
 
-  /**
-   * Atualiza um formulário existente na lista SharePoint
-   * @param id ID do item na lista
-   * @param formData Dados do formulário
-   */
-  public async updateForm(
-    id: number,
-    formData: IHSEFormData
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      // Preparar dados para atualização
-      const listItem = this.prepareListItem(formData);
+  private async createHSEList(): Promise<void> {
+    // Criar lista
+    const listCreationInfo = {
+      Title: this.listName,
+      Description:
+        "Lista para armazenar dados do formulário HSE de fornecedores",
+      BaseTemplate: 100, // Lista customizada
+    };
 
-      // Atualizar na lista SharePoint
-      const result: IItemUpdateResult = await sp.web.lists
-        .getByTitle(this.listName)
-        .items.getById(id)
-        .update(listItem);
+    const list = await this.sp.web.lists.add(listCreationInfo);
 
-      return {
-        success: true,
-      };
-    } catch (error) {
-      console.error("Erro ao atualizar formulário no SharePoint:", error);
-      return {
-        success: false,
-        error: `Erro ao atualizar: ${error.message || "Erro desconhecido"}`,
-      };
-    }
+    // Adicionar campos customizados
+    await this.addListFields(list);
   }
 
-  /**
-   * Recupera um formulário específico da lista SharePoint
-   * @param id ID do item na lista
-   */
-  public async getForm(
-    id: number
-  ): Promise<{ success: boolean; data?: IHSEFormData; error?: string }> {
-    try {
-      const item = await sp.web.lists
-        .getByTitle(this.listName)
-        .items.getById(id)
-        .get();
-
-      if (item) {
-        const formData = this.parseListItem(item);
-        return {
-          success: true,
-          data: formData,
-        };
-      } else {
-        return {
-          success: false,
-          error: "Formulário não encontrado",
-        };
-      }
-    } catch (error) {
-      console.error("Erro ao recuperar formulário do SharePoint:", error);
-      return {
-        success: false,
-        error: `Erro ao recuperar: ${error.message || "Erro desconhecido"}`,
-      };
-    }
-  }
-
-  /**
-   * Lista todos os formulários do usuário atual
-   */
-  public async getUserForms(): Promise<{
-    success: boolean;
-    data?: any[];
-    error?: string;
-  }> {
-    try {
-      const currentUser = this.context.pageContext.user.loginName;
-
-      const items = await sp.web.lists
-        .getByTitle(this.listName)
-        .items.select(
-          "Id",
-          "Title",
-          "StatusFormulario",
-          "DataCriacao",
-          "DataUltimaModificacao",
-          "CNPJ",
-          "NumeroContrato"
-        )
-        .filter(`UsuarioPreenchimento eq '${currentUser}'`)
-        .orderBy("DataUltimaModificacao", false)
-        .get();
-
-      return {
-        success: true,
-        data: items,
-      };
-    } catch (error) {
-      console.error("Erro ao listar formulários do usuário:", error);
-      return {
-        success: false,
-        error: `Erro ao listar: ${error.message || "Erro desconhecido"}`,
-      };
-    }
-  }
-
-  /**
-   * Verifica se já existe um formulário com o mesmo CNPJ e número de contrato
-   * @param cnpj CNPJ da empresa
-   * @param numeroContrato Número do contrato
-   * @param excludeId ID a ser excluído da verificação (para atualizações)
-   */
-  public async checkDuplicate(
-    cnpj: string,
-    numeroContrato: string,
-    excludeId?: number
-  ): Promise<{ exists: boolean; id?: number }> {
-    try {
-      let filter = `CNPJ eq '${cnpj}' and NumeroContrato eq '${numeroContrato}'`;
-
-      if (excludeId) {
-        filter += ` and Id ne ${excludeId}`;
-      }
-
-      const items = await sp.web.lists
-        .getByTitle(this.listName)
-        .items.select("Id")
-        .filter(filter)
-        .get();
-
-      return {
-        exists: items.length > 0,
-        id: items.length > 0 ? items[0].Id : undefined,
-      };
-    } catch (error) {
-      console.error("Erro ao verificar duplicatas:", error);
-      return { exists: false };
-    }
-  }
-
-  /**
-   * Salva um rascunho temporário (auto-save)
-   * @param formData Dados do formulário
-   */
-  public async saveDraft(
-    formData: IHSEFormData
-  ): Promise<{ success: boolean; id?: number; error?: string }> {
-    try {
-      // Forçar status como rascunho
-      formData.statusFormulario = "Rascunho";
-
-      if (formData.id) {
-        // Atualizar rascunho existente
-        const result = await this.updateForm(formData.id, formData);
-        return {
-          success: result.success,
-          id: formData.id,
-          error: result.error,
-        };
-      } else {
-        // Criar novo rascunho
-        return await this.saveForm(formData);
-      }
-    } catch (error) {
-      console.error("Erro ao salvar rascunho:", error);
-      return {
-        success: false,
-        error: `Erro ao salvar rascunho: ${
-          error.message || "Erro desconhecido"
-        }`,
-      };
-    }
-  }
-
-  /**
-   * Envia o formulário (muda status para "Enviado")
-   * @param id ID do formulário
-   */
-  public async submitForm(
-    id: number
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      await sp.web.lists.getByTitle(this.listName).items.getById(id).update({
-        StatusFormulario: "Enviado",
-        DataUltimaModificacao: new Date().toISOString(),
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error("Erro ao enviar formulário:", error);
-      return {
-        success: false,
-        error: `Erro ao enviar: ${error.message || "Erro desconhecido"}`,
-      };
-    }
-  }
-
-  /**
-   * Prepara os dados do formulário para serem salvos na lista SharePoint
-   * @param formData Dados do formulário
-   */
-  private prepareListItem(formData: IHSEFormData): any {
-    return {
-      Title: formData.dadosGerais.empresa,
-      StatusFormulario: formData.statusFormulario,
-      UsuarioPreenchimento: this.context.pageContext.user.loginName,
-      DataUltimaModificacao: new Date().toISOString(),
-
+  private async addListFields(list: any): Promise<void> {
+    const fields = [
       // Dados Gerais
-      Empresa: formData.dadosGerais.empresa,
-      CNPJ: formData.dadosGerais.cnpj,
-      NumeroContrato: formData.dadosGerais.numeroContrato,
-      DataInicioContrato:
-        formData.dadosGerais.dataInicioContrato?.toISOString(),
-      DataTerminoContrato:
-        formData.dadosGerais.dataTerminoContrato?.toISOString(),
-      EscopoServico: formData.dadosGerais.escopoServico,
-      ResponsavelTecnico: formData.dadosGerais.responsavelTecnico,
-      AtividadePrincipalCNAE: formData.dadosGerais.atividadePrincipalCNAE,
-      TotalEmpregados: formData.dadosGerais.totalEmpregados,
-      EmpregadosParaServico: formData.dadosGerais.empregadosParaServico,
-      GrauRisco: formData.dadosGerais.grauRisco,
-      PossuiSESMT: formData.dadosGerais.possuiSESMT,
-      NumeroComponentesSESMT: formData.dadosGerais.numeroComponentesSESMT,
-      GerenteContratoMarine: formData.dadosGerais.gerenteContratoMarine,
+      { name: "Empresa", type: "Text", required: true },
+      { name: "CNPJ", type: "Text", required: true },
+      { name: "NumeroContrato", type: "Text", required: true },
+      { name: "DataInicioContrato", type: "DateTime", required: true },
+      { name: "DataTerminoContrato", type: "DateTime", required: true },
+      { name: "EscopoServico", type: "Note", required: false },
+      { name: "ResponsavelTecnico", type: "Text", required: true },
+      { name: "AtividadePrincipalCNAE", type: "Text", required: false },
+      { name: "TotalEmpregados", type: "Number", required: false },
+      { name: "EmpregadosParaServico", type: "Number", required: false },
+      { name: "GrauRisco", type: "Number", required: true },
+      { name: "PossuiSESMT", type: "Boolean", required: false },
+      { name: "NumeroComponentesSESMT", type: "Number", required: false },
+      { name: "GerenteContratoMarine", type: "Text", required: true },
+
+      // Status e Metadados
+      {
+        name: "StatusFormulario",
+        type: "Choice",
+        choices: [
+          "Rascunho",
+          "Submetido",
+          "Em Análise",
+          "Aprovado",
+          "Rejeitado",
+        ],
+      },
+      { name: "DataCriacao", type: "DateTime", required: false },
+      { name: "DataUltimaModificacao", type: "DateTime", required: false },
+      { name: "UsuarioPreenchimento", type: "User", required: false },
 
       // Dados JSON
-      ConformidadeLegalData: JSON.stringify(formData.conformidadeLegal),
-      EvidenciasData: JSON.stringify(formData.evidencias),
-      EmbarcacoesData: formData.servicosEspeciais.embarcacoes
-        ? JSON.stringify(formData.servicosEspeciais.embarcacoes)
-        : null,
-      IcamentoData: formData.servicosEspeciais.icamento
-        ? JSON.stringify(formData.servicosEspeciais.icamento)
-        : null,
+      { name: "ConformidadeLegalData", type: "Note", required: false },
+      { name: "EvidenciasData", type: "Note", required: false },
+      { name: "EmbarcacoesData", type: "Note", required: false },
+      { name: "IcamentoData", type: "Note", required: false },
 
       // Serviços Especializados
-      FornecedorEmbarcacoes: formData.servicosEspeciais.fornecedorEmbarcacoes,
-      FornecedorIcamento: formData.servicosEspeciais.fornecedorIcamento,
+      { name: "FornecedorEmbarcacoes", type: "Boolean", required: false },
+      { name: "FornecedorIcamento", type: "Boolean", required: false },
+    ];
 
-      // Anexos e outros
-      AnexosMetadados: JSON.stringify(formData.anexos),
-      OutrasAcoes: formData.outrasAcoes,
-      ComentariosFinais: formData.comentariosFinais,
-      JustificativasNA: formData.justificativasNA,
-    };
+    for (const field of fields) {
+      try {
+        if (field.type === "Choice") {
+          await list.fields.addChoice(field.name, {
+            Choices: (field as any).choices,
+            Required: (field as any).required || false,
+          });
+        } else if (field.type === "User") {
+          await list.fields.addUser(field.name, {
+            Required: (field as any).required || false,
+          });
+        } else {
+          await list.fields.add(field.name, field.type, {
+            Required: (field as any).required || false,
+          });
+        }
+      } catch (error) {
+        console.error(`Erro ao criar campo ${field.name}:`, error);
+      }
+    }
   }
 
-  /**
-   * Converte item da lista SharePoint para dados do formulário
-   * @param item Item da lista SharePoint
-   */
-  private parseListItem(item: any): IHSEFormData {
+  public async saveFormData(
+    formData: IHSEFormData,
+    attachments: any
+  ): Promise<number> {
+    await this.ensureListExists();
+
+    const dados = formData.dadosGerais;
+    const servicos = formData.servicosEspeciais;
+
+    const itemData = {
+      Title: `${dados.empresa} - ${dados.numeroContrato}`,
+      Empresa: dados.empresa,
+      CNPJ: dados.cnpj,
+      NumeroContrato: dados.numeroContrato,
+      DataInicioContrato: dados.dataInicioContrato,
+      DataTerminoContrato: dados.dataTerminoContrato,
+      EscopoServico: dados.escopoServico,
+      ResponsavelTecnico: dados.responsavelTecnico,
+      AtividadePrincipalCNAE: dados.atividadePrincipalCNAE,
+      TotalEmpregados: dados.totalEmpregados,
+      EmpregadosParaServico: dados.empregadosParaServico,
+      GrauRisco: dados.grauRisco,
+      PossuiSESMT: dados.possuiSESMT,
+      NumeroComponentesSESMT: dados.numeroComponentesSESMT,
+      GerenteContratoMarine: dados.gerenteContratoMarine,
+      StatusFormulario: "Submetido",
+      DataCriacao: new Date().toISOString(),
+      DataUltimaModificacao: new Date().toISOString(),
+      ConformidadeLegalData: JSON.stringify(formData.conformidadeLegal),
+      EvidenciasData: JSON.stringify(attachments),
+      EmbarcacoesData: JSON.stringify(servicos.embarcacoes),
+      IcamentoData: JSON.stringify(servicos.icamento),
+      FornecedorEmbarcacoes: servicos.fornecedorEmbarcacoes,
+      FornecedorIcamento: servicos.fornecedorIcamento,
+    };
+
+    const result = await this.sp.web.lists
+      .getByTitle(this.listName)
+      .items.add(itemData);
+    return result.data.Id;
+  }
+
+  public async updateFormData(
+    itemId: number,
+    formData: Partial<IHSEFormData>
+  ): Promise<void> {
+    const updateData = {
+      ...formData,
+      DataUltimaModificacao: new Date().toISOString(),
+    };
+
+    await this.sp.web.lists
+      .getByTitle(this.listName)
+      .items.getById(itemId)
+      .update(updateData);
+  }
+
+  public async getFormData(itemId: number): Promise<any> {
+    return await this.sp.web.lists
+      .getByTitle(this.listName)
+      .items.getById(itemId)
+      .get();
+  }
+
+  public async getFormById(id: number): Promise<IHSEFormData | null> {
+    try {
+      const item = await this.sp.web.lists
+        .getByTitle(this.listName)
+        .items.getById(id)
+        .get();
+
+      return this.mapSharePointItemToFormData(item);
+    } catch (error) {
+      console.error(`Erro ao buscar formulário com ID ${id}:`, error);
+      return null;
+    }
+  }
+  public async submitFormData(
+    formData: IHSEFormData,
+    attachments: { [category: string]: any[] }
+  ): Promise<number> {
+    try {
+      // Primeiro, salvar os dados do formulário
+      const itemId = await this.saveFormData(formData, attachments);
+
+      // Atualizar status para "Enviado"
+      await this.updateFormData(itemId, {
+        statusFormulario: "Enviado",
+        dataUltimaModificacao: new Date(),
+      });
+
+      return itemId;
+    } catch (error) {
+      console.error("Erro ao enviar formulário:", error);
+      throw error;
+    }
+  }
+
+  private mapSharePointItemToFormData(item: any): IHSEFormData {
+    // Mapear item do SharePoint para interface IHSEFormData
     return {
       id: item.Id,
-      statusFormulario: item.StatusFormulario,
+      statusFormulario: item.StatusFormulario || "Rascunho",
       usuarioPreenchimento: item.UsuarioPreenchimento,
-      dataCriacao: item.DataCriacao ? new Date(item.DataCriacao) : undefined,
-      dataUltimaModificacao: item.DataUltimaModificacao
-        ? new Date(item.DataUltimaModificacao)
-        : undefined,
-
+      dataCriacao: item.Created ? new Date(item.Created) : undefined,
+      dataUltimaModificacao: item.Modified ? new Date(item.Modified) : undefined,
       dadosGerais: {
         empresa: item.Empresa || "",
         cnpj: item.CNPJ || "",
         numeroContrato: item.NumeroContrato || "",
-        dataInicioContrato: item.DataInicioContrato
-          ? new Date(item.DataInicioContrato)
-          : null,
-        dataTerminoContrato: item.DataTerminoContrato
-          ? new Date(item.DataTerminoContrato)
-          : null,
+        dataInicioContrato: item.DataInicioContrato ? new Date(item.DataInicioContrato) : undefined,
+        dataTerminoContrato: item.DataTerminoContrato ? new Date(item.DataTerminoContrato) : undefined,
         escopoServico: item.EscopoServico || "",
         responsavelTecnico: item.ResponsavelTecnico || "",
         atividadePrincipalCNAE: item.AtividadePrincipalCNAE || "",
-        totalEmpregados: item.TotalEmpregados || null,
-        empregadosParaServico: item.EmpregadosParaServico || null,
-        grauRisco: item.GrauRisco || "",
+        totalEmpregados: item.TotalEmpregados,
+        empregadosParaServico: item.EmpregadosParaServico,
+        grauRisco: item.GrauRisco || "1",
         possuiSESMT: item.PossuiSESMT || false,
-        numeroComponentesSESMT: item.NumeroComponentesSESMT || null,
+        numeroComponentesSESMT: item.NumeroComponentesSESMT,
         gerenteContratoMarine: item.GerenteContratoMarine || "",
       },
-
-      conformidadeLegal: item.ConformidadeLegalData
-        ? JSON.parse(item.ConformidadeLegalData)
-        : this.getDefaultConformidadeLegal(),
-      evidencias: item.EvidenciasData
-        ? JSON.parse(item.EvidenciasData)
-        : this.getDefaultEvidencias(),
-
-      servicosEspeciais: {
-        fornecedorEmbarcacoes: item.FornecedorEmbarcacoes || false,
-        embarcacoes: item.EmbarcacoesData
-          ? JSON.parse(item.EmbarcacoesData)
-          : undefined,
-        fornecedorIcamento: item.FornecedorIcamento || false,
-        icamento: item.IcamentoData ? JSON.parse(item.IcamentoData) : undefined,
-      },
-
-      outrasAcoes: item.OutrasAcoes || "",
-      comentariosFinais: item.ComentariosFinais || "",
-      justificativasNA: item.JustificativasNA || "",
-
-      anexos: item.AnexosMetadados
-        ? JSON.parse(item.AnexosMetadados)
-        : this.getDefaultAnexos(),
+      conformidadeLegal: JSON.parse(item.ConformidadeLegal || "{}"),
+      evidencias: JSON.parse(item.Evidencias || "{}"),
+      servicosEspeciais: JSON.parse(item.ServicosEspeciais || "{}"),
+      outrasAcoes: item.OutrasAcoes,
+      comentariosFinais: item.ComentariosFinais,
+      justificativasNA: item.JustificativasNA,
+      anexos: JSON.parse(item.Anexos || "{}"),
     };
-  }
-
-  /**
-   * Retorna estrutura padrão para conformidade legal
-   */
-  private getDefaultConformidadeLegal(): any {
-    // Retorna estrutura vazia com todas as NRs
-    return {
-      nr01: {
-        questao1: { resposta: "" },
-        questao2: { resposta: "" },
-        questao3: { resposta: "" },
-        questao4: { resposta: "" },
-        questao5: { resposta: "" },
-      },
-      nr04: { questao7: { resposta: "" }, questao8: { resposta: "" } },
-      // ... adicionar demais NRs conforme necessário
-    };
-  }
-
-  /**
-   * Retorna estrutura padrão para evidências
-   */
-  private getDefaultEvidencias(): any {
-    return {
-      todasRespostasPossuemEvidencia: false,
-      sesmt: { resposta: "" },
-      cipa: { resposta: "" },
-      // ... adicionar demais evidências
-    };
-  }
-
-  /**
-   * Retorna estrutura padrão para anexos
-   */
-  private getDefaultAnexos(): any {
-    return {
-      dadosGerais: {},
-      conformidade: {},
-      evidencias: {},
-    };
-  }
-
-  /**
-   * Verifica se a lista existe e tem as colunas necessárias
-   */
-  public async validateList(): Promise<{
-    valid: boolean;
-    missingColumns?: string[];
-  }> {
-    try {
-      const list = await sp.web.lists.getByTitle(this.listName).get();
-
-      if (!list) {
-        return { valid: false };
-      }
-
-      // Verificar colunas essenciais
-      const fields = await sp.web.lists.getByTitle(this.listName).fields.get();
-      const fieldNames = fields.map((f) => f.InternalName);
-
-      const requiredFields = [
-        "StatusFormulario",
-        "Empresa",
-        "CNPJ",
-        "NumeroContrato",
-        "ConformidadeLegalData",
-        "EvidenciasData",
-        "AnexosMetadados",
-      ];
-
-      const missingColumns = requiredFields.filter(
-        (field) => !fieldNames.includes(field)
-      );
-
-      return {
-        valid: missingColumns.length === 0,
-        missingColumns: missingColumns.length > 0 ? missingColumns : undefined,
-      };
-    } catch (error) {
-      console.error("Erro ao validar lista:", error);
-      return { valid: false };
-    }
   }
 }

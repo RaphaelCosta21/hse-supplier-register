@@ -1,0 +1,122 @@
+.evidencias {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  padding: 32px 28px 28px 28px;
+  margin-bottom: 32px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.progressBadge {
+  background: linear-gradient(90deg, #4caf50 60%, #2196f3 100%);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 16px;
+  padding: 6px 18px;
+  font-size: 1rem;
+  box-shadow: 0 1px 4px rgba(33, 150, 243, 0.08);
+}
+
+.evidencesList {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-bottom: 18px;
+}
+
+.evidenceItem {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 18px 20px 16px 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s;
+  border: 1px solid #e3e8ee;
+}
+.evidenceItem:hover {
+  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.1);
+  border-color: #b3e5fc;
+}
+
+.evidenceHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.evidenceInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.evidenceName {
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 2px;
+}
+
+.evidenceDescription {
+  color: #5c6f7c;
+  font-size: 0.98rem;
+}
+
+.completedIcon {
+  color: #4caf50;
+  font-size: 1.5rem;
+  margin-top: 2px;
+}
+
+.pendingIcon {
+  color: #bdbdbd;
+  font-size: 1.5rem;
+  margin-top: 2px;
+}
+
+.required {
+  color: #e53935;
+  margin-left: 4px;
+  font-size: 1.1em;
+}
+
+.statusBadge {
+  background: #e8f5e9;
+  color: #388e3c;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 3px 14px;
+  font-size: 0.98rem;
+  align-self: flex-start;
+  margin-left: 10px;
+}
+
+.actionsSection {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 700px) {
+  .evidencias {
+    padding: 16px 6px 18px 6px;
+  }
+  .evidenceItem {
+    padding: 12px 8px 10px 8px;
+  }
+  .sectionTitle {
+    font-size: 1.2rem;
+  }
+}

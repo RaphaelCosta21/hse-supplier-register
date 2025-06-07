@@ -8,30 +8,28 @@ import {
   DefaultButton,
   Separator,
 } from "@fluentui/react";
-import { useHSEForm } from "../../../context/HSEFormContext";
-import { HSEFileUpload } from "../../common/HSEFileUpload/HSEFileUpload";
+import { useHSEForm } from "../../context/HSEFormContext";
+import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
 import {
   MARITIME_CERTIFICATES,
   LIFTING_DOCUMENTS,
-} from "../../../types/IHSEFormData";
+} from "../../../utils/formConstants";
 import styles from "./ServicosEspeciais.module.scss";
 
 export const ServicosEspeciais: React.FC = () => {
   const { state, dispatch, actions } = useHSEForm();
   const { formData } = state;
-
   const handleServiceToggle = (
     service: "fornecedorEmbarcacoes" | "fornecedorIcamento",
     checked: boolean
-  ) => {
+  ): void => {
     dispatch({
       type: "UPDATE_FIELD",
-      payload: { field: service, value: checked },
+      payload: { field: `servicosEspeciais.${service}`, value: checked },
     });
   };
-
-  const renderMaritimeCertificates = () => {
-    if (!formData.fornecedorEmbarcacoes) return null;
+  const renderMaritimeCertificates = (): JSX.Element | null => {
+    if (!formData.servicosEspeciais?.fornecedorEmbarcacoes) return null;
 
     return (
       <div className={styles.serviceSection}>
@@ -54,9 +52,10 @@ export const ServicosEspeciais: React.FC = () => {
               </Text>
               <Text variant="small" className={styles.certificateDescription}>
                 {certificate.description}
-              </Text>
-              <HSEFileUpload
+              </Text>{" "}              <HSEFileUpload
+                label={certificate.name}
                 category={certificate.category}
+                subcategory="servicosEspeciais"
                 required={certificate.isRequired}
                 accept=".pdf,.jpg,.png"
                 maxFileSize={50}
@@ -68,9 +67,8 @@ export const ServicosEspeciais: React.FC = () => {
       </div>
     );
   };
-
-  const renderLiftingDocuments = () => {
-    if (!formData.fornecedorIcamento) return null;
+  const renderLiftingDocuments = (): JSX.Element | null => {
+    if (!formData.servicosEspeciais?.fornecedorIcamento) return null;
 
     return (
       <div className={styles.serviceSection}>
@@ -93,9 +91,10 @@ export const ServicosEspeciais: React.FC = () => {
               </Text>
               <Text variant="small" className={styles.documentDescription}>
                 {document.description}
-              </Text>
-              <HSEFileUpload
+              </Text>{" "}              <HSEFileUpload
+                label={document.name}
                 category={document.category}
+                subcategory="servicosEspeciais"
                 required={document.isRequired}
                 accept=".pdf,.docx,.xlsx"
                 maxFileSize={50}
@@ -116,16 +115,14 @@ export const ServicosEspeciais: React.FC = () => {
             Serviços Especializados
           </Text>
         </div>
-
         <MessageBar messageBarType={MessageBarType.info}>
           Indique quais tipos de serviços especializados sua empresa fornece.
           Documentos adicionais serão solicitados conforme aplicável.
-        </MessageBar>
-
+        </MessageBar>{" "}
         <div className={styles.serviceToggles}>
           <Toggle
             label="Fornecedor de Serviços Envolvendo Embarcações"
-            checked={formData.fornecedorEmbarcacoes || false}
+            checked={formData.servicosEspeciais?.fornecedorEmbarcacoes || false}
             onChange={(_, checked) =>
               handleServiceToggle("fornecedorEmbarcacoes", checked || false)
             }
@@ -135,7 +132,7 @@ export const ServicosEspeciais: React.FC = () => {
 
           <Toggle
             label="Fornecedor de Serviços Envolvendo Içamento de Carga"
-            checked={formData.fornecedorIcamento || false}
+            checked={formData.servicosEspeciais?.fornecedorIcamento || false}
             onChange={(_, checked) =>
               handleServiceToggle("fornecedorIcamento", checked || false)
             }
@@ -143,19 +140,16 @@ export const ServicosEspeciais: React.FC = () => {
             className={styles.serviceToggle}
           />
         </div>
-
         <Separator />
-
         {renderMaritimeCertificates()}
         {renderLiftingDocuments()}
-
-        {!formData.fornecedorEmbarcacoes && !formData.fornecedorIcamento && (
-          <MessageBar messageBarType={MessageBarType.success}>
-            Nenhum serviço especializado selecionado. Você pode prosseguir para
-            a próxima etapa.
-          </MessageBar>
-        )}
-
+        {!formData.servicosEspeciais?.fornecedorEmbarcacoes &&
+          !formData.servicosEspeciais?.fornecedorIcamento && (
+            <MessageBar messageBarType={MessageBarType.success}>
+              Nenhum serviço especializado selecionado. Você pode prosseguir
+              para a próxima etapa.
+            </MessageBar>
+          )}
         <div className={styles.actionsSection}>
           <Stack
             horizontal

@@ -8,13 +8,12 @@ import {
   MessageBarType,
   Separator,
   Icon,
-  Modal,
   Dialog,
   DialogType,
   DialogFooter,
 } from "@fluentui/react";
-import { useHSEForm } from "../../../context/HSEFormContext";
-import { formSelectors } from "../../../context/formReducer";
+import { useHSEForm } from "../../context/HSEFormContext";
+import { formSelectors } from "../../context/formReducer";
 import styles from "./RevisaoFinal.module.scss";
 
 export const RevisaoFinal: React.FC = () => {
@@ -24,14 +23,13 @@ export const RevisaoFinal: React.FC = () => {
 
   const completionPercentage = formSelectors.getCompletionPercentage(state);
   const hasValidationErrors = state.validationErrors.length > 0;
-
-  const getSummaryData = () => {
+  const getSummaryData = (): any => {
     const { formData, attachments } = state;
 
     return {
-      empresa: formData.empresa,
-      cnpj: formData.cnpj,
-      numeroContrato: formData.numeroContrato,
+      empresa: formData.dadosGerais?.empresa,
+      cnpj: formData.dadosGerais?.cnpj,
+      numeroContrato: formData.dadosGerais?.numeroContrato,
       totalAnexos: Object.values(attachments).reduce(
         (total, files) => total + files.length,
         0
@@ -40,15 +38,15 @@ export const RevisaoFinal: React.FC = () => {
         .length,
       servicosEspecializados:
         [
-          formData.fornecedorEmbarcacoes && "Embarcações",
-          formData.fornecedorIcamento && "Içamento",
+          formData.servicosEspeciais?.fornecedorEmbarcacoes && "Embarcações",
+          formData.servicosEspeciais?.fornecedorIcamento && "Içamento",
         ]
           .filter(Boolean)
           .join(", ") || "Nenhum",
     };
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     setIsSubmitting(true);
     try {
       const success = await actions.submitForm();

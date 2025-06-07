@@ -3,122 +3,209 @@ import {
   Stack,
   Text,
   Dropdown,
-  IDropdownOption,
   TextField,
   Separator,
   MessageBar,
   MessageBarType,
-  DefaultButton,
-  Accordion,
-  AccordionItem,
-  AccordionHeader,
-  AccordionPanel,
 } from "@fluentui/react";
-import { useHSEForm } from "../../../context/HSEFormContext";
-import { HSEFileUpload } from "../../common/HSEFileUpload/HSEFileUpload";
+import { IConformidadeLegalProps } from "./IConformidadeLegalProps";
 import {
   RESPOSTA_OPTIONS,
   NR_QUESTIONS_MAP,
 } from "../../../utils/formConstants";
 import styles from "./ConformidadeLegal.module.scss";
+import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
 
-export const ConformidadeLegal: React.FC = () => {
-  const { state, dispatch, actions } = useHSEForm();
-  const { formData } = state;
-
+export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
+  value,
+  onChange,
+  errors,
+}) => {
+  // Corrige tipagem da função handleNRResponse sem usar 'any' nem Record<string, unknown>' global
   const handleNRResponse = (
-    questionId: number,
+    nrKey: keyof typeof value,
+    questionKey: string,
     field: "resposta" | "comentario",
-    value: string
-  ) => {
-    const currentData = formData.conformidadeLegal[questionId] || {};
-    dispatch({
-      type: "UPDATE_FIELD",
-      payload: {
-        field: "conformidadeLegal",
-        value: {
-          ...formData.conformidadeLegal,
-          [questionId]: {
-            ...currentData,
-            [field]: value,
-          },
-        },
+    val: string
+  ): void => {
+    const nrBlock = value[nrKey] as unknown;
+    const nrBlockObj =
+      typeof nrBlock === "object" && nrBlock !== null
+        ? (nrBlock as { [k: string]: unknown })
+        : {};
+    const questionObj =
+      typeof nrBlockObj[questionKey] === "object" &&
+      nrBlockObj[questionKey] !== null
+        ? (nrBlockObj[questionKey] as { [k: string]: unknown })
+        : {};
+    onChange(nrKey, {
+      ...nrBlockObj,
+      [questionKey]: {
+        ...questionObj,
+        [field]: val,
       },
     });
   };
 
-  const renderNRSection = (
-    nrCode: string,
-    questions: number[],
-    title: string
-  ) => {
-    return (
-      <AccordionItem value={nrCode}>
-        <AccordionHeader>{title}</AccordionHeader>
-        <AccordionPanel>
-          <Stack tokens={{ childrenGap: 15 }}>
-            {questions.map((questionId) => {
-              const questionData = NR_QUESTIONS_MAP[questionId];
-              const currentResponse =
-                formData.conformidadeLegal[questionId] || {};
+  // Mapeamento das NRs e blocos do formulário conforme o modelo de dados e PDF
+  const NR_BLOCKS = [
+    {
+      key: "nr01",
+      title: "NR 01 - Disposições Gerais",
+      questions: [
+        { key: "questao1", idx: 1 },
+        { key: "questao2", idx: 2 },
+        { key: "questao3", idx: 3 },
+        { key: "questao4", idx: 4 },
+        { key: "questao5", idx: 5 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr04",
+      title: "NR 04 - SESMT",
+      questions: [
+        { key: "questao7", idx: 7 },
+        { key: "questao8", idx: 8 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr05",
+      title: "NR 05 - CIPA",
+      questions: [
+        { key: "questao10", idx: 10 },
+        { key: "questao11", idx: 11 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr06",
+      title: "NR 06 - EPI",
+      questions: [
+        { key: "questao13", idx: 13 },
+        { key: "questao14", idx: 14 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr07",
+      title: "NR 07 - PCMSO",
+      questions: [
+        { key: "questao16", idx: 16 },
+        { key: "questao17", idx: 17 },
+        { key: "questao18", idx: 18 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr09",
+      title: "NR 09 - PPRA",
+      questions: [
+        { key: "questao20", idx: 20 },
+        { key: "questao21", idx: 21 },
+        { key: "questao22", idx: 22 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr10",
+      title: "NR 10 - Segurança em Instalações e Serviços em Eletricidade",
+      questions: [
+        { key: "questao24", idx: 24 },
+        { key: "questao25", idx: 25 },
+        { key: "questao26", idx: 26 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr11",
+      title:
+        "NR 11 - Transporte, Movimentação, Armazenagem e Manuseio de Materiais",
+      questions: [
+        { key: "questao28", idx: 28 },
+        { key: "questao29", idx: 29 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr12",
+      title: "NR 12 - Segurança no Trabalho em Máquinas e Equipamentos",
+      questions: [
+        { key: "questao31", idx: 31 },
+        { key: "questao32", idx: 32 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr13",
+      title: "NR 13 - Caldeiras, Vasos de Pressão e Tubulações",
+      questions: [{ key: "questao34", idx: 34 }],
+      comentarios: true,
+    },
+    {
+      key: "nr15",
+      title: "NR 15 - Atividades e Operações Insalubres",
+      questions: [{ key: "questao36", idx: 36 }],
+      comentarios: true,
+    },
+    {
+      key: "nr23",
+      title: "NR 23 - Proteção Contra Incêndios",
+      questions: [
+        { key: "questao38", idx: 38 },
+        { key: "questao39", idx: 39 },
+        { key: "questao40", idx: 40 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "licencasAmbientais",
+      title: "Licenças Ambientais",
+      questions: [{ key: "questao42", idx: 42 }],
+      comentarios: true,
+    },
+    {
+      key: "legislacaoMaritima",
+      title: "Legislação Marítima",
+      questions: [
+        { key: "questao44", idx: 44 },
+        { key: "questao45", idx: 45 },
+        { key: "questao46", idx: 46 },
+        { key: "questao47", idx: 47 },
+        { key: "questao48", idx: 48 },
+        { key: "questao49", idx: 49 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "treinamentos",
+      title: "Treinamentos Obrigatórios",
+      questions: [
+        { key: "questao51", idx: 51 },
+        { key: "questao52", idx: 52 },
+        { key: "questao53", idx: 53 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "gestaoSMS",
+      title: "Gestão de SMS (Saúde, Meio Ambiente e Segurança)",
+      questions: [
+        { key: "questao55", idx: 55 },
+        { key: "questao56", idx: 56 },
+        { key: "questao57", idx: 57 },
+        { key: "questao58", idx: 58 },
+        { key: "questao59", idx: 59 },
+      ],
+      comentarios: true,
+    },
+  ];
 
-              return (
-                <div key={questionId} className={styles.questionContainer}>
-                  <Text variant="medium" className={styles.questionText}>
-                    {questionId}.{" "}
-                    {questionData?.text || `Pergunta ${questionId}`}
-                  </Text>
-
-                  <div className={styles.responseRow}>
-                    <Dropdown
-                      label="Resposta"
-                      options={RESPOSTA_OPTIONS}
-                      selectedKey={currentResponse.resposta}
-                      onChange={(_, option) =>
-                        handleNRResponse(
-                          questionId,
-                          "resposta",
-                          option?.key as string
-                        )
-                      }
-                      className={styles.responseDropdown}
-                      required
-                    />
-
-                    <TextField
-                      label="Comentários"
-                      value={currentResponse.comentario || ""}
-                      onChange={(_, value) =>
-                        handleNRResponse(questionId, "comentario", value || "")
-                      }
-                      multiline
-                      rows={2}
-                      className={styles.commentField}
-                      placeholder="Adicione comentários ou esclarecimentos (opcional)"
-                    />
-                  </div>
-
-                  {questionData?.attachment &&
-                    currentResponse.resposta === "SIM" && (
-                      <div className={styles.attachmentSection}>
-                        <HSEFileUpload
-                          label={`Anexar documento para pergunta ${questionId}`}
-                          category={questionData.attachment}
-                          required={true}
-                          accept=".pdf,.docx,.xlsx"
-                          maxFileSize={50}
-                          helpText="Anexar documento comprobatório obrigatório"
-                        />
-                      </div>
-                    )}
-                </div>
-              );
-            })}
-          </Stack>
-        </AccordionPanel>
-      </AccordionItem>
-    );
-  };
+  // Função utilitária para acessar blocos de forma flexível
+  function getBlockValue(key: keyof typeof value): unknown {
+    return value[key] as unknown;
+  }
 
   return (
     <div className={styles.conformidadeLegal}>
@@ -131,80 +218,126 @@ export const ConformidadeLegal: React.FC = () => {
 
         <MessageBar messageBarType={MessageBarType.info}>
           Para cada questão, selecione SIM, NÃO ou NÃO APLICÁVEL (NA). Quando
-          necessário, adicione comentários. Para respostas "SIM" em questões
-          específicas, será solicitado anexo de documento comprobatório.
+          necessário, adicione comentários. Para respostas &quot;SIM&quot; em
+          questões específicas, será solicitado anexo de documento
+          comprobatório.
         </MessageBar>
 
-        <Accordion multiple collapsible>
-          {renderNRSection(
-            "NR01",
-            [1, 2, 3, 4, 5],
-            "NR 01 - Disposições Gerais"
-          )}
-          {renderNRSection("NR04", [7, 8], "NR 04 - SESMT")}
-          {renderNRSection("NR05", [10, 11], "NR 05 - CIPA")}
-          {renderNRSection("NR06", [13, 14], "NR 06 - EPI")}
-          {renderNRSection("NR07", [16, 17, 18], "NR 07 - PCMSO")}
-          {renderNRSection("NR09", [20, 21, 22], "NR 09 - PPRA")}
-          {renderNRSection(
-            "NR10",
-            [24, 25, 26],
-            "NR 10 - Instalações Elétricas"
-          )}
-          {renderNRSection(
-            "NR11",
-            [28, 29],
-            "NR 11 - Transporte e Movimentação"
-          )}
-          {renderNRSection("NR12", [31, 32], "NR 12 - Máquinas e Equipamentos")}
-          {renderNRSection(
-            "NR13",
-            [34],
-            "NR 13 - Caldeiras e Vasos de Pressão"
-          )}
-          {renderNRSection("NR15", [36], "NR 15 - Atividades Insalubres")}
-          {renderNRSection(
-            "NR23",
-            [38, 39, 40],
-            "NR 23 - Proteção Contra Incêndios"
-          )}
-          {renderNRSection("AMBIENTAL", [42], "Licenças Ambientais")}
-          {renderNRSection(
-            "MARITIMA",
-            [44, 45, 46, 47, 48, 49],
-            "Legislação Marítima"
-          )}
-          {renderNRSection("TREINAMENTOS", [51, 52, 53], "Treinamentos")}
-          {renderNRSection("GESTAO", [55, 56, 57, 58, 59], "Gestão de SMS")}
-        </Accordion>
-
-        <div className={styles.actionsSection}>
-          <Stack
-            horizontal
-            tokens={{ childrenGap: 10 }}
-            horizontalAlign="space-between"
-          >
-            <DefaultButton
-              text="Etapa Anterior"
-              iconProps={{ iconName: "ChevronLeft" }}
-              onClick={actions.goToPreviousStep}
-            />
-            <Stack horizontal tokens={{ childrenGap: 10 }}>
-              <DefaultButton
-                text="Salvar Progresso"
-                iconProps={{ iconName: "Save" }}
-                onClick={actions.saveFormData}
-                disabled={state.isSubmitting}
-              />
-              <DefaultButton
-                text="Próxima Etapa"
-                iconProps={{ iconName: "ChevronRight" }}
-                onClick={actions.goToNextStep}
-                primary
-              />
-            </Stack>
-          </Stack>
-        </div>
+        {NR_BLOCKS.map((block) => {
+          // Cast para acesso dinâmico, mas sem usar 'any' globalmente
+          const blockValue = getBlockValue(block.key as keyof typeof value) as {
+            [key: string]: unknown;
+          };
+          return (
+            <div key={block.key} className={styles.nrSection}>
+              <Text variant="large">{block.title}</Text>
+              {block.questions.map((q) => {
+                const questionObj =
+                  blockValue &&
+                  typeof blockValue === "object" &&
+                  q.key in blockValue
+                    ? (blockValue[q.key] as { [k: string]: unknown })
+                    : {};
+                // Verifica se a pergunta exige anexo
+                const questionMeta = (
+                  NR_QUESTIONS_MAP as Record<
+                    string,
+                    { text: string; attachment?: string }
+                  >
+                )[String(q.idx)];
+                const requiresAttachment =
+                  questionMeta && questionMeta.attachment;
+                const showUpload =
+                  requiresAttachment && questionObj.resposta === "SIM";
+                return (
+                  <div key={q.key} className={styles.questionContainer}>
+                    <Text variant="medium" className={styles.questionText}>
+                      {q.idx}. {questionMeta?.text || `Pergunta ${q.idx}`}
+                    </Text>
+                    <Dropdown
+                      label="Resposta"
+                      options={RESPOSTA_OPTIONS}
+                      selectedKey={
+                        typeof questionObj.resposta === "string"
+                          ? questionObj.resposta
+                          : ""
+                      }
+                      onChange={(_, option) =>
+                        handleNRResponse(
+                          block.key as keyof typeof value,
+                          q.key,
+                          "resposta",
+                          option?.key as string
+                        )
+                      }
+                      required
+                      className={styles.responseDropdown}
+                    />
+                    <TextField
+                      label="Comentários"
+                      value={
+                        typeof questionObj.comentario === "string"
+                          ? questionObj.comentario
+                          : ""
+                      }
+                      onChange={(_, v) =>
+                        handleNRResponse(
+                          block.key as keyof typeof value,
+                          q.key,
+                          "comentario",
+                          v || ""
+                        )
+                      }
+                      multiline
+                      rows={2}
+                      className={styles.commentField}
+                      placeholder="Adicione comentários ou esclarecimentos (opcional)"
+                    />
+                    {/* Upload condicional para perguntas que exigem anexo */}
+                    {showUpload && (
+                      <div style={{ marginTop: 8 }}>                        <HSEFileUpload
+                          label={`Anexar documento comprobatório (${
+                            questionMeta.attachment
+                              ? questionMeta.attachment.toUpperCase()
+                              : ""
+                          })`}
+                          required
+                          category={questionMeta.attachment || ""}
+                          subcategory={q.key}
+                          accept={".pdf,.docx,.xlsx,.jpg,.png"}
+                          maxFileSize={50}
+                          helpText="Anexe o documento solicitado para comprovação."
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {block.comentarios && (
+                <TextField
+                  label="Comentários gerais deste bloco (opcional)"
+                  value={
+                    blockValue &&
+                    typeof blockValue === "object" &&
+                    typeof blockValue.comentarios === "string"
+                      ? blockValue.comentarios
+                      : ""
+                  }
+                  onChange={(_, v) =>
+                    onChange(block.key as keyof typeof value, {
+                      ...blockValue,
+                      comentarios: v || "",
+                    })
+                  }
+                  multiline
+                  rows={2}
+                  className={styles.commentField}
+                />
+              )}
+              <Separator />
+            </div>
+          );
+        })}
       </Stack>
     </div>
   );

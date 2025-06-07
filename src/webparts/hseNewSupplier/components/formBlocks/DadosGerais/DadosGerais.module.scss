@@ -1,0 +1,97 @@
+@import "~@fluentui/react/dist/sass/References.scss";
+
+.dadosGerais {
+  padding: 30px;
+
+  .sectionHeader {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid $ms-color-themePrimary;
+
+    .sectionTitle {
+      color: $ms-color-themePrimary;
+      font-weight: 600;
+    }
+  }
+
+  .formGrid {
+    .gridRow {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+
+      .fullWidth {
+        flex: 1;
+      }
+
+      .halfWidth {
+        flex: 0 1 calc(50% - 10px);
+      }
+
+      .quarterWidth {
+        flex: 0 1 calc(25% - 15px);
+      }
+
+      .toggleSection {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+
+        .componentesInput {
+          max-width: 150px;
+        }
+      }
+    }
+  }
+
+  .attachmentSection {
+    margin-top: 32px;
+    padding: 24px;
+    background-color: $ms-color-neutralLighterAlt;
+    border-radius: 8px;
+    border: 1px solid $ms-color-neutralLight;
+
+    .attachmentTitle {
+      color: $ms-color-themePrimary;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+  }
+
+  .actionsSection {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid $ms-color-neutralLight;
+  }
+}
+
+// Responsividade
+@media (max-width: 768px) {
+  .dadosGerais {
+    padding: 20px;
+
+    .formGrid .gridRow {
+      flex-direction: column;
+      gap: 16px;
+
+      .halfWidth,
+      .quarterWidth {
+        flex: 1;
+        max-width: none;
+      }
+
+      .toggleSection {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+
+        .componentesInput {
+          max-width: none;
+          width: 100%;
+        }
+      }
+    }
+  }
+}

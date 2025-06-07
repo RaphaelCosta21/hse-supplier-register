@@ -7,50 +7,39 @@ import {
   PropertyPaneTextField,
   PropertyPaneToggle,
 } from "@microsoft/sp-webpart-base";
-import { HSEFormProvider } from "./context/HSEFormContext";
+import { HSEFormProvider } from "./components/context/HSEFormContext";
 import { HseNewSupplier } from "./components/HseNewSupplier";
-import { IHseNewSupplierProps } from "./components/IHseNewSupplierProps";
 
 export interface IHseNewSupplierWebPartProps {
   title: string;
-  azureStorageAccount: string;
-  azureContainerName: string;
   sharePointListName: string;
+  sharePointDocumentLibraryName: string;
   maxFileSize: number;
   enableDebugMode: boolean;
 }
 
 export default class HseNewSupplierWebPart extends BaseClientSideWebPart<IHseNewSupplierWebPartProps> {
   public render(): void {
-    const element: React.ReactElement<IHseNewSupplierProps> =
-      React.createElement(
-        HSEFormProvider,
-        {
-          context: this.context,
-          azureConfig: {
-            accountName:
-              this.properties.azureStorageAccount || "hsestorageaccount",
-            containerName:
-              this.properties.azureContainerName || "hse-attachments",
-            sasToken: "", // Será gerado dinamicamente
-          },
-          sharePointConfig: {
-            siteUrl: this.context.pageContext.web.absoluteUrl,
-            listName: this.properties.sharePointListName || "hsenewregister",
-          },
-          maxFileSize: this.properties.maxFileSize || 50,
-          debugMode: this.properties.enableDebugMode || false,
-        },
-        React.createElement(HseNewSupplier, {
-          context: this.context,
-          title: this.properties.title || "Formulário HSE - Nova Contratada",
-          azureStorageAccount: this.properties.azureStorageAccount,
-          azureContainerName: this.properties.azureContainerName,
-          sharePointListName: this.properties.sharePointListName,
-          maxFileSize: this.properties.maxFileSize,
-          enableDebugMode: this.properties.enableDebugMode,
-        })
-      );
+    const element: React.ReactElement = React.createElement(HSEFormProvider, {
+      context: this.context,
+      sharePointConfig: {
+        siteUrl: this.context.pageContext.web.absoluteUrl,
+        listName: this.properties.sharePointListName || "hsenewregister",
+        documentLibraryName: this.properties.sharePointDocumentLibraryName || "HSEAttachments",
+      },
+      maxFileSize: this.properties.maxFileSize || 50,
+      debugMode: this.properties.enableDebugMode || false,
+      children: React.createElement(HseNewSupplier, {
+        context: this.context,
+        title: this.properties.title || "Formulário HSE - Nova Contratada",
+        sharePointListName:
+          this.properties.sharePointListName || "hsenewregister",
+        sharePointDocumentLibraryName:
+          this.properties.sharePointDocumentLibraryName || "HSEAttachments",
+        maxFileSize: this.properties.maxFileSize || 50,
+        enableDebugMode: this.properties.enableDebugMode || false,
+      }),
+    });
 
     ReactDom.render(element, this.domElement);
   }
@@ -89,15 +78,15 @@ export default class HseNewSupplierWebPart extends BaseClientSideWebPart<IHseNew
               ],
             },
             {
-              groupName: "Configurações Azure Storage",
+              groupName: "Configurações SharePoint",
               groupFields: [
-                PropertyPaneTextField("azureStorageAccount", {
-                  label: "Nome da Conta Azure Storage",
-                  value: "hsestorageaccount",
+                PropertyPaneTextField("sharePointListName", {
+                  label: "Nome da Lista SharePoint",
+                  value: "hsenewregister",
                 }),
-                PropertyPaneTextField("azureContainerName", {
-                  label: "Nome do Container",
-                  value: "hse-attachments",
+                PropertyPaneTextField("sharePointDocumentLibraryName", {
+                  label: "Nome da Document Library",
+                  value: "HSEAttachments",
                 }),
                 PropertyPaneTextField("maxFileSize", {
                   label: "Tamanho Máximo de Arquivo (MB)",

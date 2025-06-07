@@ -1,34 +1,133 @@
-@import '~@fluentui/react/dist/sass/References.scss';
+@import "~@fluentui/react/dist/sass/References.scss";
 
 .hseNewSupplier {
-  overflow: hidden;
-  padding: 1em;
-  color: "[theme:bodyText, default: #323130]";
-  color: var(--bodyText);
-  &.teams {
-    font-family: $ms-font-family-fallbacks;
+  min-height: 100vh;
+  background-color: $ms-color-neutralLighter;
+
+  .header {
+    background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+    color: white;
+    padding: 20px 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    .title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      opacity: 0.9;
+      margin-bottom: 16px;
+    }
+
+    .progressBar {
+      max-width: 600px;
+
+      :global(.ms-ProgressIndicator-progressBar) {
+        background-color: rgba(255, 255, 255, 0.3);
+      }
+
+      :global(.ms-ProgressIndicator-progressTrack) {
+        background-color: #005a9e;
+      }
+    }
+  }
+
+  .loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .errorBar {
+    margin: 16px 30px;
+
+    ul {
+      margin: 8px 0 0 16px;
+
+      li {
+        margin-bottom: 4px;
+      }
+    }
+  }
+
+  .container {
+    display: flex;
+    min-height: calc(100vh - 140px);
+
+    .navigation {
+      width: 280px;
+      background-color: white;
+      border-right: 1px solid $ms-color-neutralLight;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+
+      .navPanel {
+        padding: 20px 0;
+
+        :global(.ms-Nav-link) {
+          padding: 12px 20px;
+          border-radius: 0;
+
+          &.is-selected {
+            background-color: rgba(0, 120, 212, 0.1);
+            border-right: 3px solid #0078d4;
+          }
+
+          &.is-disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+
+        :global(.ms-Nav-linkText) {
+          font-weight: 500;
+        }
+      }
+    }
+
+    .content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+
+      .stepContainer {
+        max-width: 1000px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+    }
   }
 }
 
-.welcome {
-  text-align: center;
-}
+// Responsividade
+@media (max-width: 768px) {
+  .hseNewSupplier .container {
+    flex-direction: column;
 
-.welcomeImage {
-  width: 100%;
-  max-width: 420px;
-}
+    .navigation {
+      width: 100%;
 
-.links {
-  a {
-    text-decoration: none;
-    color: "[theme:link, default:#03787c]";
-    color: var(--link); // note: CSS Custom Properties support is limited to modern browsers only
+      .navPanel {
+        :global(.ms-Nav) {
+          display: flex;
+          overflow-x: auto;
+        }
 
-    &:hover {
-      text-decoration: underline;
-      color: "[theme:linkHovered, default: #014446]";
-      color: var(--linkHovered); // note: CSS Custom Properties support is limited to modern browsers only
+        :global(.ms-Nav-link) {
+          min-width: 150px;
+          text-align: center;
+        }
+      }
+    }
+
+    .content {
+      padding: 20px 16px;
     }
   }
 }

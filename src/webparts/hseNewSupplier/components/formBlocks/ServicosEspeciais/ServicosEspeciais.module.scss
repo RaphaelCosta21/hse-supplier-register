@@ -1,0 +1,112 @@
+.servicosEspeciais {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  padding: 32px 28px 28px 28px;
+  margin-bottom: 32px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.serviceToggles {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.serviceToggle {
+  min-width: 320px;
+  font-size: 1.08rem;
+}
+
+.serviceSection {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 18px 20px 16px 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e3e8ee;
+  margin-bottom: 18px;
+}
+
+.serviceTitle {
+  font-weight: 600;
+  color: #222;
+  font-size: 1.2rem;
+  margin-bottom: 6px;
+}
+
+.certificatesList,
+.documentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.certificateItem,
+.documentItem {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px 16px 12px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e3e8ee;
+  transition: box-shadow 0.2s;
+}
+.certificateItem:hover,
+.documentItem:hover {
+  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.1);
+  border-color: #b3e5fc;
+}
+
+.certificateName,
+.documentName {
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 2px;
+}
+
+.certificateDescription,
+.documentDescription {
+  color: #5c6f7c;
+  font-size: 0.98rem;
+}
+
+.required {
+  color: #e53935;
+  margin-left: 4px;
+  font-size: 1.1em;
+}
+
+.actionsSection {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 700px) {
+  .servicosEspeciais {
+    padding: 16px 6px 18px 6px;
+  }
+  .serviceSection {
+    padding: 10px 4px 8px 4px;
+  }
+  .sectionTitle {
+    font-size: 1.2rem;
+  }
+  .serviceToggle {
+    min-width: 180px;
+    font-size: 1rem;
+  }
+}

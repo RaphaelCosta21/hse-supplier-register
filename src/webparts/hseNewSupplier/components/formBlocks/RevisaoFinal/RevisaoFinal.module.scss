@@ -1,0 +1,77 @@
+.revisaoFinal {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  padding: 32px 24px;
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-weight: 600;
+  color: #222;
+}
+
+.completionBadge {
+  display: flex;
+  align-items: center;
+  background: #e5f5e0;
+  color: #22863a;
+  font-weight: 500;
+  border-radius: 16px;
+  padding: 4px 16px;
+  font-size: 1rem;
+  gap: 8px;
+}
+
+.summarySection {
+  background: #f8f8f8;
+  border-radius: 6px;
+  padding: 20px 16px;
+  margin-bottom: 16px;
+}
+
+.summaryTitle {
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #444;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 32px;
+}
+
+.summaryItem {
+  background: #fff;
+  border-radius: 4px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.actionsSection {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+  .revisaoFinal {
+    padding: 16px 4px;
+  }
+  .summaryGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
