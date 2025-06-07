@@ -24,8 +24,6 @@
       "officeFabricIconFontName": "Form",
       "properties": {
         "title": "Formulário HSE - Nova Contratada",
-        "azureStorageAccount": "hsestorageaccount",
-        "azureContainerName": "hse-attachments",
         "sharePointListName": "hsenewregister",
         "maxFileSize": 50,
         "enableDebugMode": false
