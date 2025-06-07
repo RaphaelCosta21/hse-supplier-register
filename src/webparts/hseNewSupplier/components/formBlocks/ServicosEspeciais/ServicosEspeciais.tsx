@@ -52,7 +52,8 @@ export const ServicosEspeciais: React.FC = () => {
               </Text>
               <Text variant="small" className={styles.certificateDescription}>
                 {certificate.description}
-              </Text>{" "}              <HSEFileUpload
+              </Text>{" "}
+              <HSEFileUpload
                 label={certificate.name}
                 category={certificate.category}
                 subcategory="servicosEspeciais"
@@ -91,7 +92,8 @@ export const ServicosEspeciais: React.FC = () => {
               </Text>
               <Text variant="small" className={styles.documentDescription}>
                 {document.description}
-              </Text>{" "}              <HSEFileUpload
+              </Text>{" "}
+              <HSEFileUpload
                 label={document.name}
                 category={document.category}
                 subcategory="servicosEspeciais"

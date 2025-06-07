@@ -9,7 +9,7 @@ export interface IAttachmentMetadata {
   subcategory?: string;
   url: string;
   sharepointItemId?: number;
-  
+
   // Campos legados para compatibilidade
   nomeOriginal?: string;
   tamanho?: number;

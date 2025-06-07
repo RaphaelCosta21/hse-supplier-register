@@ -84,7 +84,10 @@ export class SharePointService {
           Required: field.required || false,
         });
       } catch (error) {
-        console.error(`Erro ao criar campo ${field.name} na Document Library:`, error);
+        console.error(
+          `Erro ao criar campo ${field.name} na Document Library:`,
+          error
+        );
       }
     }
   }
@@ -276,13 +279,19 @@ export class SharePointService {
       statusFormulario: item.StatusFormulario || "Rascunho",
       usuarioPreenchimento: item.UsuarioPreenchimento,
       dataCriacao: item.Created ? new Date(item.Created) : undefined,
-      dataUltimaModificacao: item.Modified ? new Date(item.Modified) : undefined,
+      dataUltimaModificacao: item.Modified
+        ? new Date(item.Modified)
+        : undefined,
       dadosGerais: {
         empresa: item.Empresa || "",
         cnpj: item.CNPJ || "",
         numeroContrato: item.NumeroContrato || "",
-        dataInicioContrato: item.DataInicioContrato ? new Date(item.DataInicioContrato) : undefined,
-        dataTerminoContrato: item.DataTerminoContrato ? new Date(item.DataTerminoContrato) : undefined,
+        dataInicioContrato: item.DataInicioContrato
+          ? new Date(item.DataInicioContrato)
+          : undefined,
+        dataTerminoContrato: item.DataTerminoContrato
+          ? new Date(item.DataTerminoContrato)
+          : undefined,
         escopoServico: item.EscopoServico || "",
         responsavelTecnico: item.ResponsavelTecnico || "",
         atividadePrincipalCNAE: item.AtividadePrincipalCNAE || "",

@@ -20,7 +20,11 @@ export interface IHSEFormContext {
     loadFormData: (formId?: number) => Promise<void>;
     saveFormData: () => Promise<boolean>;
     submitForm: () => Promise<boolean>;
-    uploadAttachment: (file: File, category: string, subcategory?: string) => Promise<IAttachmentMetadata>;
+    uploadAttachment: (
+      file: File,
+      category: string,
+      subcategory?: string
+    ) => Promise<IAttachmentMetadata>;
     removeAttachment: (category: string, attachmentId: string) => Promise<void>;
     validateStep: (stepNumber: number) => Promise<boolean>;
     goToNextStep: () => void;
@@ -304,9 +308,13 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     } finally {
       dispatch({ type: "SET_SUBMITTING", payload: false });
     }
-  }, [sharePointService, state.formData, state.attachments, validateStep]);// Fazer upload de anexo usando SharePoint
+  }, [sharePointService, state.formData, state.attachments, validateStep]); // Fazer upload de anexo usando SharePoint
   const uploadAttachment = React.useCallback(
-    async (file: File, category: string, subcategory?: string): Promise<IAttachmentMetadata> => {
+    async (
+      file: File,
+      category: string,
+      subcategory?: string
+    ): Promise<IAttachmentMetadata> => {
       try {
         const cnpj = state.formData.dadosGerais.cnpj || "temp";
         const empresa = state.formData.dadosGerais.empresa || "Empresa";
@@ -338,8 +346,13 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         throw error;
       }
     },
-    [sharePointFileService, state.formData.dadosGerais.cnpj, state.formData.dadosGerais.empresa, debugMode]
-  );  // Remover anexo
+    [
+      sharePointFileService,
+      state.formData.dadosGerais.cnpj,
+      state.formData.dadosGerais.empresa,
+      debugMode,
+    ]
+  ); // Remover anexo
   const removeAttachment = React.useCallback(
     async (category: string, attachmentId: string): Promise<void> => {
       try {

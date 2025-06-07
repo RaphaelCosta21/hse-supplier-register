@@ -25,7 +25,8 @@ export default class HseNewSupplierWebPart extends BaseClientSideWebPart<IHseNew
       sharePointConfig: {
         siteUrl: this.context.pageContext.web.absoluteUrl,
         listName: this.properties.sharePointListName || "hsenewregister",
-        documentLibraryName: this.properties.sharePointDocumentLibraryName || "HSEAttachments",
+        documentLibraryName:
+          this.properties.sharePointDocumentLibraryName || "HSEAttachments",
       },
       maxFileSize: this.properties.maxFileSize || 50,
       debugMode: this.properties.enableDebugMode || false,

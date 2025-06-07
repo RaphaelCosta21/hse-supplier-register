@@ -53,18 +53,18 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
 
   const dropAreaStyles = mergeStyles({
     border: `2px dashed ${theme.palette.neutralQuaternary}`,
-    borderRadius: '4px',
-    padding: '20px',
-    textAlign: 'center',
-    minHeight: '120px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: "4px",
+    padding: "20px",
+    textAlign: "center",
+    minHeight: "120px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: theme.palette.neutralLighterAlt,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    ':hover': {
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    ":hover": {
       borderColor: theme.palette.themePrimary,
       backgroundColor: theme.palette.neutralLighter,
     },
@@ -79,10 +79,12 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
 
     // Validar tipo de arquivo
     if (accept) {
-      const extensions = accept.split(',').map(ext => ext.trim().toLowerCase());
+      const extensions = accept
+        .split(",")
+        .map((ext) => ext.trim().toLowerCase());
       const fileName = file.name.toLowerCase();
-      const fileExtension = '.' + fileName.split('.').pop();
-      
+      const fileExtension = "." + fileName.split(".").pop();
+
       if (!extensions.includes(fileExtension)) {
         return `Tipo de arquivo não permitido. Permitidos: ${accept}`;
       }
@@ -99,7 +101,7 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
+
       // Validar arquivo
       const validationError = validateFile(file);
       if (validationError) {
@@ -109,24 +111,33 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
 
       // Se não permite múltiplos arquivos e já tem arquivo, parar
       if (!allowMultiple && existingFiles.length > 0) {
-        newErrors.push("Apenas um arquivo é permitido. Remova o arquivo existente primeiro.");
+        newErrors.push(
+          "Apenas um arquivo é permitido. Remova o arquivo existente primeiro."
+        );
         break;
       }
 
       try {
         setUploading(true);
-        
+
         // Fazer upload usando o contexto HSE
-        const uploadedFile = await actions.uploadAttachment(file, category, subcategory);
-        
+        const uploadedFile = await actions.uploadAttachment(
+          file,
+          category,
+          subcategory
+        );
+
         // Notificar componente pai
         if (onFileUploaded) {
           onFileUploaded(uploadedFile);
         }
-
       } catch (error) {
         console.error("Erro no upload:", error);
-        newErrors.push(`${file.name}: Erro no upload - ${error.message || 'Erro desconhecido'}`);
+        newErrors.push(
+          `${file.name}: Erro no upload - ${
+            error.message || "Erro desconhecido"
+          }`
+        );
       }
     }
 
@@ -135,29 +146,33 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
 
     // Limpar input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const handleRemoveFile = async (file: IAttachmentMetadata) => {
     try {
       await actions.removeAttachment(category, file.id);
-      
+
       if (onFileRemoved) {
         onFileRemoved(file);
       }
     } catch (error) {
       console.error("Erro ao remover arquivo:", error);
-      setErrors([`Erro ao remover ${file.originalName}: ${error.message || 'Erro desconhecido'}`]);
+      setErrors([
+        `Erro ao remover ${file.originalName}: ${
+          error.message || "Erro desconhecido"
+        }`,
+      ]);
     }
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -168,9 +183,9 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (disabled) return;
-    
+
     const files = e.dataTransfer.files;
     handleFileSelect(files);
   };
@@ -184,22 +199,23 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
   return (
     <Stack tokens={{ childrenGap: 8 }}>
       <Label required={required}>{label}</Label>
-      
       {helpText && (
-        <Text variant="small" styles={{ root: { color: theme.palette.neutralSecondary } }}>
+        <Text
+          variant="small"
+          styles={{ root: { color: theme.palette.neutralSecondary } }}
+        >
           {helpText}
         </Text>
       )}
-
       {/* Área de Drop/Upload */}
       <div
         className={dropAreaStyles}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onClick={openFileDialog}
-        style={{ 
+        style={{
           opacity: disabled ? 0.6 : 1,
-          cursor: disabled ? 'not-allowed' : 'pointer'
+          cursor: disabled ? "not-allowed" : "pointer",
         }}
       >
         <input
@@ -208,12 +224,15 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
           accept={accept}
           multiple={allowMultiple}
           onChange={(e) => handleFileSelect(e.target.files)}
-          style={{ display: 'none' }}
+          style={{ display: "none" }}
           disabled={disabled}
         />
-        
+
         {uploading ? (
-          <Stack tokens={{ childrenGap: 8 }} styles={{ root: { width: '100%' } }}>
+          <Stack
+            tokens={{ childrenGap: 8 }}
+            styles={{ root: { width: "100%" } }}
+          >
             <Text>Enviando arquivo...</Text>
             <ProgressIndicator />
           </Stack>
@@ -223,7 +242,7 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
             <Text variant="small">
               Formatos aceitos: {accept} | Tamanho máximo: {maxFileSize}MB
             </Text>
-            <PrimaryButton 
+            <PrimaryButton
               text="Selecionar Arquivo"
               disabled={disabled}
               onClick={(e) => {
@@ -234,53 +253,56 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
           </Stack>
         )}
       </div>
-
       {/* Lista de arquivos existentes */}
       {existingFiles.length > 0 && (
         <Stack tokens={{ childrenGap: 8 }}>
           <Text variant="medium">Arquivos anexados:</Text>
           {existingFiles.map((file, index) => (
-            <Stack 
+            <Stack
               key={index}
               horizontal
               verticalAlign="center"
               tokens={{ childrenGap: 8 }}
               styles={{
                 root: {
-                  padding: '8px',
+                  padding: "8px",
                   border: `1px solid ${theme.palette.neutralQuaternaryAlt}`,
-                  borderRadius: '4px',
+                  borderRadius: "4px",
                   backgroundColor: theme.palette.neutralLighterAlt,
-                }
+                },
               }}
             >
               <Stack.Item grow>
                 <Text variant="small">
                   <strong>{file.originalName}</strong>
                 </Text>
-                <Text variant="tiny" styles={{ root: { color: theme.palette.neutralSecondary } }}>
-                  {formatFileSize(file.fileSize)} | {new Date(file.uploadDate).toLocaleDateString()}
+                <Text
+                  variant="tiny"
+                  styles={{ root: { color: theme.palette.neutralSecondary } }}
+                >
+                  {formatFileSize(file.fileSize)} |{" "}
+                  {new Date(file.uploadDate).toLocaleDateString()}
                 </Text>
               </Stack.Item>
-              
+
               {file.url && (
                 <TooltipHost content="Visualizar arquivo">
                   <IconButton
-                    iconProps={{ iconName: 'View' }}
-                    onClick={() => window.open(file.url, '_blank')}
+                    iconProps={{ iconName: "View" }}
+                    onClick={() => window.open(file.url, "_blank")}
                     disabled={disabled}
                   />
                 </TooltipHost>
               )}
-              
+
               <TooltipHost content="Remover arquivo">
                 <IconButton
-                  iconProps={{ iconName: 'Delete' }}
+                  iconProps={{ iconName: "Delete" }}
                   onClick={() => handleRemoveFile(file)}
                   disabled={disabled}
                   styles={{
                     root: { color: theme.palette.redDark },
-                    rootHovered: { backgroundColor: theme.palette.red }
+                    rootHovered: { backgroundColor: theme.palette.red },
                   }}
                 />
               </TooltipHost>
@@ -288,12 +310,11 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
           ))}
         </Stack>
       )}
-
       {/* Mensagens de erro */}
       {errors.length > 0 && (
         <Stack tokens={{ childrenGap: 4 }}>
           {errors.map((error, index) => (
-            <MessageBar 
+            <MessageBar
               key={index}
               messageBarType={MessageBarType.error}
               dismissButtonAriaLabel="Fechar"
@@ -303,7 +324,8 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
             </MessageBar>
           ))}
         </Stack>
-      )}      {/* Indicador de carregamento global */}
+      )}{" "}
+      {/* Indicador de carregamento global */}
       {state.isSubmitting && (
         <MessageBar messageBarType={MessageBarType.info}>
           Processando formulário...

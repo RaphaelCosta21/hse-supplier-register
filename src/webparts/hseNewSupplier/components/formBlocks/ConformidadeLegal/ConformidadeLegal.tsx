@@ -295,7 +295,9 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                     />
                     {/* Upload condicional para perguntas que exigem anexo */}
                     {showUpload && (
-                      <div style={{ marginTop: 8 }}>                        <HSEFileUpload
+                      <div style={{ marginTop: 8 }}>
+                        {" "}
+                        <HSEFileUpload
                           label={`Anexar documento comprobatório (${
                             questionMeta.attachment
                               ? questionMeta.attachment.toUpperCase()

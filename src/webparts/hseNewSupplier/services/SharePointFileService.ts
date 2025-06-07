@@ -19,7 +19,10 @@ export class SharePointFileService {
   private sp: any;
   private documentLibraryName: string;
 
-  constructor(context: WebPartContext, documentLibraryName: string = "HSEAttachments") {
+  constructor(
+    context: WebPartContext,
+    documentLibraryName: string = "HSEAttachments"
+  ) {
     this.sp = spfi().using(SPFx(context));
     this.documentLibraryName = documentLibraryName;
   }
@@ -30,7 +33,9 @@ export class SharePointFileService {
   public async ensureDocumentLibraryExists(): Promise<void> {
     try {
       // Verificar se a biblioteca existe
-      await this.sp.web.lists.getByTitle(this.documentLibraryName).select("Id")();
+      await this.sp.web.lists
+        .getByTitle(this.documentLibraryName)
+        .select("Id")();
       console.log(`Document Library ${this.documentLibraryName} já existe`);
     } catch (error) {
       // Biblioteca não existe, criar
@@ -50,7 +55,7 @@ export class SharePointFileService {
     };
 
     const library = await this.sp.web.lists.add(libraryCreationInfo);
-    
+
     // Adicionar campos customizados para metadados
     await this.addCustomFields(library);
   }
@@ -84,7 +89,10 @@ export class SharePointFileService {
   /**
    * Cria ou garante que existe uma pasta para o fornecedor
    */
-  public async ensureFolderExists(cnpj: string, nomeEmpresa: string): Promise<string> {
+  public async ensureFolderExists(
+    cnpj: string,
+    nomeEmpresa: string
+  ): Promise<string> {
     await this.ensureDocumentLibraryExists();
 
     // Limpar nome da empresa para usar como nome de pasta
@@ -95,23 +103,19 @@ export class SharePointFileService {
       // Verificar se a pasta já existe
       await this.sp.web.lists
         .getByTitle(this.documentLibraryName)
-        .rootFolder
-        .folders
-        .getByName(folderName)
+        .rootFolder.folders.getByName(folderName)
         .select("Name")();
-      
+
       console.log(`Pasta ${folderName} já existe`);
       return folderName;
     } catch (error) {
       // Pasta não existe, criar
       console.log(`Criando pasta ${folderName}...`);
-      
+
       await this.sp.web.lists
         .getByTitle(this.documentLibraryName)
-        .rootFolder
-        .folders
-        .add(folderName);
-      
+        .rootFolder.folders.add(folderName);
+
       return folderName;
     }
   }
@@ -129,29 +133,28 @@ export class SharePointFileService {
     try {
       // Garantir que a pasta existe
       const folderName = await this.ensureFolderExists(cnpj, nomeEmpresa);
-      
+
       // Gerar nome único para o arquivo
       const timestamp = new Date().getTime();
-      const fileExtension = file.name.split('.').pop();
-      const fileName = `${categoria}_${subcategoria || 'default'}_${timestamp}.${fileExtension}`;
-      
+      const fileExtension = file.name.split(".").pop();
+      const fileName = `${categoria}_${
+        subcategoria || "default"
+      }_${timestamp}.${fileExtension}`;
+
       // Converter arquivo para ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
-        // Fazer upload do arquivo
+      // Fazer upload do arquivo
       const uploadResult: any = await this.sp.web.lists
         .getByTitle(this.documentLibraryName)
-        .rootFolder
-        .folders
-        .getByName(folderName)
-        .files
-        .add(fileName, arrayBuffer, true);
+        .rootFolder.folders.getByName(folderName)
+        .files.add(fileName, arrayBuffer, true);
 
       // Atualizar metadados do arquivo
       await uploadResult.file.listItemAllFields.update({
         CNPJFornecedor: cnpj,
         NomeFornecedor: nomeEmpresa,
         CategoriaAnexo: categoria,
-        SubcategoriaAnexo: subcategoria || '',
+        SubcategoriaAnexo: subcategoria || "",
         FormularioID: formularioId,
         TamanhoArquivo: file.size,
         DataUpload: new Date().toISOString(),
@@ -159,7 +162,7 @@ export class SharePointFileService {
 
       // Obter URL do arquivo
       const fileUrl = uploadResult.data.ServerRelativeUrl;
-      
+
       // Criar metadata do anexo
       const metadata: IAttachmentMetadata = {
         id: uploadResult.data.UniqueId,
@@ -175,7 +178,6 @@ export class SharePointFileService {
       };
 
       return metadata;
-
     } catch (error) {
       console.error("Erro ao fazer upload do arquivo:", error);
       throw new Error(error.message || "Erro desconhecido ao fazer upload");
@@ -188,8 +190,7 @@ export class SharePointFileService {
     try {
       await this.sp.web.lists
         .getByTitle(this.documentLibraryName)
-        .items
-        .getById(itemId)
+        .items.getById(itemId)
         .delete();
       return true;
     } catch (error) {
@@ -200,12 +201,14 @@ export class SharePointFileService {
 
   /**
    * Lista todos os arquivos de um fornecedor
-   */  public async getFilesBySupplier(cnpj: string, nomeEmpresa: string): Promise<IAttachmentMetadata[]> {
+   */ public async getFilesBySupplier(
+    cnpj: string,
+    nomeEmpresa: string
+  ): Promise<IAttachmentMetadata[]> {
     try {
       const items = await this.sp.web.lists
         .getByTitle(this.documentLibraryName)
-        .items
-        .filter(`CNPJFornecedor eq '${cnpj}'`)
+        .items.filter(`CNPJFornecedor eq '${cnpj}'`)
         .select(
           "Id",
           "FileLeafRef",
@@ -233,7 +236,6 @@ export class SharePointFileService {
         url: item.File.ServerRelativeUrl,
         sharepointItemId: item.Id,
       }));
-
     } catch (error) {
       console.error("Erro ao buscar arquivos do fornecedor:", error);
       return [];
@@ -259,8 +261,8 @@ export class SharePointFileService {
    */
   private sanitizeFolderName(name: string): string {
     return name
-      .replace(/[<>:"/\\|?*]/g, '') // Remove caracteres inválidos
-      .replace(/\s+/g, '_') // Substitui espaços por underscore
+      .replace(/[<>:"/\\|?*]/g, "") // Remove caracteres inválidos
+      .replace(/\s+/g, "_") // Substitui espaços por underscore
       .substring(0, 50) // Limita tamanho
       .toLowerCase();
   }
@@ -269,18 +271,18 @@ export class SharePointFileService {
    * Determina tipo de arquivo baseado no nome
    */
   private getFileTypeFromName(fileName: string): string {
-    const extension = fileName.split('.').pop()?.toLowerCase();
+    const extension = fileName.split(".").pop()?.toLowerCase();
     const mimeTypes: { [key: string]: string } = {
-      'pdf': 'application/pdf',
-      'doc': 'application/msword',
-      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'xls': 'application/vnd.ms-excel',
-      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'png': 'image/png',
-      'gif': 'image/gif',
+      pdf: "application/pdf",
+      doc: "application/msword",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      xls: "application/vnd.ms-excel",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
     };
-    return mimeTypes[extension || ''] || 'application/octet-stream';
+    return mimeTypes[extension || ""] || "application/octet-stream";
   }
 }

@@ -54,7 +54,8 @@ export const Evidencias: React.FC = () => {
             </div>
           </div>
           {hasAttachment && <div className={styles.statusBadge}>✓ Anexado</div>}
-        </div>{" "}        <HSEFileUpload
+        </div>{" "}
+        <HSEFileUpload
           label={evidence.name}
           category={evidence.category}
           subcategory="evidencias"
