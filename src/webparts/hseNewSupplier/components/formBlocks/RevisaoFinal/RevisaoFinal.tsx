@@ -21,9 +21,18 @@ export const RevisaoFinal: React.FC = () => {
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  interface SummaryData {
+    empresa: string | undefined;
+    cnpj: string | undefined;
+    numeroContrato: string | undefined;
+    totalAnexos: number;
+    respostasConformidade: number;
+    servicosEspecializados: string;
+  }
+
   const completionPercentage = formSelectors.getCompletionPercentage(state);
   const hasValidationErrors = state.validationErrors.length > 0;
-  const getSummaryData = (): any => {
+  const getSummaryData = (): SummaryData => {
     const { formData, attachments } = state;
 
     return {
@@ -79,7 +88,6 @@ export const RevisaoFinal: React.FC = () => {
             {completionPercentage}% concluído
           </div>
         </div>
-
         {hasValidationErrors ? (
           <MessageBar messageBarType={MessageBarType.error}>
             Existem {state.validationErrors.length} erro(s) que precisam ser
@@ -90,7 +98,6 @@ export const RevisaoFinal: React.FC = () => {
             Formulário está válido e pronto para envio.
           </MessageBar>
         )}
-
         <div className={styles.summarySection}>
           <Text variant="large" className={styles.summaryTitle}>
             Resumo do Formulário
@@ -127,46 +134,8 @@ export const RevisaoFinal: React.FC = () => {
               <Text>{summaryData.servicosEspecializados}</Text>
             </div>
           </div>
-        </div>
-
+        </div>{" "}
         <Separator />
-
-        <div className={styles.actionsSection}>
-          <Stack
-            horizontal
-            tokens={{ childrenGap: 10 }}
-            horizontalAlign="space-between"
-          >
-            <DefaultButton
-              text="Etapa Anterior"
-              iconProps={{ iconName: "ChevronLeft" }}
-              onClick={actions.goToPreviousStep}
-            />
-
-            <Stack horizontal tokens={{ childrenGap: 10 }}>
-              <DefaultButton
-                text="Salvar Rascunho"
-                iconProps={{ iconName: "Save" }}
-                onClick={actions.saveFormData}
-                disabled={state.isSubmitting}
-              />
-
-              <DefaultButton
-                text="Exportar PDF"
-                iconProps={{ iconName: "PDF" }}
-                // onClick={handleExportPDF}
-              />
-
-              <PrimaryButton
-                text="Enviar Formulário"
-                iconProps={{ iconName: "Send" }}
-                onClick={() => setShowSubmitDialog(true)}
-                disabled={hasValidationErrors || completionPercentage < 80}
-              />
-            </Stack>
-          </Stack>
-        </div>
-
         <Dialog
           hidden={!showSubmitDialog}
           onDismiss={() => setShowSubmitDialog(false)}

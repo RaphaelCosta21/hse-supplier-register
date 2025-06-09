@@ -23,14 +23,9 @@ export const ProgressIndicator: React.FC<IProgressIndicatorProps> = ({
             background: color,
             height: barHeight,
           }}
-        />
+        />{" "}
       </div>
       {description && <div className={styles.description}>{description}</div>}
-      {showLabel && (
-        <div className={styles.percent}>
-          {Math.round(percentComplete * 100)}%
-        </div>
-      )}
     </div>
   );
 };

@@ -187,7 +187,7 @@ export const NR_QUESTIONS_MAP = {
 // Validações de campos
 export const FIELD_VALIDATIONS = {
   CNPJ: {
-    pattern: /^\d{2}\.\d{3}\.\d{3}\/\d{4}\-\d{2}$/,
+    pattern: /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/,
     errorMessage: "CNPJ deve estar no formato 00.000.000/0000-00",
   },
   EMAIL: {
@@ -222,12 +222,15 @@ export const FORM_STEPS = [
     description: "Informações básicas da empresa e contrato",
     icon: "ContactInfo",
     requiredFields: [
-      "empresa",
-      "cnpj",
-      "numeroContrato",
-      "dataInicioContrato",
-      "dataTerminoContrato",
-      "responsavelTecnico",
+      "dadosGerais.empresa",
+      "dadosGerais.cnpj",
+      "dadosGerais.numeroContrato",
+      "dadosGerais.dataInicioContrato",
+      "dadosGerais.dataTerminoContrato",
+      "dadosGerais.responsavelTecnico",
+      "dadosGerais.atividadePrincipalCNAE",
+      "dadosGerais.grauRisco",
+      "dadosGerais.gerenteContratoMarine",
     ],
     requiredAttachments: [ATTACHMENT_CATEGORIES.REM],
   },

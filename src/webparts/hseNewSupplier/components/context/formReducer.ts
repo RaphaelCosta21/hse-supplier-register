@@ -18,6 +18,7 @@ export type FormAction =
   | { type: "SET_CURRENT_STEP"; payload: number }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_SUBMITTING"; payload: boolean }
+  | { type: "SET_SUBMISSION_ATTEMPTED"; payload: boolean }
   | { type: "SAVE_SUCCESS"; payload: Date }
   | {
       type: "ADD_ATTACHMENT";
@@ -62,6 +63,7 @@ export const initialFormState: IFormState = {
   validationErrors: [],
   isSubmitting: false,
   isLoading: false,
+  submissionAttempted: false,
   lastSaved: undefined,
   errors: {},
   isDirty: false,
@@ -111,6 +113,12 @@ export const formReducer = (
       return {
         ...state,
         isSubmitting: action.payload,
+      };
+    }
+    case "SET_SUBMISSION_ATTEMPTED": {
+      return {
+        ...state,
+        submissionAttempted: action.payload,
       };
     }
     case "SAVE_SUCCESS": {
@@ -183,26 +191,7 @@ export const formSelectors = {
     );
   },
   canProceedToStep: (state: IFormState, targetStep: number): boolean => {
-    switch (targetStep) {
-      case 1:
-        return true;
-      case 2:
-        return !!(
-          state.formData.dadosGerais.empresa && state.formData.dadosGerais.cnpj
-        );
-      case 3:
-        return (
-          state.currentStep >= 2 &&
-          Object.keys(state.formData.conformidadeLegal || {}).length > 0
-        );
-      case 4:
-        return state.currentStep >= 3;
-      case 5:
-        return (
-          state.currentStep >= 4 && formSelectors.hasRequiredAttachments(state)
-        );
-      default:
-        return false;
-    }
+    // Permitir navegação livre entre todas as etapas em qualquer momento
+    return targetStep >= 1 && targetStep <= 5;
   },
 };

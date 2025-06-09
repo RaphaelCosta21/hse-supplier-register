@@ -7,6 +7,7 @@ import {
   Separator,
   MessageBar,
   MessageBarType,
+  Icon,
 } from "@fluentui/react";
 import { IConformidadeLegalProps } from "./IConformidadeLegalProps";
 import {
@@ -44,6 +45,26 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
         ...questionObj,
         [field]: val,
       },
+    });
+  };
+
+  // Função para verificar se um bloco NR está completo
+  const isBlockComplete = (
+    blockKey: string,
+    questions: Array<{ key: string; idx: number }>
+  ): boolean => {
+    const blockValue = getBlockValue(blockKey as keyof typeof value) as {
+      [key: string]: unknown;
+    };
+
+    if (!blockValue) return false;
+
+    // Verifica se todas as questões têm resposta preenchida
+    return questions.every((q) => {
+      const questionObj = blockValue[q.key] as
+        | { resposta?: string }
+        | undefined;
+      return questionObj && questionObj.resposta && questionObj.resposta !== "";
     });
   };
 
@@ -215,131 +236,305 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
             B - Cumprimento da Legislação Básica
           </Text>
         </div>
-
         <MessageBar messageBarType={MessageBarType.info}>
           Para cada questão, selecione SIM, NÃO ou NÃO APLICÁVEL (NA). Quando
           necessário, adicione comentários. Para respostas &quot;SIM&quot; em
           questões específicas, será solicitado anexo de documento
-          comprobatório.
-        </MessageBar>
+          comprobatório.{" "}
+        </MessageBar>{" "}
+        <div className={styles.blocksContainer}>
+          {/* Primeira coluna - Blocos 1-8 */}
+          <div className={styles.singleBlock}>
+            {NR_BLOCKS.slice(0, Math.ceil(NR_BLOCKS.length / 2)).map(
+              (block) => {
+                // Cast para acesso dinâmico, mas sem usar 'any' globalmente
+                const blockValue = getBlockValue(
+                  block.key as keyof typeof value
+                ) as {
+                  [key: string]: unknown;
+                };
 
-        {NR_BLOCKS.map((block) => {
-          // Cast para acesso dinâmico, mas sem usar 'any' globalmente
-          const blockValue = getBlockValue(block.key as keyof typeof value) as {
-            [key: string]: unknown;
-          };
-          return (
-            <div key={block.key} className={styles.nrSection}>
-              <Text variant="large">{block.title}</Text>
-              {block.questions.map((q) => {
-                const questionObj =
-                  blockValue &&
-                  typeof blockValue === "object" &&
-                  q.key in blockValue
-                    ? (blockValue[q.key] as { [k: string]: unknown })
-                    : {};
-                // Verifica se a pergunta exige anexo
-                const questionMeta = (
-                  NR_QUESTIONS_MAP as Record<
-                    string,
-                    { text: string; attachment?: string }
-                  >
-                )[String(q.idx)];
-                const requiresAttachment =
-                  questionMeta && questionMeta.attachment;
-                const showUpload =
-                  requiresAttachment && questionObj.resposta === "SIM";
+                // Verifica se o bloco está completo
+                const isComplete = isBlockComplete(block.key, block.questions);
+
                 return (
-                  <div key={q.key} className={styles.questionContainer}>
-                    <Text variant="medium" className={styles.questionText}>
-                      {q.idx}. {questionMeta?.text || `Pergunta ${q.idx}`}
-                    </Text>
-                    <Dropdown
-                      label="Resposta"
-                      options={RESPOSTA_OPTIONS}
-                      selectedKey={
-                        typeof questionObj.resposta === "string"
-                          ? questionObj.resposta
-                          : ""
-                      }
-                      onChange={(_, option) =>
-                        handleNRResponse(
-                          block.key as keyof typeof value,
-                          q.key,
-                          "resposta",
-                          option?.key as string
-                        )
-                      }
-                      required
-                      className={styles.responseDropdown}
-                    />
+                  <div key={block.key} className={styles.nrSection}>
+                    <div className={styles.blockHeader}>
+                      <Text variant="large">{block.title}</Text>
+                      {isComplete && (
+                        <Icon
+                          iconName="CheckMark"
+                          className={styles.completionIcon}
+                          title="Bloco completo"
+                        />
+                      )}
+                    </div>
+
+                    {block.questions.map((q) => {
+                      const questionObj =
+                        blockValue &&
+                        typeof blockValue === "object" &&
+                        q.key in blockValue
+                          ? (blockValue[q.key] as { [k: string]: unknown })
+                          : {};
+                      // Verifica se a pergunta exige anexo
+                      const questionMeta = (
+                        NR_QUESTIONS_MAP as Record<
+                          string,
+                          { text: string; attachment?: string }
+                        >
+                      )[String(q.idx)];
+                      const requiresAttachment =
+                        questionMeta && questionMeta.attachment;
+                      const showUpload =
+                        requiresAttachment && questionObj.resposta === "SIM";
+                      return (
+                        <div key={q.key} className={styles.questionContainer}>
+                          <div className={styles.questionSection}>
+                            <Text
+                              variant="medium"
+                              className={styles.questionText}
+                            >
+                              {q.idx}.{" "}
+                              {questionMeta?.text || `Pergunta ${q.idx}`}
+                            </Text>
+                          </div>
+
+                          <div className={styles.responseSection}>
+                            <Dropdown
+                              label="Resposta"
+                              options={RESPOSTA_OPTIONS}
+                              selectedKey={
+                                typeof questionObj.resposta === "string"
+                                  ? questionObj.resposta
+                                  : ""
+                              }
+                              onChange={(_, option) =>
+                                handleNRResponse(
+                                  block.key as keyof typeof value,
+                                  q.key,
+                                  "resposta",
+                                  option?.key as string
+                                )
+                              }
+                              required
+                              className={styles.responseDropdown}
+                            />
+                          </div>
+
+                          <div className={styles.commentSection}>
+                            <TextField
+                              label="Comentários"
+                              value={
+                                typeof questionObj.comentario === "string"
+                                  ? questionObj.comentario
+                                  : ""
+                              }
+                              onChange={(_, v) =>
+                                handleNRResponse(
+                                  block.key as keyof typeof value,
+                                  q.key,
+                                  "comentario",
+                                  v || ""
+                                )
+                              }
+                              multiline
+                              rows={2}
+                              className={styles.commentField}
+                              placeholder="Adicione comentários ou esclarecimentos (opcional)"
+                            />
+                            {/* Upload condicional para perguntas que exigem anexo */}
+                            {showUpload && (
+                              <div style={{ marginTop: 8 }}>
+                                <HSEFileUpload
+                                  label={`Anexar documento comprobatório (${
+                                    questionMeta.attachment
+                                      ? questionMeta.attachment.toUpperCase()
+                                      : ""
+                                  })`}
+                                  required
+                                  category={questionMeta.attachment || ""}
+                                  subcategory={q.key}
+                                  accept={".pdf,.docx,.xlsx,.jpg,.png"}
+                                  maxFileSize={50}
+                                  helpText="Anexe o documento solicitado para comprovação."
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {block.comentarios && (
+                      <TextField
+                        label="Comentários gerais deste bloco (opcional)"
+                        value={
+                          blockValue &&
+                          typeof blockValue === "object" &&
+                          typeof blockValue.comentarios === "string"
+                            ? blockValue.comentarios
+                            : ""
+                        }
+                        onChange={(_, v) =>
+                          onChange(block.key as keyof typeof value, {
+                            ...blockValue,
+                            comentarios: v || "",
+                          })
+                        }
+                        multiline
+                        rows={2}
+                        className={styles.commentField}
+                      />
+                    )}
+                    <Separator />
+                  </div>
+                );
+              }
+            )}
+          </div>
+
+          {/* Segunda coluna - Blocos restantes */}
+          <div className={styles.singleBlock}>
+            {NR_BLOCKS.slice(Math.ceil(NR_BLOCKS.length / 2)).map((block) => {
+              // Cast para acesso dinâmico, mas sem usar 'any' globalmente
+              const blockValue = getBlockValue(
+                block.key as keyof typeof value
+              ) as {
+                [key: string]: unknown;
+              };
+              return (
+                <div key={block.key} className={styles.nrSection}>
+                  <div className={styles.blockHeader}>
+                    <Text variant="large">{block.title}</Text>
+                    {isBlockComplete(block.key, block.questions) && (
+                      <Icon
+                        iconName="CheckMark"
+                        className={styles.completionIcon}
+                        title="Bloco completo"
+                      />
+                    )}
+                  </div>
+                  {block.questions.map((q) => {
+                    const questionObj =
+                      blockValue &&
+                      typeof blockValue === "object" &&
+                      q.key in blockValue
+                        ? (blockValue[q.key] as { [k: string]: unknown })
+                        : {};
+                    // Verifica se a pergunta exige anexo
+                    const questionMeta = (
+                      NR_QUESTIONS_MAP as Record<
+                        string,
+                        { text: string; attachment?: string }
+                      >
+                    )[String(q.idx)];
+                    const requiresAttachment =
+                      questionMeta && questionMeta.attachment;
+                    const showUpload =
+                      requiresAttachment && questionObj.resposta === "SIM";
+                    return (
+                      <div key={q.key} className={styles.questionContainer}>
+                        <div className={styles.questionSection}>
+                          <Text
+                            variant="medium"
+                            className={styles.questionText}
+                          >
+                            {q.idx}. {questionMeta?.text || `Pergunta ${q.idx}`}
+                          </Text>
+                        </div>
+
+                        <div className={styles.responseSection}>
+                          <Dropdown
+                            label="Resposta"
+                            options={RESPOSTA_OPTIONS}
+                            selectedKey={
+                              typeof questionObj.resposta === "string"
+                                ? questionObj.resposta
+                                : ""
+                            }
+                            onChange={(_, option) =>
+                              handleNRResponse(
+                                block.key as keyof typeof value,
+                                q.key,
+                                "resposta",
+                                option?.key as string
+                              )
+                            }
+                            required
+                            className={styles.responseDropdown}
+                          />
+                        </div>
+
+                        <div className={styles.commentSection}>
+                          <TextField
+                            label="Comentários"
+                            value={
+                              typeof questionObj.comentario === "string"
+                                ? questionObj.comentario
+                                : ""
+                            }
+                            onChange={(_, v) =>
+                              handleNRResponse(
+                                block.key as keyof typeof value,
+                                q.key,
+                                "comentario",
+                                v || ""
+                              )
+                            }
+                            multiline
+                            rows={2}
+                            className={styles.commentField}
+                            placeholder="Adicione comentários ou esclarecimentos (opcional)"
+                          />
+                          {/* Upload condicional para perguntas que exigem anexo */}
+                          {showUpload && (
+                            <div style={{ marginTop: 8 }}>
+                              <HSEFileUpload
+                                label={`Anexar documento comprobatório (${
+                                  questionMeta.attachment
+                                    ? questionMeta.attachment.toUpperCase()
+                                    : ""
+                                })`}
+                                required
+                                category={questionMeta.attachment || ""}
+                                subcategory={q.key}
+                                accept={".pdf,.docx,.xlsx,.jpg,.png"}
+                                maxFileSize={50}
+                                helpText="Anexe o documento solicitado para comprovação."
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {block.comentarios && (
                     <TextField
-                      label="Comentários"
+                      label="Comentários gerais deste bloco (opcional)"
                       value={
-                        typeof questionObj.comentario === "string"
-                          ? questionObj.comentario
+                        blockValue &&
+                        typeof blockValue === "object" &&
+                        typeof blockValue.comentarios === "string"
+                          ? blockValue.comentarios
                           : ""
                       }
                       onChange={(_, v) =>
-                        handleNRResponse(
-                          block.key as keyof typeof value,
-                          q.key,
-                          "comentario",
-                          v || ""
-                        )
+                        onChange(block.key as keyof typeof value, {
+                          ...blockValue,
+                          comentarios: v || "",
+                        })
                       }
                       multiline
                       rows={2}
                       className={styles.commentField}
-                      placeholder="Adicione comentários ou esclarecimentos (opcional)"
                     />
-                    {/* Upload condicional para perguntas que exigem anexo */}
-                    {showUpload && (
-                      <div style={{ marginTop: 8 }}>
-                        {" "}
-                        <HSEFileUpload
-                          label={`Anexar documento comprobatório (${
-                            questionMeta.attachment
-                              ? questionMeta.attachment.toUpperCase()
-                              : ""
-                          })`}
-                          required
-                          category={questionMeta.attachment || ""}
-                          subcategory={q.key}
-                          accept={".pdf,.docx,.xlsx,.jpg,.png"}
-                          maxFileSize={50}
-                          helpText="Anexe o documento solicitado para comprovação."
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {block.comentarios && (
-                <TextField
-                  label="Comentários gerais deste bloco (opcional)"
-                  value={
-                    blockValue &&
-                    typeof blockValue === "object" &&
-                    typeof blockValue.comentarios === "string"
-                      ? blockValue.comentarios
-                      : ""
-                  }
-                  onChange={(_, v) =>
-                    onChange(block.key as keyof typeof value, {
-                      ...blockValue,
-                      comentarios: v || "",
-                    })
-                  }
-                  multiline
-                  rows={2}
-                  className={styles.commentField}
-                />
-              )}
-              <Separator />
-            </div>
-          );
-        })}
+                  )}
+                  <Separator />
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </Stack>
     </div>
   );

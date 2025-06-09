@@ -27,6 +27,7 @@ export interface IHSEFormContext {
     ) => Promise<IAttachmentMetadata>;
     removeAttachment: (category: string, attachmentId: string) => Promise<void>;
     validateStep: (stepNumber: number) => Promise<boolean>;
+    triggerSubmissionValidation: () => Promise<boolean>;
     goToNextStep: () => void;
     goToPreviousStep: () => void;
     resetForm: () => void;
@@ -268,20 +269,33 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         }
       }
 
-      dispatch({ type: "SET_VALIDATION_ERRORS", payload: errors });
+      // Only set validation errors if submission has been attempted
+      if (state.submissionAttempted) {
+        dispatch({ type: "SET_VALIDATION_ERRORS", payload: errors });
+      }
       return errors.length === 0;
     },
     [state]
   );
+  // Trigger submission validation - show all validation errors
+  const triggerSubmissionValidation =
+    React.useCallback(async (): Promise<boolean> => {
+      dispatch({ type: "SET_SUBMISSION_ATTEMPTED", payload: true });
+
+      // Validate all steps and force showing errors
+      const allStepsValid = await Promise.all(
+        [1, 2, 3, 4, 5].map((step) => validateStep(step))
+      ).then((results) => results.every(Boolean));
+
+      return allStepsValid;
+    }, [validateStep]);
 
   // Enviar formulário (versão final)
   const submitForm = React.useCallback(async (): Promise<boolean> => {
     dispatch({ type: "SET_SUBMITTING", payload: true });
 
-    // Validação completa antes do envio
-    const allStepsValid = await Promise.all(
-      [1, 2, 3, 4, 5].map((step) => validateStep(step))
-    ).then((results) => results.every(Boolean));
+    // First trigger validation to show all errors
+    const allStepsValid = await triggerSubmissionValidation();
 
     if (!allStepsValid) {
       dispatch({ type: "SET_SUBMITTING", payload: false });
@@ -416,6 +430,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         uploadAttachment,
         removeAttachment,
         validateStep,
+        triggerSubmissionValidation,
         goToNextStep,
         goToPreviousStep,
         resetForm,
@@ -432,6 +447,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       uploadAttachment,
       removeAttachment,
       validateStep,
+      triggerSubmissionValidation,
       goToNextStep,
       goToPreviousStep,
       resetForm,

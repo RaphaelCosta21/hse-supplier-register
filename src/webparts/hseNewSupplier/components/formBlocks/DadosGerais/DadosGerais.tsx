@@ -14,6 +14,7 @@ import {
 import { IDadosGeraisProps } from "./IDadosGeraisProps";
 import { GRAU_RISCO_OPTIONS } from "../../../utils/formConstants";
 import styles from "./DadosGerais.module.scss";
+import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
 
 export const DadosGerais: React.FC<IDadosGeraisProps> = ({
   value,
@@ -36,19 +37,19 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
           <Text variant="xLarge" className={styles.sectionTitle}>
             A - Informações e Dados Gerais da Contratada
           </Text>
-        </div>
+        </div>{" "}
         <MessageBar messageBarType={MessageBarType.info}>
           Preencha todas as informações obrigatórias (*) sobre a empresa
           contratada. O anexo do REM (Resumo Estatístico Mensal) é obrigatório.
         </MessageBar>
         <div className={styles.formGrid}>
           <div className={styles.gridRow}>
+            {" "}
             <TextField
               label="Nome da Empresa"
               value={value.empresa || ""}
               onChange={(_, v) => onChange("empresa", v)}
               required
-              errorMessage={errors?.empresa}
               className={styles.fullWidth}
               placeholder="Razão Social da empresa"
             />
@@ -59,7 +60,6 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               value={value.cnpj || ""}
               onChange={(_, v) => onChange("cnpj", formatCNPJ(v || ""))}
               required
-              errorMessage={errors?.cnpj}
               className={styles.halfWidth}
               placeholder="00.000.000/0000-00"
               maxLength={18}
@@ -69,12 +69,12 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               value={value.numeroContrato || ""}
               onChange={(_, v) => onChange("numeroContrato", v)}
               required
-              errorMessage={errors?.numeroContrato}
               className={styles.halfWidth}
               placeholder="Número do contrato com a Oceaneering"
             />
           </div>
           <div className={styles.gridRow}>
+            {" "}
             <DatePicker
               label="Data de Início do Contrato"
               value={
@@ -116,12 +116,12 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
             />
           </div>
           <div className={styles.gridRow}>
+            {" "}
             <TextField
               label="Responsável Técnico"
               value={value.responsavelTecnico || ""}
               onChange={(_, v) => onChange("responsavelTecnico", v)}
               required
-              errorMessage={errors?.responsavelTecnico}
               className={styles.halfWidth}
               placeholder="Nome completo do responsável técnico"
             />
@@ -129,6 +129,8 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               label="Atividade Principal (CNAE)"
               value={value.atividadePrincipalCNAE || ""}
               onChange={(_, v) => onChange("atividadePrincipalCNAE", v)}
+              required
+              errorMessage={errors?.atividadePrincipalCNAE}
               className={styles.halfWidth}
               placeholder="Código CNAE da atividade principal"
             />
@@ -209,24 +211,40 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
             </div>
           </div>
           <div className={styles.gridRow}>
+            {" "}
             <TextField
               label="Gerente do Contrato Marine"
               value={value.gerenteContratoMarine || ""}
               onChange={(_, v) => onChange("gerenteContratoMarine", v)}
               required
-              errorMessage={errors?.gerenteContratoMarine}
               className={styles.fullWidth}
               placeholder="Nome do gerente responsável pelo contrato"
             />
           </div>
-        </div>
+        </div>{" "}
         <Separator />
         <div className={styles.attachmentSection}>
           <Text variant="large" className={styles.attachmentTitle}>
             Anexo Obrigatório
           </Text>
-          {/* O componente de upload de arquivo deve ser integrado ao contexto principal do formulário */}
+          <HSEFileUpload
+            label="REM - Resumo Estatístico Mensal"
+            required
+            category="rem"
+            accept=".pdf,.xlsx,.xls,.docx,.doc"
+            maxFileSize={50}
+            helpText="Anexe o REM dos acidentes de trabalho do ano corrente e do ano anterior (NBR14280)."
+          />{" "}
         </div>
+        <MessageBar messageBarType={MessageBarType.warning}>
+          <Text variant="medium" style={{ fontWeight: 600 }}>
+            OBS.: a) Cabe a contratada anexar a este questionário o REM: Resumo
+            Estatístico Mensal dos acidentes de trabalho (típico e trajeto) do
+            ano corrente e do ano anterior ao preenchimento deste questionário.
+            As estatísticas de acidentes devem estar preparadas de acordo com a
+            Norma de Cadastro de Acidentes do Trabalho, NBR14280, da ABNT.
+          </Text>
+        </MessageBar>
       </Stack>
     </div>
   );

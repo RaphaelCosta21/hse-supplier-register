@@ -4,7 +4,6 @@ import {
   Text,
   MessageBar,
   MessageBarType,
-  DefaultButton,
   Separator,
   Icon,
 } from "@fluentui/react";
@@ -14,7 +13,7 @@ import { REQUIRED_EVIDENCES } from "../../../utils/formConstants";
 import styles from "./Evidencias.module.scss";
 
 export const Evidencias: React.FC = () => {
-  const { state, actions } = useHSEForm();
+  const { state } = useHSEForm();
 
   const calculateEvidencesProgress = (): number => {
     const totalRequired = REQUIRED_EVIDENCES.filter(
@@ -27,7 +26,9 @@ export const Evidencias: React.FC = () => {
     return Math.round((completed / totalRequired) * 100);
   };
 
-  const renderEvidenceItem = (evidence: (typeof REQUIRED_EVIDENCES)[0]) => {
+  const renderEvidenceItem = (
+    evidence: (typeof REQUIRED_EVIDENCES)[0]
+  ): JSX.Element => {
     const attachments = state.attachments[evidence.category] || [];
     const hasAttachment = attachments.length > 0;
 
@@ -82,46 +83,23 @@ export const Evidencias: React.FC = () => {
             {calculateEvidencesProgress()}% concluído
           </div>
         </div>
-
         <MessageBar messageBarType={MessageBarType.warning}>
+          {" "}
           Todos os documentos marcados com (*) são obrigatórios. Certifique-se
-          de anexar as evidências documentais que comprovem as respostas "SIM"
-          fornecidas na seção anterior.
+          de anexar as evidências documentais que comprovem as respostas
+          &quot;SIM&quot; fornecidas na seção anterior.
         </MessageBar>
-
-        <Separator />
-
+        <Separator />{" "}
         <div className={styles.evidencesList}>
-          {REQUIRED_EVIDENCES.map(renderEvidenceItem)}
-        </div>
-
-        <div className={styles.actionsSection}>
-          <Stack
-            horizontal
-            tokens={{ childrenGap: 10 }}
-            horizontalAlign="space-between"
-          >
-            <DefaultButton
-              text="Etapa Anterior"
-              iconProps={{ iconName: "ChevronLeft" }}
-              onClick={actions.goToPreviousStep}
-            />
-            <Stack horizontal tokens={{ childrenGap: 10 }}>
-              <DefaultButton
-                text="Salvar Progresso"
-                iconProps={{ iconName: "Save" }}
-                onClick={actions.saveFormData}
-                disabled={state.isSubmitting}
-              />
-              <DefaultButton
-                text="Próxima Etapa"
-                iconProps={{ iconName: "ChevronRight" }}
-                onClick={actions.goToNextStep}
-                primary
-                disabled={calculateEvidencesProgress() < 80}
-              />
-            </Stack>
-          </Stack>
+          {/* Primeira coluna - Primeira metade dos documentos */}
+          {REQUIRED_EVIDENCES.slice(
+            0,
+            Math.ceil(REQUIRED_EVIDENCES.length / 2)
+          ).map(renderEvidenceItem)}
+          {/* Segunda coluna - Segunda metade dos documentos */}
+          {REQUIRED_EVIDENCES.slice(
+            Math.ceil(REQUIRED_EVIDENCES.length / 2)
+          ).map(renderEvidenceItem)}
         </div>
       </Stack>
     </div>

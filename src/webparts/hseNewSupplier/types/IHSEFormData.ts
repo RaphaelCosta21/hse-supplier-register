@@ -302,6 +302,7 @@ export interface IFormState {
   validationErrors: IValidationError[];
   isSubmitting: boolean;
   isLoading: boolean;
+  submissionAttempted: boolean;
   lastSaved?: Date;
   errors: { [key: string]: string };
   isDirty: boolean;

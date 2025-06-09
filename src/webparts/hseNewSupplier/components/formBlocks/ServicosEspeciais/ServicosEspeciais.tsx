@@ -5,31 +5,29 @@ import {
   Toggle,
   MessageBar,
   MessageBarType,
-  DefaultButton,
   Separator,
 } from "@fluentui/react";
-import { useHSEForm } from "../../context/HSEFormContext";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
 import {
   MARITIME_CERTIFICATES,
   LIFTING_DOCUMENTS,
 } from "../../../utils/formConstants";
+import { IServicosEspeciaisProps } from "./IServicosEspeciaisProps";
 import styles from "./ServicosEspeciais.module.scss";
 
-export const ServicosEspeciais: React.FC = () => {
-  const { state, dispatch, actions } = useHSEForm();
-  const { formData } = state;
+export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
+  value,
+  onChange,
+  errors = {},
+}) => {
   const handleServiceToggle = (
     service: "fornecedorEmbarcacoes" | "fornecedorIcamento",
     checked: boolean
   ): void => {
-    dispatch({
-      type: "UPDATE_FIELD",
-      payload: { field: `servicosEspeciais.${service}`, value: checked },
-    });
+    onChange(service, checked);
   };
   const renderMaritimeCertificates = (): JSX.Element | null => {
-    if (!formData.servicosEspeciais?.fornecedorEmbarcacoes) return null;
+    if (!value?.fornecedorEmbarcacoes) return null;
 
     return (
       <div className={styles.serviceSection}>
@@ -69,7 +67,7 @@ export const ServicosEspeciais: React.FC = () => {
     );
   };
   const renderLiftingDocuments = (): JSX.Element | null => {
-    if (!formData.servicosEspeciais?.fornecedorIcamento) return null;
+    if (!value?.fornecedorIcamento) return null;
 
     return (
       <div className={styles.serviceSection}>
@@ -122,19 +120,19 @@ export const ServicosEspeciais: React.FC = () => {
           Documentos adicionais serão solicitados conforme aplicável.
         </MessageBar>{" "}
         <div className={styles.serviceToggles}>
+          {" "}
           <Toggle
             label="Fornecedor de Serviços Envolvendo Embarcações"
-            checked={formData.servicosEspeciais?.fornecedorEmbarcacoes || false}
+            checked={value?.fornecedorEmbarcacoes || false}
             onChange={(_, checked) =>
               handleServiceToggle("fornecedorEmbarcacoes", checked || false)
             }
             inlineLabel
             className={styles.serviceToggle}
           />
-
           <Toggle
             label="Fornecedor de Serviços Envolvendo Içamento de Carga"
-            checked={formData.servicosEspeciais?.fornecedorIcamento || false}
+            checked={value?.fornecedorIcamento || false}
             onChange={(_, checked) =>
               handleServiceToggle("fornecedorIcamento", checked || false)
             }
@@ -142,43 +140,15 @@ export const ServicosEspeciais: React.FC = () => {
             className={styles.serviceToggle}
           />
         </div>
-        <Separator />
-        {renderMaritimeCertificates()}
+        <Separator /> {renderMaritimeCertificates()}
         {renderLiftingDocuments()}
-        {!formData.servicosEspeciais?.fornecedorEmbarcacoes &&
-          !formData.servicosEspeciais?.fornecedorIcamento && (
-            <MessageBar messageBarType={MessageBarType.success}>
-              Nenhum serviço especializado selecionado. Você pode prosseguir
-              para a próxima etapa.
-            </MessageBar>
-          )}
-        <div className={styles.actionsSection}>
-          <Stack
-            horizontal
-            tokens={{ childrenGap: 10 }}
-            horizontalAlign="space-between"
-          >
-            <DefaultButton
-              text="Etapa Anterior"
-              iconProps={{ iconName: "ChevronLeft" }}
-              onClick={actions.goToPreviousStep}
-            />
-            <Stack horizontal tokens={{ childrenGap: 10 }}>
-              <DefaultButton
-                text="Salvar Progresso"
-                iconProps={{ iconName: "Save" }}
-                onClick={actions.saveFormData}
-                disabled={state.isSubmitting}
-              />
-              <DefaultButton
-                text="Revisão Final"
-                iconProps={{ iconName: "ChevronRight" }}
-                onClick={actions.goToNextStep}
-                primary
-              />
-            </Stack>
-          </Stack>
-        </div>
+        {!value?.fornecedorEmbarcacoes && !value?.fornecedorIcamento && (
+          <MessageBar messageBarType={MessageBarType.success}>
+            {" "}
+            Nenhum serviço especializado selecionado. Você pode prosseguir para
+            a próxima etapa.
+          </MessageBar>
+        )}
       </Stack>
     </div>
   );

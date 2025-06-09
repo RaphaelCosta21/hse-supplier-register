@@ -1,0 +1,706 @@
+// Microinterações e Animações Avançadas
+// Sistema de feedback visual para melhorar a experiência do usuário
+
+// === LOADING STATES MODERNOS ===
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+
+  &.skeleton-text {
+    height: 1rem;
+    margin-bottom: 0.5rem;
+
+    &:last-child {
+      width: 60%;
+    }
+  }
+
+  &.skeleton-title {
+    height: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  &.skeleton-avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+  }
+
+  &.skeleton-button {
+    height: 2.5rem;
+    width: 6rem;
+    border-radius: 0.5rem;
+  }
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+// === SPINNERS MODERNOS ===
+.spinner {
+  display: inline-block;
+  position: relative;
+}
+
+.spinner-dots {
+  width: 40px;
+  height: 40px;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    background: #0078d4;
+    animation: spinner-dots-animation 1.5s infinite ease-in-out;
+  }
+
+  &::before {
+    left: 8px;
+    animation-delay: -0.32s;
+  }
+
+  &::after {
+    left: 24px;
+  }
+}
+
+@keyframes spinner-dots-animation {
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.spinner-ring {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #0078d4;
+  border-radius: 50%;
+  animation: spinner-ring-animation 1s linear infinite;
+}
+
+@keyframes spinner-ring-animation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner-pulse {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #0078d4;
+  animation: spinner-pulse-animation 1.5s ease-in-out infinite;
+}
+
+@keyframes spinner-pulse-animation {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+// === PROGRESS BARS MODERNOS ===
+.progress-modern {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #0078d4, #4caf50);
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+      );
+      animation: progress-shimmer 2s infinite;
+    }
+  }
+
+  &.progress-lg {
+    height: 12px;
+  }
+
+  &.progress-sm {
+    height: 4px;
+  }
+}
+
+@keyframes progress-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+// === HOVER EFFECTS MODERNOS ===
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.hover-glow {
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 0 20px rgba(0, 120, 212, 0.4);
+    transform: scale(1.02);
+  }
+}
+
+.hover-rotate {
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: rotate(5deg);
+  }
+}
+
+.hover-scale {
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+// === CLICK ANIMATIONS ===
+.click-ripple {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  &:active::before {
+    width: 200%;
+    height: 200%;
+  }
+}
+
+.click-bounce {
+  transition: transform 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// === FOCUS INDICATORS MODERNOS ===
+.focus-ring {
+  transition: all 0.2s ease;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.3);
+    border-radius: 8px;
+  }
+}
+
+.focus-glow {
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #0078d4, 0 0 20px rgba(0, 120, 212, 0.3);
+  }
+}
+
+// === TOAST NOTIFICATIONS ===
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 300px;
+  max-width: 500px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  padding: 16px 20px;
+  border-left: 4px solid #0078d4;
+  animation: toast-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 9999;
+
+  &.toast-success {
+    border-left-color: #4caf50;
+  }
+
+  &.toast-error {
+    border-left-color: #f44336;
+  }
+
+  &.toast-warning {
+    border-left-color: #ff9800;
+  }
+
+  .toast-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    .toast-icon {
+      margin-top: 2px;
+      font-size: 18px;
+    }
+
+    .toast-body {
+      flex: 1;
+
+      .toast-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #1a1a1a;
+      }
+
+      .toast-message {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f0f0f0;
+        color: #333;
+      }
+    }
+  }
+
+  &.toast-exit {
+    animation: toast-slide-out 0.3s ease-in forwards;
+  }
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+// === MODAL ANIMATIONS ===
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: modal-backdrop-fade-in 0.3s ease;
+  z-index: 1040;
+}
+
+.modal-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modal-scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1050;
+}
+
+@keyframes modal-backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-scale-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+// === DROPDOWN ANIMATIONS ===
+.dropdown-menu {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  animation: dropdown-fade-in 0.2s ease;
+  transform-origin: top;
+
+  .dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-bottom: 1px solid #f5f5f5;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: #f8f9fa;
+    }
+
+    &:active {
+      background: #e9ecef;
+    }
+  }
+}
+
+@keyframes dropdown-fade-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+// === VALIDATION ANIMATIONS ===
+.validation-shake {
+  animation: validation-shake-animation 0.5s ease-in-out;
+}
+
+@keyframes validation-shake-animation {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.validation-pulse {
+  animation: validation-pulse-animation 0.6s ease-in-out;
+}
+
+@keyframes validation-pulse-animation {
+  0% {
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+  }
+}
+
+// === PAGE TRANSITIONS ===
+.page-enter {
+  animation: page-enter-animation 0.5s ease-out;
+}
+
+.page-exit {
+  animation: page-exit-animation 0.3s ease-in;
+}
+
+@keyframes page-enter-animation {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes page-exit-animation {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+// === FORM FIELD ANIMATIONS ===
+.field-float-label {
+  position: relative;
+
+  .form-control {
+    padding-top: 1.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .form-label {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    color: #999;
+  }
+
+  .form-control:focus + .form-label,
+  .form-control:not(:placeholder-shown) + .form-label {
+    top: 0.25rem;
+    font-size: 0.75rem;
+    color: #0078d4;
+    font-weight: 500;
+  }
+}
+
+// === SCROLL ANIMATIONS ===
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease;
+
+  &.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scroll-reveal-left {
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: all 0.6s ease;
+
+  &.revealed {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.scroll-reveal-right {
+  opacity: 0;
+  transform: translateX(30px);
+  transition: all 0.6s ease;
+
+  &.revealed {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// === RESPONSIVE MICROINTERACTIONS ===
+@media (max-width: 768px) {
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+
+  .toast-notification {
+    left: 10px;
+    right: 10px;
+    min-width: auto;
+  }
+
+  .modal-container {
+    margin: 20px;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 40px);
+  }
+}
+
+// === ACESSIBILIDADE ===
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .hover-lift:hover,
+  .hover-scale:hover,
+  .hover-rotate:hover,
+  .hover-glow:hover {
+    transform: none;
+  }
+
+  .scroll-reveal,
+  .scroll-reveal-left,
+  .scroll-reveal-right {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// === HIGH CONTRAST ===
+@media (prefers-contrast: high) {
+  .toast-notification {
+    border-width: 2px;
+    border-style: solid;
+    border-color: currentColor;
+  }
+
+  .modal-container {
+    border: 2px solid #000;
+  }
+
+  .dropdown-menu {
+    border-width: 2px;
+  }
+}
+
+// === UTILITIES CLASSES ===
+.transition-none {
+  transition: none !important;
+}
+.transition-all {
+  transition: all 0.15s ease-in-out;
+}
+.transition-colors {
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+}
+.transition-opacity {
+  transition: opacity 0.15s ease-in-out;
+}
+.transition-shadow {
+  transition: box-shadow 0.15s ease-in-out;
+}
+.transition-transform {
+  transition: transform 0.15s ease-in-out;
+}
+
+.duration-75 {
+  transition-duration: 75ms !important;
+}
+.duration-100 {
+  transition-duration: 100ms !important;
+}
+.duration-150 {
+  transition-duration: 150ms !important;
+}
+.duration-200 {
+  transition-duration: 200ms !important;
+}
+.duration-300 {
+  transition-duration: 300ms !important;
+}
+.duration-500 {
+  transition-duration: 500ms !important;
+}
+
+.ease-linear {
+  transition-timing-function: linear !important;
+}
+.ease-in {
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
+}
+.ease-out {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1) !important;
+}
+.ease-in-out {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}

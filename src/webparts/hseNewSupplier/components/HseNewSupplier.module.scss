@@ -3,32 +3,142 @@
 .hseNewSupplier {
   min-height: 100vh;
   background-color: $ms-color-neutralLighter;
-
   .header {
-    background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+    background: linear-gradient(135deg, #0078d4 0%, #106ebe 50%, #004578 100%);
     color: white;
-    padding: 20px 30px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 24px 32px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
 
-    .title {
-      font-weight: 600;
-      margin-bottom: 8px;
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")
+        repeat;
+      opacity: 0.4;
     }
 
-    .subtitle {
-      opacity: 0.9;
-      margin-bottom: 16px;
-    }
+    .headerContent {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
 
-    .progressBar {
-      max-width: 600px;
+      .titleSection {
+        flex: 1;
 
-      :global(.ms-ProgressIndicator-progressBar) {
-        background-color: rgba(255, 255, 255, 0.3);
+        .title {
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          margin: 0;
+          line-height: 1.2;
+          background: linear-gradient(135deg, #ffffff 0%, #e1f5fe 100%);
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: titleShine 3s ease-in-out infinite;
+        }
       }
 
-      :global(.ms-ProgressIndicator-progressTrack) {
-        background-color: #005a9e;
+      .progressSection {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: center;
+
+        .stepInfo {
+          text-align: center;
+
+          .stepText {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+          }
+
+          .currentStepTitle {
+            color: #ffffff;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          }
+        }
+
+        .progressBar {
+          width: 100%;
+          max-width: 300px;
+
+          :global(.ms-ProgressIndicator-progressTrack) {
+            background-color: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            border-radius: 10px;
+            height: 8px;
+          }
+
+          :global(.ms-ProgressIndicator-progressBar) {
+            background: linear-gradient(
+              90deg,
+              #4fc3f7 0%,
+              #29b6f6 50%,
+              #0288d1 100%
+            );
+            border-radius: 10px;
+            animation: progressShimmer 2s ease-in-out infinite;
+          }
+
+          :global(.ms-ProgressIndicator-itemDescription) {
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            margin-top: 8px;
+          }
+        }
+      }
+
+      .logoSection {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .headerLogo {
+          height: 60px;
+          width: auto;
+          object-fit: contain;
+        }
+      }
+    }
+
+    // Responsive design
+    @media (max-width: 768px) {
+      padding: 16px 20px;
+
+      .headerContent {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+
+        .titleSection .title {
+          font-size: 20px;
+        }
+
+        .progressSection .progressBar {
+          max-width: 250px;
+        }
+
+        .logoSection .headerLogo {
+          height: 40px;
+        }
       }
     }
   }
@@ -57,19 +167,48 @@
   .container {
     display: flex;
     min-height: calc(100vh - 140px);
-
     .navigation {
       width: 280px;
       background-color: white;
       border-right: 1px solid $ms-color-neutralLight;
       box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
 
+      .navHeader {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 20px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid $ms-color-neutralLight;
+
+        .navLogo {
+          height: 32px;
+          width: auto;
+        }
+
+        .navTitle {
+          font-weight: 600;
+          color: #0078d4;
+        }
+      }
       .navPanel {
         padding: 20px 0;
 
         :global(.ms-Nav-link) {
           padding: 12px 20px;
           border-radius: 0;
+          position: relative;
+
+          &.completed::after {
+            content: "✓";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #107c10;
+            font-weight: bold;
+            font-size: 16px;
+          }
 
           &.is-selected {
             background-color: rgba(0, 120, 212, 0.1);
@@ -129,5 +268,28 @@
     .content {
       padding: 20px 16px;
     }
+  }
+}
+
+// Animations
+@keyframes titleShine {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes progressShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
   }
 }
