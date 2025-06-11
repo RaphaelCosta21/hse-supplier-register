@@ -10,6 +10,9 @@ export interface IAttachmentMetadata {
   url: string;
   sharepointItemId?: number;
 
+  // Dados do arquivo para salvamento posterior
+  fileData?: File | string; // File object ou base64 string
+
   // Campos legados para compatibilidade
   nomeOriginal?: string;
   tamanho?: number;

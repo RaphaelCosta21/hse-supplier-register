@@ -157,8 +157,10 @@ export class SharePointFileService {
         throw new Error(
           `Document Library '${this.documentLibraryName}' não encontrada`
         );
-      } // Criar nome da pasta principal (remover pontos e barras do CNPJ)
-      const cleanCNPJ = cnpj.replace(/[.\-/]/g, "");
+      }
+
+      // Criar nome da pasta principal (remover pontos e barras do CNPJ)
+      const cleanCNPJ = cnpj.replace(/[.\/-]/g, "");
       const mainFolderName = `${cleanCNPJ}-${this.sanitizeFolderName(
         nomeEmpresa
       )}`;
@@ -180,35 +182,34 @@ export class SharePointFileService {
           continue;
         }
 
-        savedAttachments[category] = []; // Criar subpasta para a categoria usando o mapeamento correto
-        const subFolderName =
-          ATTACHMENT_FOLDER_MAP[category] || category.toUpperCase();
-        console.log(
-          `Tentando criar subpasta: ${subFolderName} para categoria: ${category}`
-        );
-        const targetFolderPath = await this.ensureSubFolder(
-          mainFolderName,
-          subFolderName
-        );
-        console.log("Pasta de destino definida:", targetFolderPath);
+        savedAttachments[category] = [];
 
-        // Aguardar um pouco para garantir que a pasta foi criada no SharePoint
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Salvar cada arquivo na pasta/subpasta
+        // Criar subpasta para a categoria usando o mapeamento correto
+        let targetFolderPath: string;
+        try {
+          const subFolderName =
+            ATTACHMENT_FOLDER_MAP[category] || category.toUpperCase();
+          targetFolderPath = await this.ensureSubFolder(
+            mainFolderName,
+            subFolderName
+          );
+          console.log("Pasta de destino definida:", targetFolderPath);
+        } catch (subFolderError) {
+          console.warn(
+            "Erro ao criar subpasta, usando pasta principal:",
+            subFolderError
+          );
+          targetFolderPath = mainFolderName;
+        }
+
+        // Salvar cada arquivo na pasta/subpasta
         for (const fileMetadata of files) {
           if (fileMetadata.fileData && fileMetadata.fileData instanceof File) {
             try {
-              console.log(
-                `📁 Salvando arquivo: ${fileMetadata.originalName} na pasta: ${targetFolderPath}`
-              );
+              console.log(`Salvando arquivo: ${fileMetadata.originalName}`);
 
               // Manter o nome original do arquivo
               const fileName = fileMetadata.originalName;
-
-              // Verificar se a pasta de destino existe antes de tentar salvar
-              console.log(
-                `🔍 Verificando se a pasta ${targetFolderPath} existe...`
-              );
-
               const savedMetadata = await this.saveFileToFolder(
                 fileMetadata.fileData,
                 targetFolderPath,
@@ -220,12 +221,10 @@ export class SharePointFileService {
               );
 
               savedAttachments[category].push(savedMetadata);
-              console.log(
-                `✅ Arquivo ${fileName} salvo com sucesso na subpasta ${subFolderName}`
-              );
+              console.log(`✅ Arquivo ${fileName} salvo com sucesso`);
             } catch (fileError) {
               console.error(
-                `❌ ERRO CRÍTICO ao salvar arquivo ${fileMetadata.originalName} na subpasta ${subFolderName}:`,
+                `❌ Erro ao salvar arquivo ${fileMetadata.originalName}:`,
                 fileError
               );
 
@@ -299,6 +298,7 @@ export class SharePointFileService {
       throw new Error(`Falha ao criar pasta principal: ${error.message}`);
     }
   }
+
   /**
    * Garante que uma subpasta existe dentro da pasta principal
    */
@@ -306,72 +306,43 @@ export class SharePointFileService {
     mainFolderName: string,
     subFolderName: string
   ): Promise<string> {
-    console.log(
-      `=== CRIANDO SUBPASTA: ${subFolderName} DENTRO DE ${mainFolderName} ===`
-    );
-
-    // Primeiro, garantir que a pasta principal existe
-    await this.ensureMainFolder(mainFolderName);
-
-    const subFolderPath = `${mainFolderName}/${subFolderName}`;
-    console.log("📁 Caminho completo da subpasta:", subFolderPath);
-
     try {
-      // Tentar acessar a subpasta para ver se já existe
-      const existingFolder = await this.sp.web.lists
-        .getByTitle(this.documentLibraryName)
-        .rootFolder.folders.getByUrl(subFolderPath)();
+      console.log(
+        `=== CRIANDO SUBPASTA: ${subFolderName} DENTRO DE ${mainFolderName} ===`
+      );
 
-      console.log("✅ Subpasta já existe:", existingFolder.Name);
-      return subFolderPath;
-    } catch {
-      // Se não existe, criar a subpasta
-      console.log("🔄 Subpasta não existe, criando...");
+      // Primeiro, garantir que a pasta principal existe
+      await this.ensureMainFolder(mainFolderName);
+
+      const subFolderPath = `${mainFolderName}/${subFolderName}`;
+      console.log("Caminho completo da subpasta:", subFolderPath);
 
       try {
+        // Tentar acessar a subpasta para ver se já existe
+        const existingFolder = await this.sp.web.lists
+          .getByTitle(this.documentLibraryName)
+          .rootFolder.folders.getByUrl(subFolderPath)();
+
+        console.log("Subpasta já existe:", existingFolder.Name);
+        return subFolderPath;
+      } catch {
+        // Se não existe, criar a subpasta
+        console.log("Subpasta não existe, criando...");
+
         const newSubFolder = await this.sp.web.lists
           .getByTitle(this.documentLibraryName)
           .rootFolder.folders.addUsingPath(subFolderPath);
 
-        console.log("✅ Subpasta criada com sucesso:", newSubFolder.Name);
-        console.log("📍 Caminho verificado:", subFolderPath);
+        console.log("Subpasta criada com sucesso:", newSubFolder.Name);
         return subFolderPath;
-      } catch (createError) {
-        console.error("❌ Erro ao criar subpasta:", createError);
-
-        // Última tentativa: tentar criar a subpasta na pasta pai diretamente
-        try {
-          console.log(
-            "🔄 Tentativa alternativa: criando subpasta diretamente na pasta pai..."
-          );
-          const parentFolder = await this.sp.web.lists
-            .getByTitle(this.documentLibraryName)
-            .rootFolder.folders.getByUrl(mainFolderName);
-
-          const altSubFolder = await parentFolder.folders.addUsingPath(
-            subFolderName
-          );
-          console.log(
-            "✅ Subpasta criada com método alternativo:",
-            altSubFolder.Name
-          );
-          console.log("📍 Caminho alternativo verificado:", subFolderPath);
-          return subFolderPath;
-        } catch (altError) {
-          console.error("❌ Método alternativo também falhou:", altError);
-          console.error(
-            "🚫 FALHA CRÍTICA: Não foi possível criar a subpasta",
-            subFolderName
-          );
-
-          // NÃO retornar pasta principal como fallback - lançar erro
-          throw new Error(
-            `Falha crítica ao criar subpasta ${subFolderName}: ${altError.message}`
-          );
-        }
       }
+    } catch (error) {
+      console.error("Erro ao criar subpasta:", error);
+      console.log("Fallback: usando apenas pasta principal");
+      return mainFolderName;
     }
   }
+
   /**
    * Salva um arquivo em uma pasta específica
    */
@@ -390,80 +361,31 @@ export class SharePointFileService {
 
       // Ler o arquivo como ArrayBuffer
       const fileBuffer = await file.arrayBuffer();
-      console.log("Arquivo lido, tamanho:", fileBuffer.byteLength, "bytes"); // MÚLTIPLAS TENTATIVAS para verificar pasta
-      let folderExists = false;
-      const maxRetries = 5; // Tenta até 5 vezes com delays progressivos
+      console.log("Arquivo lido, tamanho:", fileBuffer.byteLength, "bytes");
 
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          console.log(
-            `🔍 Tentativa ${attempt}/${maxRetries} de verificar pasta: ${folderPath}`
-          );
+      // Fazer upload do arquivo usando addUsingPath
+      const fileAddResult = await this.sp.web.lists
+        .getByTitle(this.documentLibraryName)
+        .rootFolder.folders.getByUrl(folderPath)
+        .files.addUsingPath(fileName, fileBuffer, { Overwrite: true });
 
-          await this.sp.web.lists
-            .getByTitle(this.documentLibraryName)
-            .rootFolder.folders.getByUrl(folderPath)();
+      console.log("Arquivo salvo com sucesso:", fileAddResult.Name);
+      // Retornar metadata do arquivo salvo
+      const metadata: IAttachmentMetadata = {
+        id: fileAddResult.UniqueId,
+        fileName: fileName,
+        originalName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        url: fileAddResult.ServerRelativeUrl,
+        uploadDate: new Date().toISOString(),
+        category: category,
+        sharepointItemId: undefined, // Será definido quando necessário
+      };
 
-          console.log(
-            `✅ Pasta confirmada na tentativa ${attempt}: ${folderPath}`
-          );
-          folderExists = true;
-          break; // Pasta encontrada, sair do loop
-        } catch {
-          if (attempt < maxRetries) {
-            const delayMs = attempt * 1000; // Delay progressivo: 1s, 2s, 3s, 4s, 5s
-            console.warn(
-              `⏳ Pasta não encontrada, aguardando ${delayMs}ms antes da próxima tentativa...`
-            );
-            await new Promise((resolve) => setTimeout(resolve, delayMs));
-          } else {
-            console.error("❌ Pasta não encontrada após todas as tentativas");
-          }
-        }
-      }
-
-      // Se pasta não existe após todas as tentativas, tentar uma última abordagem
-      if (!folderExists) {
-        console.warn("⚠️ Tentando upload direto mesmo sem confirmar pasta...");
-        // Vamos tentar o upload diretamente e ver o que acontece
-      }
-
-      try {
-        // Fazer upload do arquivo (mesmo se não confirmamos a pasta)
-        const fileAddResult = await this.sp.web.lists
-          .getByTitle(this.documentLibraryName)
-          .rootFolder.folders.getByUrl(folderPath)
-          .files.addUsingPath(fileName, fileBuffer, { Overwrite: true });
-
-        console.log("✅ Arquivo salvo com sucesso:", fileAddResult.Name);
-        console.log("📍 Localização final:", fileAddResult.ServerRelativeUrl);
-
-        // Retornar metadata do arquivo salvo
-        const metadata: IAttachmentMetadata = {
-          id: fileAddResult.UniqueId,
-          fileName: fileName,
-          originalName: file.name,
-          fileSize: file.size,
-          fileType: file.type || this.getFileTypeFromName(file.name),
-          url: fileAddResult.ServerRelativeUrl,
-          uploadDate: new Date().toISOString(),
-          category: category,
-          sharepointItemId: undefined,
-        };
-
-        return metadata;
-      } catch (uploadError) {
-        // Se ainda falhar o upload, então sim, lançar erro
-        console.error(
-          `❌ Upload falhou após todas as tentativas:`,
-          uploadError
-        );
-        throw new Error(
-          `Falha ao fazer upload para ${folderPath}: ${uploadError.message}`
-        );
-      }
+      return metadata;
     } catch (error) {
-      console.error(`❌ Erro ao salvar arquivo ${fileName}:`, error);
+      console.error(`Erro ao salvar arquivo ${fileName}:`, error);
       throw new Error(`Falha ao salvar arquivo: ${error.message}`);
     }
   }

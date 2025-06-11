@@ -15,12 +15,15 @@ import { IDadosGeraisProps } from "./IDadosGeraisProps";
 import { GRAU_RISCO_OPTIONS } from "../../../utils/formConstants";
 import styles from "./DadosGerais.module.scss";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
+import { useHSEForm } from "../../context/HSEFormContext";
 
 export const DadosGerais: React.FC<IDadosGeraisProps> = ({
   value,
   onChange,
   errors,
 }) => {
+  const { state, dispatch } = useHSEForm();
+
   const formatCNPJ = (val: string): string => {
     const cleanValue = val.replace(/\D/g, "");
     return cleanValue
@@ -28,6 +31,31 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1/$2")
       .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  };
+  // Função utilitária para mostrar erro visual - combina erros do prop e do contexto
+  const showError = (field: string): boolean => {
+    // Verificar erros do prop (validação normal)
+    const propErrors = errors && errors[field as keyof typeof errors];
+    // Verificar erros do contexto (validação do botão salvar)
+    const contextErrors = state.errors && state.errors[field];
+    return !!(propErrors || contextErrors);
+  }; // Função para limpar erro específico quando campo é alterado
+  const handleFieldChange = (
+    fieldName: string,
+    fieldValue: string | number | boolean | Date | undefined
+  ): void => {
+    // Chamar a função onChange original
+    onChange(fieldName as keyof typeof value, fieldValue);
+
+    // Limpar erro específico deste campo se existir
+    if (state.errors && state.errors[fieldName] && dispatch) {
+      const newErrors = { ...state.errors };
+      delete newErrors[fieldName];
+      dispatch({
+        type: "SET_FIELD_ERRORS",
+        payload: newErrors,
+      });
+    }
   };
 
   return (
@@ -43,36 +71,41 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
           contratada. O anexo do REM (Resumo Estatístico Mensal) é obrigatório.
         </MessageBar>
         <div className={styles.formGrid}>
+          {" "}
           <div className={styles.gridRow}>
             {" "}
             <TextField
               label="Nome da Empresa"
               value={value.empresa || ""}
-              onChange={(_, v) => onChange("empresa", v)}
+              onChange={(_, v) => handleFieldChange("empresa", v)}
               required
-              className={styles.fullWidth}
+              className={`${styles.fullWidth} ${
+                showError("empresa") ? styles.fieldError : ""
+              }`}
               placeholder="Razão Social da empresa"
             />
-          </div>
+          </div>{" "}
           <div className={styles.gridRow}>
             <TextField
               label="CNPJ"
-              value={value.cnpj || ""}
-              onChange={(_, v) => onChange("cnpj", formatCNPJ(v || ""))}
+              value={formatCNPJ(value.cnpj || "")}
+              disabled
               required
               className={styles.halfWidth}
               placeholder="00.000.000/0000-00"
               maxLength={18}
-            />
+            />{" "}
             <TextField
               label="Número do Contrato"
               value={value.numeroContrato || ""}
-              onChange={(_, v) => onChange("numeroContrato", v)}
+              onChange={(_, v) => handleFieldChange("numeroContrato", v)}
               required
-              className={styles.halfWidth}
+              className={`${styles.halfWidth} ${
+                showError("numeroContrato") ? styles.fieldError : ""
+              }`}
               placeholder="Número do contrato com a Oceaneering"
             />
-          </div>
+          </div>{" "}
           <div className={styles.gridRow}>
             {" "}
             <DatePicker
@@ -83,10 +116,12 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
                   : undefined
               }
               onSelectDate={(date) =>
-                onChange("dataInicioContrato", date ?? undefined)
+                handleFieldChange("dataInicioContrato", date ?? undefined)
               }
               isRequired
-              className={styles.halfWidth}
+              className={`${styles.halfWidth} ${
+                showError("dataInicioContrato") ? styles.fieldError : ""
+              }`}
               placeholder="Selecione a data de início"
             />
             <DatePicker
@@ -97,13 +132,15 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
                   : undefined
               }
               onSelectDate={(date) =>
-                onChange("dataTerminoContrato", date ?? undefined)
+                handleFieldChange("dataTerminoContrato", date ?? undefined)
               }
               isRequired
-              className={styles.halfWidth}
+              className={`${styles.halfWidth} ${
+                showError("dataTerminoContrato") ? styles.fieldError : ""
+              }`}
               placeholder="Selecione a data de término"
             />
-          </div>
+          </div>{" "}
           <div className={styles.gridRow}>
             <TextField
               label="Escopo do Serviço"
@@ -114,24 +151,28 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               className={styles.fullWidth}
               placeholder="Descreva detalhadamente o escopo dos serviços contratados"
             />
-          </div>
+          </div>{" "}
           <div className={styles.gridRow}>
-            {" "}
             <TextField
               label="Responsável Técnico"
               value={value.responsavelTecnico || ""}
-              onChange={(_, v) => onChange("responsavelTecnico", v)}
+              onChange={(_, v) => handleFieldChange("responsavelTecnico", v)}
               required
-              className={styles.halfWidth}
+              className={`${styles.halfWidth} ${
+                showError("responsavelTecnico") ? styles.fieldError : ""
+              }`}
               placeholder="Nome completo do responsável técnico"
             />
             <TextField
               label="Atividade Principal (CNAE)"
               value={value.atividadePrincipalCNAE || ""}
-              onChange={(_, v) => onChange("atividadePrincipalCNAE", v)}
+              onChange={(_, v) =>
+                handleFieldChange("atividadePrincipalCNAE", v)
+              }
               required
-              errorMessage={errors?.atividadePrincipalCNAE}
-              className={styles.halfWidth}
+              className={`${styles.halfWidth} ${
+                showError("atividadePrincipalCNAE") ? styles.fieldError : ""
+              }`}
               placeholder="Código CNAE da atividade principal"
             />
           </div>
@@ -168,14 +209,18 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               min={0}
               step={1}
               className={styles.quarterWidth}
-            />
+            />{" "}
             <Dropdown
               label="Grau de Risco (NR-4)"
               options={GRAU_RISCO_OPTIONS}
               selectedKey={value.grauRisco}
-              onChange={(_, option) => onChange("grauRisco", option?.key)}
+              onChange={(_, option) =>
+                handleFieldChange("grauRisco", option?.key)
+              }
               required
-              className={styles.quarterWidth}
+              className={`${styles.quarterWidth} ${
+                showError("grauRisco") ? styles.fieldError : ""
+              }`}
               placeholder="Selecione"
             />
           </div>
@@ -209,32 +254,33 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
                 />
               )}
             </div>
-          </div>
+          </div>{" "}
           <div className={styles.gridRow}>
-            {" "}
             <TextField
               label="Gerente do Contrato Marine"
               value={value.gerenteContratoMarine || ""}
-              onChange={(_, v) => onChange("gerenteContratoMarine", v)}
+              onChange={(_, v) => handleFieldChange("gerenteContratoMarine", v)}
               required
-              className={styles.fullWidth}
+              className={`${styles.fullWidth} ${
+                showError("gerenteContratoMarine") ? styles.fieldError : ""
+              }`}
               placeholder="Nome do gerente responsável pelo contrato"
             />
           </div>
         </div>{" "}
-        <Separator />
+        <Separator />{" "}
         <div className={styles.attachmentSection}>
           <Text variant="large" className={styles.attachmentTitle}>
-            Anexo Obrigatório
-          </Text>
+            Anexo
+          </Text>{" "}
           <HSEFileUpload
             label="REM - Resumo Estatístico Mensal"
-            required
+            required={true}
             category="rem"
             accept=".pdf,.xlsx,.xls,.docx,.doc"
             maxFileSize={50}
-            helpText="Anexe o REM dos acidentes de trabalho do ano corrente e do ano anterior (NBR14280)."
-          />{" "}
+            helpText="Anexe o REM dos acidentes de trabalho do ano corrente e do ano anterior (NBR14280). (Opcional para testes)"
+          />
         </div>
         <MessageBar messageBarType={MessageBarType.warning}>
           <Text variant="medium" style={{ fontWeight: 600 }}>

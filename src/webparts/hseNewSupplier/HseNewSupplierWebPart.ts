@@ -7,8 +7,7 @@ import {
   PropertyPaneTextField,
   PropertyPaneToggle,
 } from "@microsoft/sp-webpart-base";
-import { HSEFormProvider } from "./components/context/HSEFormContext";
-import { HseNewSupplier } from "./components/HseNewSupplier";
+import HseNewSupplier from "./components/HseNewSupplier";
 
 export interface IHseNewSupplierWebPartProps {
   title: string;
@@ -20,26 +19,15 @@ export interface IHseNewSupplierWebPartProps {
 
 export default class HseNewSupplierWebPart extends BaseClientSideWebPart<IHseNewSupplierWebPartProps> {
   public render(): void {
-    const element: React.ReactElement = React.createElement(HSEFormProvider, {
+    const element: React.ReactElement = React.createElement(HseNewSupplier, {
       context: this.context,
-      sharePointConfig: {
-        siteUrl: this.context.pageContext.web.absoluteUrl,
-        listName: this.properties.sharePointListName || "hsenewregister",
-        documentLibraryName:
-          this.properties.sharePointDocumentLibraryName || "HSEAttachments",
-      },
+      title: this.properties.title || "Formulário HSE - Nova Contratada",
+      sharePointListName:
+        this.properties.sharePointListName || "hse-new-register",
+      sharePointDocumentLibraryName:
+        this.properties.sharePointDocumentLibraryName || "anexos-contratadas",
       maxFileSize: this.properties.maxFileSize || 50,
-      debugMode: this.properties.enableDebugMode || false,
-      children: React.createElement(HseNewSupplier, {
-        context: this.context,
-        title: this.properties.title || "Formulário HSE - Nova Contratada",
-        sharePointListName:
-          this.properties.sharePointListName || "hsenewregister",
-        sharePointDocumentLibraryName:
-          this.properties.sharePointDocumentLibraryName || "HSEAttachments",
-        maxFileSize: this.properties.maxFileSize || 50,
-        enableDebugMode: this.properties.enableDebugMode || false,
-      }),
+      enableDebugMode: this.properties.enableDebugMode || false,
     });
 
     ReactDom.render(element, this.domElement);
@@ -74,7 +62,7 @@ export default class HseNewSupplierWebPart extends BaseClientSideWebPart<IHseNew
                 }),
                 PropertyPaneTextField("sharePointListName", {
                   label: "Nome da Lista SharePoint",
-                  value: "hsenewregister",
+                  value: "hse-new-register",
                 }),
               ],
             },
@@ -83,11 +71,11 @@ export default class HseNewSupplierWebPart extends BaseClientSideWebPart<IHseNew
               groupFields: [
                 PropertyPaneTextField("sharePointListName", {
                   label: "Nome da Lista SharePoint",
-                  value: "hsenewregister",
+                  value: "hse-new-register",
                 }),
                 PropertyPaneTextField("sharePointDocumentLibraryName", {
                   label: "Nome da Document Library",
-                  value: "HSEAttachments",
+                  value: "anexos-contratadas",
                 }),
                 PropertyPaneTextField("maxFileSize", {
                   label: "Tamanho Máximo de Arquivo (MB)",

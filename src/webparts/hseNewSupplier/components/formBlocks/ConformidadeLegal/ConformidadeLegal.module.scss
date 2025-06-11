@@ -86,7 +86,7 @@
   border-radius: 12px;
   background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
   display: grid;
-  grid-template-columns: 2fr 1fr 3fr;
+  grid-template-columns: 2fr 1fr;
   gap: 24px;
   align-items: start;
   position: relative;
@@ -138,18 +138,6 @@
 }
 
 .responseSection {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-.commentsSection {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-.commentSection {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -563,12 +551,8 @@
 // Responsividade específica para campos
 @media (max-width: 1200px) {
   .questionContainer {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 16px;
-
-    .commentSection {
-      grid-column: 1 / -1;
-    }
   }
 }
 
@@ -662,10 +646,98 @@
   margin-bottom: 16px;
 }
 
+.blockTitleSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.blockToggle {
+  :global(.ms-Toggle-label) {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 0;
+    order: 2;
+  }
+
+  :global(.ms-Toggle-container) {
+    order: 1;
+    margin-right: 8px;
+  }
+
+  :global(.ms-Toggle-thumb) {
+    background-color: #fff;
+    border: 2px solid #0078d4;
+    transition: all 0.2s ease;
+  }
+
+  :global(.ms-Toggle-track) {
+    background-color: #e1dfdd;
+    border: 1px solid #c8c6c4;
+  }
+
+  :global(.ms-Toggle-track.is-checked) {
+    background-color: #0078d4;
+    border-color: #0078d4;
+  }
+
+  :global(.ms-Toggle-track.is-checked) .ms-Toggle-thumb {
+    background-color: #fff;
+    border-color: #0078d4;
+  }
+}
+
 .completionIcon {
   color: #4caf50;
   font-size: 18px;
-  font-weight: 600;
-  margin-left: 8px;
-  animation: checkmarkBounce 0.6s ease-out;
+  animation: checkmarkBounce 0.4s ease-out;
+}
+
+.expandButton {
+  :global(.ms-Button-icon) {
+    font-size: 16px;
+    transition: transform 0.2s ease;
+  }
+
+  :global(.ms-Button) {
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #f3f2f1;
+    border: 1px solid #e1dfdd;
+
+    &:hover {
+      background-color: #edebe9;
+      border-color: #c8c6c4;
+      transform: scale(1.05);
+    }
+
+    &:active {
+      background-color: #e1dfdd;
+      transform: scale(0.98);
+    }
+  }
+}
+
+.questionsSection {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #f0f2f5;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+    transform: translateY(0);
+  }
 }

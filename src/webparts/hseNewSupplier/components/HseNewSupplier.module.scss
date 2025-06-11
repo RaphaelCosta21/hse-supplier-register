@@ -172,6 +172,9 @@
       background-color: white;
       border-right: 1px solid $ms-color-neutralLight;
       box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 140px);
 
       .navHeader {
         display: flex;
@@ -193,6 +196,7 @@
       }
       .navPanel {
         padding: 20px 0;
+        flex: 1;
 
         :global(.ms-Nav-link) {
           padding: 12px 20px;
@@ -225,6 +229,13 @@
           font-weight: 500;
         }
       }
+
+      .navFooter {
+        padding: 20px;
+        border-top: 1px solid $ms-color-neutralLight;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        margin-top: auto;
+      }
     }
 
     .content {
@@ -251,8 +262,19 @@
 
     .navigation {
       width: 100%;
+      height: auto;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+
+      .navHeader {
+        padding: 12px 16px;
+      }
 
       .navPanel {
+        flex: 1;
+        padding: 0;
+
         :global(.ms-Nav) {
           display: flex;
           overflow-x: auto;
@@ -261,6 +283,21 @@
         :global(.ms-Nav-link) {
           min-width: 150px;
           text-align: center;
+          padding: 8px 12px;
+        }
+      }
+
+      .navFooter {
+        padding: 12px 16px;
+        border-top: none;
+        border-left: 1px solid $ms-color-neutralLight;
+        margin-top: 0;
+
+        .backToHomeButton {
+          width: auto;
+          min-width: 120px;
+          height: 36px;
+          font-size: 12px;
         }
       }
     }

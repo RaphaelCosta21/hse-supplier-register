@@ -131,25 +131,21 @@ export const SharePointFileUpload: React.FC<ISharePointFileUploadProps> = ({
         if (validationErrors.length > 0) {
           setErrors((prev: string[]) => [...prev, ...validationErrors]);
           continue;
-        }
-
-        // Upload do arquivo
+        } // Upload do arquivo
         try {
           setIsUploading(true);
           setProgress(0);
 
-          // Simular progresso (SharePoint não fornece progresso real)
+          // Simular progresso visual
           const progressInterval = setInterval(() => {
-            setProgress((prev: number) => Math.min(prev + 10, 90));
-          }, 200);
+            setProgress((prev: number) => Math.min(prev + 20, 90));
+          }, 100);
 
-          const metadata = await sharePointFileService.uploadFile(
+          // Criar metadata local (não faz upload para SharePoint ainda)
+          const metadata = sharePointFileService.createLocalFileMetadata(
             file,
-            cnpj,
-            nomeEmpresa,
             category,
-            subcategory,
-            formularioId
+            subcategory
           );
 
           clearInterval(progressInterval);

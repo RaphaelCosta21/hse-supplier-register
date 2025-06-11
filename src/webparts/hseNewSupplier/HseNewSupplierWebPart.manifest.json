@@ -24,7 +24,7 @@
       "officeFabricIconFontName": "Form",
       "properties": {
         "title": "Formulário HSE - Nova Contratada",
-        "sharePointListName": "hsenewregister",
+        "sharePointListName": "hse-new-register",
         "maxFileSize": 50,
         "enableDebugMode": false
       }

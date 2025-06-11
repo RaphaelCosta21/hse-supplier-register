@@ -10,13 +10,27 @@ import { SharePointService } from "../../services/SharePointService";
 import { SharePointFileService } from "../../services/SharePointFileService";
 import { IHSEFormData, IValidationError } from "../../types/IHSEFormData";
 import { IAttachmentMetadata } from "../../types/IAttachmentMetadata";
+import {
+  ICNPJVerificationResult,
+  IApplicationPhase,
+  IUserFormSummary,
+} from "../../types/IApplicationPhase";
 
 export interface IHSEFormContext {
   state: IFormState;
   dispatch: React.Dispatch<FormAction>;
   sharePointService: SharePointService;
   sharePointFileService: SharePointFileService;
+  // Novo estado de fase
+  applicationPhase: IApplicationPhase;
+  // Informações do usuário atual
+  currentUser: {
+    displayName: string;
+    email: string;
+    loginName: string;
+  };
   actions: {
+    // Funcionalidades existentes
     loadFormData: (formId?: number) => Promise<void>;
     saveFormData: () => Promise<boolean>;
     submitForm: () => Promise<boolean>;
@@ -31,6 +45,14 @@ export interface IHSEFormContext {
     goToNextStep: () => void;
     goToPreviousStep: () => void;
     resetForm: () => void;
+    // Novas funcionalidades para CNPJ
+    verifyCNPJ: (cnpj: string) => Promise<ICNPJVerificationResult>;
+    loadExistingForm: (itemId: number) => Promise<void>;
+    startNewForm: (cnpj: string) => void;
+    setApplicationPhase: (phase: IApplicationPhase) => void;
+    // Novas funcionalidades para gerenciamento do usuário
+    getUserForms: () => Promise<IUserFormSummary[]>;
+    searchCNPJWithSecurity: (cnpj: string) => Promise<ICNPJVerificationResult>;
   };
 }
 
@@ -69,11 +91,10 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
   children,
 }) => {
   const [state, dispatch] = React.useReducer(formReducer, initialFormState);
-
   // Inicialização dos serviços SharePoint
   const sharePointService = React.useMemo(() => {
-    return new SharePointService(context, sharePointConfig.listName);
-  }, [context, sharePointConfig.listName]);
+    return new SharePointService(context, "hse-new-register");
+  }, [context]);
   const sharePointFileService = React.useMemo(() => {
     return new SharePointFileService(
       context,
@@ -108,16 +129,38 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       }
     },
     [sharePointService]
-  );
-  // Salvar dados do formulário (como rascunho ou no SharePoint)
+  ); // Salvar dados do formulário (como rascunho ou no SharePoint)
   const saveFormData = React.useCallback(async (): Promise<boolean> => {
     dispatch({ type: "SET_SUBMITTING", payload: true });
     try {
       // Salvar no localStorage como backup
       localStorage.setItem("hse_form_draft", JSON.stringify(state.formData));
 
+      // Salvar anexos no SharePoint se houver dados suficientes
+      let savedAttachments = state.attachments;
+      const cnpj = state.formData.dadosGerais.cnpj;
+      const empresa = state.formData.dadosGerais.empresa;
+
+      if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
+        try {
+          console.log("Salvando anexos no SharePoint...");
+          savedAttachments = await sharePointFileService.saveFormAttachments(
+            cnpj,
+            empresa,
+            state.attachments
+          );
+          console.log("Anexos salvos com sucesso");
+        } catch (attachmentError) {
+          console.warn(
+            "Erro ao salvar anexos, continuando com dados do formulário:",
+            attachmentError
+          );
+          // Continuar mesmo se houver erro nos anexos
+        }
+      }
+
       // Salvar no SharePoint
-      await sharePointService.saveFormData(state.formData, state.attachments);
+      await sharePointService.saveFormData(state.formData, savedAttachments);
 
       dispatch({ type: "SAVE_SUCCESS", payload: new Date() });
       return true;
@@ -127,7 +170,12 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     } finally {
       dispatch({ type: "SET_SUBMITTING", payload: false });
     }
-  }, [sharePointService, state.formData, state.attachments]);
+  }, [
+    sharePointService,
+    sharePointFileService,
+    state.formData,
+    state.attachments,
+  ]);
 
   // Validar uma etapa específica
   const validateStep = React.useCallback(
@@ -181,15 +229,14 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
             );
           }
 
-          // Validar anexo REM
-          const remAttachments = attachments.rem || [];
-          if (remAttachments.length === 0) {
-            addError("rem", "O Resumo Estatístico Mensal (REM) é obrigatório");
-          }
+          // REM é opcional para testes
+          // const remAttachments = attachments.rem || [];
+          // if (remAttachments.length === 0) {
+          //   addError("rem", "O Resumo Estatístico Mensal (REM) é obrigatório");
+          // }
 
           break;
         }
-
         case 2: {
           // Validação da Conformidade Legal
           // A lógica completa depende das respostas do formulário
@@ -197,24 +244,6 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         }
 
         case 3: {
-          // Validação das Evidências
-          // Verificar se os documentos obrigatórios foram anexados
-          const requiredEvidences = ["sesmt", "cipa", "ppra", "pcmso", "aso"];
-
-          requiredEvidences.forEach((evidence) => {
-            const evidenceAttachments = attachments[evidence] || [];
-            if (evidenceAttachments.length === 0) {
-              addError(
-                evidence,
-                `O documento ${evidence.toUpperCase()} é obrigatório`
-              );
-            }
-          });
-
-          break;
-        }
-
-        case 4: {
           // Validação dos Serviços Especializados
           // Validar embarcações
           if (formData.servicosEspeciais.fornecedorEmbarcacoes) {
@@ -248,14 +277,13 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
               }
             });
           }
-
           break;
         }
 
-        case 5: {
+        case 4: {
           // Revisão final - verificar todas as validações anteriores
           const allStepsValid = await Promise.all(
-            [1, 2, 3, 4].map((step) => validateStep(step))
+            [1, 2, 3].map((step) => validateStep(step))
           ).then((results) => results.every(Boolean));
 
           if (!allStepsValid) {
@@ -280,21 +308,17 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
   // Trigger submission validation - show all validation errors
   const triggerSubmissionValidation =
     React.useCallback(async (): Promise<boolean> => {
-      dispatch({ type: "SET_SUBMISSION_ATTEMPTED", payload: true });
-
-      // Validate all steps and force showing errors
+      dispatch({ type: "SET_SUBMISSION_ATTEMPTED", payload: true }); // Validate all steps and force showing errors
       const allStepsValid = await Promise.all(
-        [1, 2, 3, 4, 5].map((step) => validateStep(step))
+        [1, 2, 3, 4].map((step) => validateStep(step))
       ).then((results) => results.every(Boolean));
 
       return allStepsValid;
-    }, [validateStep]);
-
-  // Enviar formulário (versão final)
+    }, [validateStep]); // Enviar formulário (versão final)
   const submitForm = React.useCallback(async (): Promise<boolean> => {
     dispatch({ type: "SET_SUBMITTING", payload: true });
 
-    // First trigger validation to show all errors
+    // Validar todas as etapas antes do envio
     const allStepsValid = await triggerSubmissionValidation();
 
     if (!allStepsValid) {
@@ -303,13 +327,26 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     }
 
     try {
+      // Salvar anexos no SharePoint primeiro
+      let savedAttachments = state.attachments;
+      const cnpj = state.formData.dadosGerais.cnpj;
+      const empresa = state.formData.dadosGerais.empresa;
+
+      if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
+        savedAttachments = await sharePointFileService.saveFormAttachments(
+          cnpj,
+          empresa,
+          state.attachments
+        );
+      }
+
       // Marcar como "Enviado" no SharePoint
       await sharePointService.submitFormData(
         {
           ...state.formData,
           statusFormulario: "Enviado",
         },
-        state.attachments
+        savedAttachments
       );
 
       // Limpar rascunho local após envio bem-sucedido
@@ -322,7 +359,13 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     } finally {
       dispatch({ type: "SET_SUBMITTING", payload: false });
     }
-  }, [sharePointService, state.formData, state.attachments, validateStep]); // Fazer upload de anexo usando SharePoint
+  }, [
+    sharePointService,
+    sharePointFileService,
+    state.formData,
+    state.attachments,
+    triggerSubmissionValidation,
+  ]); // Fazer upload de anexo (apenas armazenamento local)
   const uploadAttachment = React.useCallback(
     async (
       file: File,
@@ -330,42 +373,44 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       subcategory?: string
     ): Promise<IAttachmentMetadata> => {
       try {
-        const cnpj = state.formData.dadosGerais.cnpj || "temp";
-        const empresa = state.formData.dadosGerais.empresa || "Empresa";
+        console.log(`=== UPLOAD ATTACHMENT PARA CATEGORIA: ${category} ===`);
+        console.log(
+          "Armazenando arquivo apenas localmente (não será salvo no SharePoint até clicar em Salvar/Submeter)"
+        );
 
-        // Fazer upload para SharePoint Document Library
-        const uploadResult = await sharePointFileService.uploadFile(
+        // Criar metadata local sem fazer upload para SharePoint
+        const localMetadata = sharePointFileService.createLocalFileMetadata(
           file,
-          cnpj,
-          empresa,
           category,
           subcategory
         );
 
-        // Registrar o anexo no estado do formulário
+        // Registrar o anexo no estado do formulário (armazenamento local apenas)
         dispatch({
           type: "ADD_ATTACHMENT",
           payload: {
             category,
-            attachment: uploadResult,
+            attachment: localMetadata,
           },
         });
 
-        return uploadResult;
+        console.log(
+          `Arquivo ${file.name} armazenado localmente para categoria ${category}`
+        );
+        console.log(
+          "O arquivo será salvo no SharePoint apenas quando o usuário clicar em 'Salvar' ou 'Submeter'"
+        );
+
+        return localMetadata;
       } catch (error) {
-        console.error("Erro ao fazer upload do anexo:", error);
+        console.error("Erro ao processar anexo:", error);
         if (debugMode) {
           console.error("Debug - Upload Error:", error);
         }
         throw error;
       }
     },
-    [
-      sharePointFileService,
-      state.formData.dadosGerais.cnpj,
-      state.formData.dadosGerais.empresa,
-      debugMode,
-    ]
+    [sharePointFileService, debugMode]
   ); // Remover anexo
   const removeAttachment = React.useCallback(
     async (category: string, attachmentId: string): Promise<void> => {
@@ -376,15 +421,21 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           (a: IAttachmentMetadata) => a.id === attachmentId
         );
 
-        if (attachment && attachment.sharepointItemId) {
-          // Remover do SharePoint Document Library
-          await sharePointFileService.deleteFile(attachment.sharepointItemId);
+        if (attachment) {
+          // Se o arquivo já foi salvo no SharePoint, remover de lá também
+          if (attachment.sharepointItemId) {
+            await sharePointFileService.deleteFile(attachment.sharepointItemId);
+          }
 
-          // Remover do estado
+          // Remover do estado local
           dispatch({
             type: "REMOVE_ATTACHMENT",
             payload: { category, attachmentId },
           });
+
+          console.log(
+            `Arquivo ${attachment.originalName} removido da categoria ${category}`
+          );
         }
       } catch (error) {
         console.error("Erro ao remover anexo:", error);
@@ -416,6 +467,216 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     dispatch({ type: "RESET_FORM" });
     localStorage.removeItem("hse_form_draft");
   }, []);
+
+  // Nova funcionalidade: Estado da fase da aplicação
+  const [applicationPhase, setApplicationPhaseState] =
+    React.useState<IApplicationPhase>({
+      phase: "ENTRADA",
+    });
+  // Nova funcionalidade: Verificar CNPJ
+  const verifyCNPJ = React.useCallback(
+    async (cnpj: string): Promise<ICNPJVerificationResult> => {
+      try {
+        console.log("=== INICIANDO VERIFICAÇÃO DE CNPJ ===");
+        console.log("CNPJ recebido:", cnpj);
+
+        // Validação prévia do CNPJ
+        const normalizedCNPJ = cnpj.replace(/\D/g, "");
+        if (normalizedCNPJ.length !== 14) {
+          throw new Error("CNPJ deve conter exatamente 14 dígitos");
+        }
+
+        dispatch({ type: "SET_LOADING", payload: true });
+
+        const result = await sharePointService.searchFormByCNPJ(normalizedCNPJ);
+        console.log("Resultado da busca SharePoint:", result);
+
+        const verificationResult: ICNPJVerificationResult = {
+          exists: result.exists,
+          cnpj: normalizedCNPJ,
+          itemId: result.itemId,
+          status: result.status,
+          formData: result.formData,
+          allowEdit: true,
+          requiresApproval:
+            result.status === "Enviado" || result.status === "Aprovado",
+        };
+
+        console.log("Resultado final da verificação:", verificationResult);
+        return verificationResult;
+      } catch (error) {
+        console.error("=== ERRO NA VERIFICAÇÃO DE CNPJ ===");
+        console.error("Erro:", error);
+        console.error("Stack:", error.stack);
+
+        // Re-throw com mensagem mais específica
+        if (error.message && error.message.includes("dígitos")) {
+          throw new Error("CNPJ inválido: deve conter exatamente 14 dígitos");
+        }
+
+        if (error.message && error.message.includes("conexão")) {
+          throw new Error(
+            "Erro de conexão. Verifique sua internet e tente novamente."
+          );
+        }
+
+        throw new Error(
+          `Erro ao verificar CNPJ: ${error.message || "Erro desconhecido"}`
+        );
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
+    },
+    [sharePointService]
+  );
+
+  // Nova funcionalidade: Definir fase da aplicação
+  const setApplicationPhase = React.useCallback(
+    (phase: IApplicationPhase): void => {
+      console.log("Mudando fase da aplicação:", phase);
+      setApplicationPhaseState(phase);
+      // Não altera mais o formData aqui!
+    },
+    []
+  );
+
+  // Nova funcionalidade: Carregar formulário existente
+  const loadExistingForm = React.useCallback(
+    async (itemId: number): Promise<void> => {
+      try {
+        console.log("=== CARREGANDO FORMULÁRIO EXISTENTE ===");
+        console.log("Item ID:", itemId);
+
+        dispatch({ type: "SET_LOADING", payload: true });
+
+        const formData = await sharePointService.getFormById(itemId);
+        console.log("Dados retornados pelo SharePointService:", formData);
+
+        if (formData) {
+          console.log("=== ENVIANDO DADOS PARA O REDUCER ===");
+          console.log("Form Data completo:", formData);
+
+          dispatch({ type: "SET_FORM_DATA", payload: formData });
+          console.log("Formulário carregado e enviado para o reducer"); // Mudar para a fase do formulário após carregar os dados
+          setApplicationPhase({
+            phase: "FORMULARIO",
+            cnpj: formData.dadosGerais?.cnpj || "",
+            existingItemId: itemId,
+            isOverwrite: false,
+          });
+          console.log("Fase alterada para 'FORMULARIO'");
+
+          // Aguardar um pouco para garantir que o estado foi atualizado
+          setTimeout(() => {
+            console.log("=== VERIFICAÇÃO FINAL DO ESTADO ===");
+            console.log("Estado atual após carregamento");
+          }, 100);
+        } else {
+          console.error("Formulário não encontrado ou dados vazios");
+          throw new Error(
+            "Formulário não encontrado ou não pôde ser carregado"
+          );
+        }
+      } catch (error) {
+        console.error("=== ERRO AO CARREGAR FORMULÁRIO EXISTENTE ===");
+        console.error("Erro:", error);
+
+        // Mostrar mensagem de erro mais amigável para o usuário
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Erro desconhecido ao carregar formulário";
+        console.error("Mensagem de erro:", errorMessage);
+
+        // Re-throw para que o componente chamador possa lidar com o erro
+        throw new Error(
+          `Falha ao carregar formulário existente: ${errorMessage}`
+        );
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
+    },
+    [sharePointService, setApplicationPhase]
+  );
+  // Nova funcionalidade: Iniciar novo formulário
+  const startNewForm = React.useCallback((cnpj: string): void => {
+    console.log("Iniciando novo formulário para CNPJ:", cnpj);
+
+    // Reset form state
+    dispatch({ type: "RESET_FORM" });
+
+    // Set CNPJ in form data
+    const newFormData = {
+      ...initialFormState.formData,
+      dadosGerais: {
+        ...initialFormState.formData.dadosGerais,
+        cnpj: cnpj.replace(/\D/g, ""),
+      },
+    };
+
+    dispatch({ type: "SET_FORM_DATA", payload: newFormData });
+
+    // Change to form phase
+    setApplicationPhaseState({
+      phase: "FORMULARIO",
+      cnpj: cnpj,
+      isOverwrite: false,
+    });
+    console.log("Novo formulário iniciado");
+  }, []);
+
+  // Nova funcionalidade: Buscar formulários do usuário
+  const getUserForms = React.useCallback(async (): Promise<
+    IUserFormSummary[]
+  > => {
+    try {
+      console.log("=== BUSCANDO FORMULÁRIOS DO USUÁRIO ===");
+      const currentUserEmail = context.pageContext.user.email;
+      console.log("Email do usuário atual:", currentUserEmail);
+
+      const forms = await sharePointService.getUserForms(currentUserEmail);
+      console.log("Formulários encontrados:", forms.length);
+
+      return forms;
+    } catch (error) {
+      console.error("Erro ao buscar formulários do usuário:", error);
+      throw error;
+    }
+  }, [sharePointService, context.pageContext.user.email]);
+
+  // Nova funcionalidade: Busca segura por CNPJ
+  const searchCNPJWithSecurity = React.useCallback(
+    async (cnpj: string): Promise<ICNPJVerificationResult> => {
+      try {
+        console.log("=== BUSCA SEGURA POR CNPJ ===");
+        const currentUserEmail = context.pageContext.user.email;
+        console.log("CNPJ:", cnpj);
+        console.log("Email do usuário atual:", currentUserEmail);
+
+        const result = await sharePointService.searchFormByCNPJWithOwnership(
+          cnpj,
+          currentUserEmail
+        );
+        console.log("Resultado da busca:", result);
+
+        return result;
+      } catch (error) {
+        console.error("Erro na busca segura por CNPJ:", error);
+        throw error;
+      }
+    },
+    [sharePointService, context.pageContext.user.email]
+  );
+
+  // Informações do usuário atual
+  const currentUser = React.useMemo(
+    () => ({
+      displayName: context.pageContext.user.displayName,
+      email: context.pageContext.user.email,
+      loginName: context.pageContext.user.loginName,
+    }),
+    [context.pageContext.user]
+  );
   // Expor ações e estado para os componentes filhos
   const contextValue = React.useMemo<IHSEFormContext>(
     () => ({
@@ -423,6 +684,8 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       dispatch,
       sharePointService,
       sharePointFileService,
+      applicationPhase,
+      currentUser,
       actions: {
         loadFormData,
         saveFormData,
@@ -434,6 +697,12 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         goToNextStep,
         goToPreviousStep,
         resetForm,
+        verifyCNPJ,
+        loadExistingForm,
+        startNewForm,
+        setApplicationPhase,
+        getUserForms,
+        searchCNPJWithSecurity,
       },
     }),
     [
@@ -441,6 +710,8 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       dispatch,
       sharePointService,
       sharePointFileService,
+      applicationPhase,
+      currentUser,
       loadFormData,
       saveFormData,
       submitForm,
@@ -451,6 +722,12 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       goToNextStep,
       goToPreviousStep,
       resetForm,
+      verifyCNPJ,
+      loadExistingForm,
+      startNewForm,
+      setApplicationPhase,
+      getUserForms,
+      searchCNPJWithSecurity,
     ]
   );
 

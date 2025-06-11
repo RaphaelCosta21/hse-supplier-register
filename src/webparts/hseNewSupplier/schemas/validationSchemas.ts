@@ -39,12 +39,7 @@ export const conformidadeLegalSchema = yup.object({
     ),
 });
 
-export const evidenciasSchema = yup.object({
-  // Esquema para validar evidências baseado nos anexos
-});
-
 export const completeFormSchema = yup.object({
   ...dadosGeraisSchema.fields,
   ...conformidadeLegalSchema.fields,
-  ...evidenciasSchema.fields,
 });

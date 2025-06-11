@@ -232,7 +232,7 @@ export const FORM_STEPS = [
       "dadosGerais.grauRisco",
       "dadosGerais.gerenteContratoMarine",
     ],
-    requiredAttachments: [ATTACHMENT_CATEGORIES.REM],
+    requiredAttachments: [], // REM é opcional para testes
   },
   {
     id: 2,
@@ -244,24 +244,6 @@ export const FORM_STEPS = [
   },
   {
     id: 3,
-    title: "Evidências",
-    description: "Documentos comprobatórios obrigatórios",
-    icon: "Documentation",
-    requiredFields: [],
-    requiredAttachments: [
-      ATTACHMENT_CATEGORIES.SESMT,
-      ATTACHMENT_CATEGORIES.CIPA,
-      ATTACHMENT_CATEGORIES.TREINAMENTO,
-      ATTACHMENT_CATEGORIES.TREINAMENTO_EPI,
-      ATTACHMENT_CATEGORIES.CA_EPI,
-      ATTACHMENT_CATEGORIES.PPRA,
-      ATTACHMENT_CATEGORIES.PCMSO,
-      ATTACHMENT_CATEGORIES.ASO,
-      ATTACHMENT_CATEGORIES.PLANO_RESIDUOS,
-    ],
-  },
-  {
-    id: 4,
     title: "Serviços Especializados",
     description: "Embarcações e içamento de carga",
     icon: "Settings",
@@ -269,7 +251,7 @@ export const FORM_STEPS = [
     requiredAttachments: [], // Condicional
   },
   {
-    id: 5,
+    id: 4,
     title: "Revisão Final",
     description: "Validação e envio do formulário",
     icon: "ReviewSolid",
@@ -280,8 +262,8 @@ export const FORM_STEPS = [
 
 // URLs do SharePoint (configuráveis)
 export const SHAREPOINT_CONFIG = {
-  LIST_NAME: "hsenewregister",
-  LIBRARY_NAME: "HSEAttachments",
+  LIST_NAME: "hse-new-register",
+  LIBRARY_NAME: "anexos-contratadas",
   CONTENT_TYPES: {
     FORM_DATA: "HSEFormData",
     ATTACHMENT: "HSEAttachment",
@@ -326,87 +308,6 @@ export const EXPORT_CONFIG = {
     SHEET_NAME: "Formulário HSE",
   },
 };
-
-// Evidências obrigatórias
-export const REQUIRED_EVIDENCES = [
-  {
-    id: 61,
-    name: "SESMT",
-    category: "sesmt",
-    isRequired: true,
-    description: "Documento do SESMT",
-  },
-  {
-    id: 62,
-    name: "CIPA",
-    category: "cipa",
-    isRequired: true,
-    description: "Documento da CIPA",
-  },
-  {
-    id: 63,
-    name: "Cronograma de Treinamento",
-    category: "cronogramaTreinamento",
-    isRequired: true,
-    description: "Cronograma atualizado de treinamentos",
-  },
-  {
-    id: 64,
-    name: "Treinamento EPI",
-    category: "treinamentoEPI",
-    isRequired: true,
-    description: "Comprovação de treinamento de EPI",
-  },
-  {
-    id: 65,
-    name: "CA dos EPIs",
-    category: "caEPIs",
-    isRequired: true,
-    description: "Certificados de Aprovação dos EPIs",
-  },
-  {
-    id: 66,
-    name: "PPRA",
-    category: "ppra",
-    isRequired: true,
-    description: "Programa de Prevenção de Riscos Ambientais",
-  },
-  {
-    id: 67,
-    name: "PCMSO",
-    category: "pcmso",
-    isRequired: true,
-    description: "Programa de Controle Médico de Saúde Ocupacional",
-  },
-  {
-    id: 68,
-    name: "ASO",
-    category: "aso",
-    isRequired: true,
-    description: "Atestados de Saúde Ocupacional",
-  },
-  {
-    id: 69,
-    name: "Plano de Resíduos",
-    category: "planoResiduos",
-    isRequired: true,
-    description: "Plano de Gerenciamento de Resíduos",
-  },
-  {
-    id: 70,
-    name: "REM",
-    category: "rem",
-    isRequired: true,
-    description: "Relatório de Exposição a Material",
-  },
-  {
-    id: 71,
-    name: "CAT Acidentes",
-    category: "catAcidentes",
-    isRequired: true,
-    description: "Comunicação de Acidente de Trabalho",
-  },
-];
 
 // Certificados marítimos obrigatórios
 export const MARITIME_CERTIFICATES = [

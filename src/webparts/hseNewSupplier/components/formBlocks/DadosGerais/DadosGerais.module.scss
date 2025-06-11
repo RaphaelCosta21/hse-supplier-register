@@ -95,3 +95,14 @@
     }
   }
 }
+
+.fieldError {
+  // Força borda vermelha no input do Fluent UI TextField
+  :global(.ms-TextField-field),
+  :global(input),
+  :global(.ms-Dropdown-title),
+  :global(.ms-DatePicker input) {
+    border-color: #d13438 !important;
+    box-shadow: 0 0 0 1px #d13438 !important;
+  }
+}

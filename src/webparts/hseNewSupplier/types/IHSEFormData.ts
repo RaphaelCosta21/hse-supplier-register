@@ -17,14 +17,10 @@ export interface IHSEFormData {
 
   // Bloco A - Dados Gerais da Contratada
   dadosGerais: IDadosGerais;
-
   // Bloco B - Conformidade Legal (NRs 1-60)
   conformidadeLegal: IConformidadeLegal;
 
-  // Bloco C - Evidências (questões 61-73)
-  evidencias: IEvidencias;
-
-  // Bloco D - Serviços Especializados
+  // Bloco C - Serviços Especializados
   servicosEspeciais: IServicosEspeciais;
 
   // Outros dados
@@ -189,25 +185,6 @@ export interface IConformidadeLegal {
   gestaoSMS: IGestaoSMS;
 }
 
-// Interface para evidências (questões 61-73)
-export interface IEvidencias {
-  todasRespostasPossuemEvidencia: boolean;
-  perguntasSemEvidencia?: string;
-
-  // Documentos evidenciados
-  sesmt: IQuestaoConformidade;
-  cipa: IQuestaoConformidade;
-  cronogramaTreinamento: IQuestaoConformidade;
-  treinamentoEPI: IQuestaoConformidade;
-  caEPIs: IQuestaoConformidade;
-  ppra: IQuestaoConformidade;
-  pcmso: IQuestaoConformidade;
-  aso: IQuestaoConformidade;
-  planoResiduos: IQuestaoConformidade;
-  rem: IQuestaoConformidade;
-  catAcidentes: IQuestaoConformidade;
-}
-
 // Interface para serviços especializados
 export interface IServicosEspeciais {
   fornecedorEmbarcacoes: boolean;
@@ -254,19 +231,6 @@ export interface IAnexosFormulario {
     sesmt?: IAttachmentMetadata;
     cipa?: IAttachmentMetadata;
     epiCA?: IAttachmentMetadata;
-  };
-  evidencias: {
-    sesmt?: IAttachmentMetadata;
-    cipa?: IAttachmentMetadata;
-    cronogramaTreinamento?: IAttachmentMetadata;
-    treinamentoEPI?: IAttachmentMetadata;
-    caEPIs?: IAttachmentMetadata;
-    ppra?: IAttachmentMetadata;
-    pcmso?: IAttachmentMetadata;
-    aso?: IAttachmentMetadata;
-    planoResiduos?: IAttachmentMetadata;
-    rem?: IAttachmentMetadata;
-    catAcidentes?: IAttachmentMetadata;
   };
   embarcacoes?: {
     iopp?: IAttachmentMetadata;
@@ -319,7 +283,6 @@ export interface IValidationError {
 export interface IFormProgress {
   dadosGerais: number;
   conformidadeLegal: number;
-  evidencias: number;
   servicosEspeciais: number;
   total: number;
 }

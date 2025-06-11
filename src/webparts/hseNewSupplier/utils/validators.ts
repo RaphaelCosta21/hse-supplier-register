@@ -62,11 +62,69 @@ export const validators = {
     const maxSizeBytes = maxSizeMB * 1024 * 1024;
     return file.size <= maxSizeBytes;
   },
-
   fileType: (file: File, allowedTypes: string[]): boolean => {
     const fileExtension = file.name.split(".").pop()?.toLowerCase();
     return allowedTypes.some(
       (type) => type.toLowerCase().replace(".", "") === fileExtension
     );
   },
+};
+
+// Interface para resultado da validação do formulário
+export interface IValidationResult {
+  isValid: boolean;
+  missingFields: string[];
+  missingAttachments: string[];
+}
+
+// Função para validar formulário completo
+export const validateFormForSave = (
+  formData: any,
+  attachments: any
+): IValidationResult => {
+  const missingFields: string[] = [];
+  const missingAttachments: string[] = [];
+
+  // Validar campos obrigatórios dos Dados Gerais
+  if (!formData.dadosGerais?.empresa?.trim()) {
+    missingFields.push("Nome da Empresa");
+  }
+  if (!formData.dadosGerais?.cnpj?.trim()) {
+    missingFields.push("CNPJ");
+  }
+  if (!formData.dadosGerais?.numeroContrato?.trim()) {
+    missingFields.push("Número do Contrato");
+  }
+  if (!formData.dadosGerais?.dataInicioContrato) {
+    missingFields.push("Data de Início do Contrato");
+  }
+  if (!formData.dadosGerais?.dataTerminoContrato) {
+    missingFields.push("Data de Término do Contrato");
+  }
+  if (!formData.dadosGerais?.responsavelTecnico?.trim()) {
+    missingFields.push("Responsável Técnico");
+  }
+  if (!formData.dadosGerais?.atividadePrincipalCNAE?.trim()) {
+    missingFields.push("Atividade Principal (CNAE)");
+  }
+  if (!formData.dadosGerais?.grauRisco) {
+    missingFields.push("Grau de Risco (NR-4)");
+  }
+  if (!formData.dadosGerais?.gerenteContratoMarine?.trim()) {
+    missingFields.push("Gerente do Contrato Marine");
+  }
+
+  // Validar anexo REM obrigatório
+  const remAttachments = attachments?.rem || [];
+  if (remAttachments.length === 0) {
+    missingAttachments.push("REM - Resumo Estatístico Mensal");
+  }
+
+  const isValid = missingFields.length === 0 && missingAttachments.length === 0;
+
+  return {
+    isValid,
+    missingFields,
+    missingAttachments,
+  };
 };

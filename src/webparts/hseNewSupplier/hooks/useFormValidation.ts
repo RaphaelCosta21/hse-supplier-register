@@ -11,7 +11,6 @@ export const useFormValidation = (): {
   errors: IValidationError[];
   validateStep1: (formData: IHSEFormData) => IValidationResult;
   validateStep2: (formData: IHSEFormData) => IValidationResult;
-  validateStep3: (attachments: IAnexosFormulario) => IValidationResult;
   validateCompleteForm: (
     formData: IHSEFormData,
     attachments: IAnexosFormulario
@@ -143,37 +142,6 @@ export const useFormValidation = (): {
     },
     []
   );
-
-  const validateStep3 = useCallback(
-    (attachments: IAnexosFormulario): IValidationResult => {
-      const stepErrors: IValidationError[] = [];
-
-      // Exemplo: validar anexos obrigatórios
-      if (!attachments.evidencias?.sesmt) {
-        stepErrors.push({
-          field: "sesmt",
-          message: "Documento SESMT é obrigatório",
-          step: 3,
-        });
-      }
-      if (!attachments.evidencias?.cipa) {
-        stepErrors.push({
-          field: "cipa",
-          message: "Documento CIPA é obrigatório",
-          step: 3,
-        });
-      }
-
-      // Adicione outras validações de anexos obrigatórios
-
-      return {
-        isValid: stepErrors.length === 0,
-        errors: stepErrors,
-      };
-    },
-    []
-  );
-
   const validateCompleteForm = useCallback(
     (
       formData: IHSEFormData,
@@ -182,9 +150,8 @@ export const useFormValidation = (): {
       const allErrors: IValidationError[] = [];
       const step1 = validateStep1(formData);
       const step2 = validateStep2(formData);
-      const step3 = validateStep3(attachments);
 
-      allErrors.push(...step1.errors, ...step2.errors, ...step3.errors);
+      allErrors.push(...step1.errors, ...step2.errors);
 
       setErrors(allErrors);
 
@@ -193,14 +160,13 @@ export const useFormValidation = (): {
         errors: allErrors,
       };
     },
-    [validateStep1, validateStep2, validateStep3]
+    [validateStep1, validateStep2]
   );
 
   return {
     errors,
     validateStep1,
     validateStep2,
-    validateStep3,
     validateCompleteForm,
     clearErrors: () => setErrors([]),
   };

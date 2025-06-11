@@ -87,9 +87,7 @@ export const useSharePointUpload = ({
           isUploading: true,
           progress: 0,
           errors: prev.errors.filter((e) => !e.includes(file.name)),
-        }));
-
-        // Simular progresso (SharePoint não fornece progresso real)
+        })); // Simular progresso (SharePoint não fornece progresso real)
         const progressInterval = setInterval(() => {
           setUploadState((prev) => ({
             ...prev,
@@ -97,11 +95,9 @@ export const useSharePointUpload = ({
           }));
         }, 200);
 
-        // Fazer upload para SharePoint
-        const metadata = await sharePointFileService.uploadFile(
+        // Criar metadata local (não fazer upload para SharePoint ainda)
+        const metadata = sharePointFileService.createLocalFileMetadata(
           file,
-          cnpj,
-          empresa,
           category,
           subcategory
         );

@@ -1,31 +1,47 @@
 import * as React from "react";
 import { PrimaryButton, Stack } from "@fluentui/react";
+import { useHSEForm } from "../../context/HSEFormContext";
 import styles from "./FormNavigation.module.scss";
 
 interface FormNavigationProps {
-  onSave?: () => void;
-  showSave?: boolean;
+  onSubmit?: () => void;
   isSubmitting?: boolean;
+  isLastStep?: boolean;
 }
 
 export const FormNavigation: React.FC<FormNavigationProps> = ({
-  onSave,
-  showSave = true,
+  onSubmit,
   isSubmitting = false,
-}) => (
-  <Stack
-    horizontal
-    tokens={{ childrenGap: 10 }}
-    className={styles.formNavigation}
-    horizontalAlign="center"
-  >
-    {showSave && (
+  isLastStep = false,
+}): JSX.Element => {
+  const { actions } = useHSEForm();
+
+  const handleSubmit = async (): Promise<void> => {
+    if (onSubmit) {
+      await onSubmit();
+    } else {
+      await actions.submitForm();
+    }
+  };
+
+  // Só renderiza algo se for a última etapa
+  if (!isLastStep) {
+    return <></>;
+  }
+
+  return (
+    <Stack
+      horizontal
+      tokens={{ childrenGap: 10 }}
+      className={styles.formNavigation}
+      horizontalAlign="center"
+    >
       <PrimaryButton
-        text="Salvar Progresso"
-        iconProps={{ iconName: "Save" }}
-        onClick={onSave}
+        text="Submeter Formulário"
+        iconProps={{ iconName: "Send" }}
+        onClick={handleSubmit}
         disabled={isSubmitting}
       />
-    )}
-  </Stack>
-);
+    </Stack>
+  );
+};

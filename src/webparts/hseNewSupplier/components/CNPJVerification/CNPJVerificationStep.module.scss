@@ -1,0 +1,117 @@
+@import "~@fluentui/react/dist/sass/References.scss";
+
+.cnpjVerificationContainer {
+  padding: 40px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.verificationCard {
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  background-color: $ms-color-white;
+  width: 100%;
+  max-width: 600px;
+}
+
+.title {
+  color: $ms-color-themePrimary;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: $ms-color-neutralSecondary;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.cnpjInput {
+  :global(.ms-TextField-fieldGroup) {
+    height: 48px;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+
+  :global(.ms-TextField-field) {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+}
+
+.verifyButton {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 120, 212, 0.2);
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.3);
+  }
+}
+
+.loadingContainer {
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.resultCard {
+  padding: 24px;
+  border-radius: 6px;
+  background-color: $ms-color-neutralLighter;
+  border-left: 4px solid $ms-color-themePrimary;
+  margin-top: 24px;
+}
+
+.actionButton {
+  height: 40px;
+  font-weight: 600;
+  border-radius: 4px;
+  min-width: 160px;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .cnpjVerificationContainer {
+    padding: 20px 16px;
+  }
+
+  .verificationCard {
+    padding: 24px 20px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .actionButton {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+// Dark theme support
+@media (prefers-color-scheme: dark) {
+  .verificationCard {
+    background-color: $ms-color-neutralLighterAlt;
+    border: 1px solid $ms-color-neutralQuaternary;
+  }
+
+  .resultCard {
+    background-color: $ms-color-neutralLight;
+  }
+}
