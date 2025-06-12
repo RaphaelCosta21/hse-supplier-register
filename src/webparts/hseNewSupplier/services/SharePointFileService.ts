@@ -314,98 +314,57 @@ export class SharePointFileService {
     }
   }
   /**
-   * Garante que uma subpasta existe dentro da pasta principal
+   * Garante que uma subpasta existe dentro da pasta principal (via pasta pai)
+   * Se já existir, apenas retorna o caminho.
    */
   private async ensureSubFolder(
     mainFolderName: string,
     subFolderName: string
   ): Promise<string> {
     console.log(
-      `=== CRIANDO SUBPASTA: ${subFolderName} DENTRO DE ${mainFolderName} ===`
+      `=== CRIANDO/VERIFICANDO SUBPASTA: ${subFolderName} DENTRO DE ${mainFolderName} ===`
     );
 
-    // Primeiro, garantir que a pasta principal existe
+    // Garantir que a pasta principal existe
     await this.ensureMainFolder(mainFolderName);
 
     const subFolderPath = `${mainFolderName}/${subFolderName}`;
     console.log("📁 Caminho completo da subpasta:", subFolderPath);
 
     try {
-      // Tentar acessar a subpasta para ver se já existe
-      await this.sp.web.lists
+      // Tentar acessar a subpasta via pasta pai
+      const parentFolder = await this.sp.web.lists
         .getByTitle(this.documentLibraryName)
-        .rootFolder.folders.getByUrl(subFolderPath)();
-
-      console.log("✅ Subpasta já existe:", subFolderPath);
-      return subFolderPath;
-    } catch {
-      // Se não existe, criar a subpasta usando método que funciona (via pasta pai)
-      console.log("🔄 Subpasta não existe, criando via pasta pai...");
-
+        .rootFolder.folders.getByUrl(mainFolderName);
       try {
-        const parentFolder = await this.sp.web.lists
-          .getByTitle(this.documentLibraryName)
-          .rootFolder.folders.getByUrl(mainFolderName);
+        const existingSubFolder = await parentFolder.folders.getByUrl(
+          subFolderName
+        )();
+        console.log(
+          "✅ Subpasta já existe via pasta pai:",
+          existingSubFolder.Name
+        );
+        return subFolderPath;
+      } catch {
+        // Se não existe, criar via pasta pai
         const newSubFolder = await parentFolder.folders.addUsingPath(
           subFolderName
         );
         console.log("✅ Subpasta criada via pasta pai:", newSubFolder.Name);
-
-        // TIMING FIX: Aguardar 3 segundos para SharePoint processar completamente
-        console.log("⏳ Aguardando 3 segundos para SharePoint processar...");
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
-        // Confirmar que a pasta existe e está acessível usando método mais robusto
-        try {
-          await this.sp.web.lists
-            .getByTitle(this.documentLibraryName)
-            .rootFolder.folders.getByUrl(subFolderPath)();
-
-          console.log(
-            "✅ Subpasta confirmada e pronta para uso:",
-            subFolderPath
-          );
-        } catch (confirmError) {
-          console.warn(
-            "⚠️ Não foi possível confirmar subpasta, mas ela foi criada:",
-            confirmError.message
-          );
-          console.log("🔄 Tentando confirmar via pasta pai...");
-
-          // Tentar confirmar via pasta pai como alternativa
-          try {
-            const confirmedFolder = await parentFolder.folders.getByUrl(
-              subFolderName
-            )();
-            console.log(
-              "✅ Subpasta confirmada via pasta pai:",
-              confirmedFolder.Name
-            );
-          } catch (confirmError2) {
-            console.warn(
-              "⚠️ Confirmação alternativa falhou, mas prosseguindo:",
-              confirmError2.message
-            );
-          }
-        }
-
+        // Pequeno delay para garantir propagação
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         return subFolderPath;
-      } catch (createError) {
-        console.error(
-          "❌ FALHA CRÍTICA: Não foi possível criar subpasta",
-          subFolderName
-        );
-        console.error("Erro:", createError);
-
-        throw new Error(
-          `Falha crítica ao criar subpasta ${subFolderName}. ` +
-            `Erro: ${createError.message}`
-        );
       }
+    } catch (err) {
+      console.error("❌ Erro ao garantir subpasta via pasta pai:", err);
+      throw new Error(
+        `Falha ao garantir subpasta ${subFolderName}: ${err.message}`
+      );
     }
   }
+
   /**
-   * Salva um arquivo em uma pasta específica
+   * Salva um arquivo em uma pasta específica (via pasta pai). Se já existir, deleta o antigo antes de salvar.
    */
   private async saveFileToFolder(
     file: File,
@@ -420,16 +379,28 @@ export class SharePointFileService {
       console.log(`=== SALVANDO ARQUIVO: ${fileName} ===`);
       console.log("📁 Pasta de destino:", folderPath);
 
-      // Verificar se temos permissão na biblioteca primeiro
+      // Obter referência da pasta principal e subpasta via pasta pai
+      const mainFolderName = folderPath.split("/")[0];
+      const subFolderName = folderPath.split("/")[1];
+      const parentFolder = await this.sp.web.lists
+        .getByTitle(this.documentLibraryName)
+        .rootFolder.folders.getByUrl(mainFolderName);
+      const targetFolder = parentFolder.folders.getByUrl(subFolderName);
+
+      // Deletar todos os arquivos existentes na subpasta antes de salvar o novo
       try {
-        const libraryInfo = await this.sp.web.lists
-          .getByTitle(this.documentLibraryName)
-          .select("Id", "Title", "BasePermissions")();
-        console.log("📚 Informações da biblioteca:", libraryInfo);
-      } catch (permError) {
-        console.error(
-          "❌ Erro ao verificar permissões da biblioteca:",
-          permError
+        const files = await targetFolder.files();
+        if (files && files.length > 0) {
+          for (const f of files) {
+            console.log(
+              `🗑️ Deletando arquivo existente (${f.Name}) antes de salvar novo.`
+            );
+            await targetFolder.files.getByUrl(f.Name).delete();
+          }
+        }
+      } catch {
+        console.log(
+          "Nenhum arquivo existente encontrado na subpasta, prosseguindo com upload."
         );
       }
 
@@ -437,43 +408,13 @@ export class SharePointFileService {
       const fileBuffer = await file.arrayBuffer();
       console.log("📄 Arquivo lido, tamanho:", fileBuffer.byteLength, "bytes");
 
-      // AGUARDAR ADICIONAL: Garantir que pasta está pronta para receber arquivos
-      console.log(
-        "⏳ Aguardando 2 segundos para garantir que pasta está pronta..."
-      );
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Upload via pasta pai (sem checar via .select() ou getByUrl antes)
-      console.log("🔄 Upload via pasta pai (método único e confiável)...");
-      try {
-        // Obter referência da pasta principal
-        const mainFolderName = folderPath.split("/")[0];
-        const subFolderName = folderPath.split("/")[1];
-        const parentFolder = await this.sp.web.lists
-          .getByTitle(this.documentLibraryName)
-          .rootFolder.folders.getByUrl(mainFolderName);
-        const targetFolder = parentFolder.folders.getByUrl(subFolderName);
-
-        // Upload via pasta pai
-        await targetFolder.files.addUsingPath(fileName, fileBuffer, {
-          Overwrite: true,
-        });
-        console.log("✅ Upload via pasta pai bem-sucedido");
-      } catch (uploadError) {
-        console.error("❌ Falha no upload via pasta pai:", uploadError);
-        throw new Error(
-          `Falha ao fazer upload do arquivo ${fileName} na pasta ${folderPath}. ` +
-            `Erro: ${uploadError.message}`
-        );
-      }
+      // Upload via pasta pai
+      await targetFolder.files.addUsingPath(fileName, fileBuffer, {
+        Overwrite: true,
+      });
+      console.log("✅ Upload via pasta pai bem-sucedido");
 
       // Obter informações detalhadas do arquivo salvo via pasta pai
-      const mainFolderName = folderPath.split("/")[0];
-      const subFolderName = folderPath.split("/")[1];
-      const parentFolder = await this.sp.web.lists
-        .getByTitle(this.documentLibraryName)
-        .rootFolder.folders.getByUrl(mainFolderName);
-      const targetFolder = parentFolder.folders.getByUrl(subFolderName);
       const fileInfo = await targetFolder.files
         .getByUrl(fileName)
         .select("Name", "ServerRelativeUrl", "UniqueId", "Length")();

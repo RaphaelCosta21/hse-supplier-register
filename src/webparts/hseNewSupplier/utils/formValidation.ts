@@ -68,8 +68,11 @@ export const validateFormForSave = (
     missingFields.push("Gerente do Contrato Marine");
   }
 
-  // Nota: REM é opcional para testes, conforme indicado no formulário
-  // Não incluir na validação para permitir salvar sem o anexo durante desenvolvimento/testes
+  // Validar anexo REM obrigatório
+  const remAttachments = (attachments as Record<string, unknown[]>)?.rem || [];
+  if (remAttachments.length === 0) {
+    missingAttachments.push("REM - Resumo Estatístico Mensal");
+  }
 
   const isValid = missingFields.length === 0 && missingAttachments.length === 0;
 

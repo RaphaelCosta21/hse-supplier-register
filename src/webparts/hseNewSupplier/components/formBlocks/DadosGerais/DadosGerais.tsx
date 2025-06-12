@@ -16,6 +16,7 @@ import { GRAU_RISCO_OPTIONS } from "../../../utils/formConstants";
 import styles from "./DadosGerais.module.scss";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
 import { useHSEForm } from "../../context/HSEFormContext";
+import { SectionTitle } from "../../common/SectionTitle";
 
 export const DadosGerais: React.FC<IDadosGeraisProps> = ({
   value,
@@ -57,15 +58,16 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
       });
     }
   };
-
   return (
     <div className={styles.dadosGerais}>
       <Stack tokens={{ childrenGap: 20 }}>
-        <div className={styles.sectionHeader}>
-          <Text variant="xLarge" className={styles.sectionTitle}>
-            A - Informações e Dados Gerais da Contratada
-          </Text>
-        </div>{" "}
+        {" "}
+        <SectionTitle
+          title="A - Informações e Dados Gerais da Contratada"
+          subtitle="Preencha todas as informações básicas sobre a empresa contratada"
+          icon="ContactInfo"
+          variant="primary"
+        />
         <MessageBar messageBarType={MessageBarType.info}>
           Preencha todas as informações obrigatórias (*) sobre a empresa
           contratada. O anexo do REM (Resumo Estatístico Mensal) é obrigatório.
@@ -279,7 +281,7 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
             category="rem"
             accept=".pdf,.xlsx,.xls,.docx,.doc"
             maxFileSize={50}
-            helpText="Anexe o REM dos acidentes de trabalho do ano corrente e do ano anterior (NBR14280). (Opcional para testes)"
+            helpText="Anexe o REM dos acidentes de trabalho do ano corrente e do ano anterior (NBR14280)."
           />
         </div>
         <MessageBar messageBarType={MessageBarType.warning}>

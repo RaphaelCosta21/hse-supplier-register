@@ -10,6 +10,12 @@ import styles from "./FloatingSaveButton.module.scss";
 import { ProgressModal } from "../ProgressModal";
 import { useScreenLock } from "../../../hooks/useScreenLock";
 import { Toast } from "../Toast/Toast";
+import {
+  validateFormForSave,
+  generateValidationMessage,
+  mapMissingFieldsToFormFields,
+} from "../../../utils/formValidation";
+import { LoadingOverlay } from "../LoadingOverlay/LoadingOverlay";
 
 export const FloatingSaveButton: React.FC = (): JSX.Element => {
   const { actions, state, dispatch } = useHSEForm();
@@ -23,6 +29,8 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
   const [toastType, setToastType] = React.useState<
     "success" | "error" | "warning" | "info"
   >("success");
+  const [loadingVisible, setLoadingVisible] = React.useState(false);
+  const [loadingMessage, setLoadingMessage] = React.useState("");
 
   // Hook para travar a tela durante o processamento
   useScreenLock(progressOpen);
@@ -312,6 +320,35 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
   };
   // Handler para salvar com progresso visual
   const handleSaveWithProgress = async (): Promise<void> => {
+    setLoadingVisible(true);
+    setLoadingMessage("Salvando progresso...");
+    // Validação detalhada dos Dados Gerais antes de salvar
+    const validationResult = validateFormForSave(
+      state.formData,
+      state.attachments
+    );
+    if (!validationResult.isValid) {
+      // Gera mensagem de erro detalhada
+      const errorMsg = generateValidationMessage(validationResult);
+      setToastMessage(""); // Esconde toast de sucesso/erro anterior
+      setShowValidationError(true);
+      setToastVisible(false);
+      setTimeout(() => setShowValidationError(false), 6000);
+      // Mapeia campos faltantes para erros de campo
+      if (dispatch) {
+        const fieldErrors = mapMissingFieldsToFormFields(
+          validationResult.missingFields
+        );
+        dispatch({ type: "SET_FIELD_ERRORS", payload: fieldErrors });
+      }
+      setProgressOpen(false);
+      setIsSaving(false);
+      setToastType("error");
+      setToastMessage(errorMsg);
+      setToastVisible(true);
+      setLoadingVisible(false);
+      return;
+    }
     setIsSaving(true);
     try {
       await runWithProgressSimulation(async () => {
@@ -332,6 +369,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       setToastVisible(true);
     } finally {
       setIsSaving(false);
+      setLoadingVisible(false);
     }
   };
 
@@ -351,11 +389,13 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
           >
             <Stack tokens={{ childrenGap: 4 }}>
               <strong>Não é possível salvar o formulário:</strong>
-              <span>{}</span>
+              <span>{toastMessage}</span>
             </Stack>
           </MessageBar>
         </div>
-      )}{" "}
+      )}
+      {/* Overlay de loading igual Revisão Final */}
+      <LoadingOverlay visible={loadingVisible} message={loadingMessage} />
       {/* Botão flutuante de salvar ou revisar/submeter */}
       <div
         className={`${styles.floatingSaveButton} ${
@@ -367,7 +407,9 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
             iconProps={{ iconName: "CheckMark" }}
             text="Revisar e Submeter"
             onClick={handleReviewAndSubmit}
-            disabled={isSaving || state.isSubmitting || progressOpen}
+            disabled={
+              isSaving || state.isSubmitting || progressOpen || loadingVisible
+            }
             className={styles.submitButtonGreen}
             title="Revisar e submeter o formulário"
           />
@@ -376,11 +418,13 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
             iconProps={{ iconName: "Save" }}
             text={isSaving ? "Salvando..." : "Salvar Progresso"}
             onClick={handleSaveWithProgress}
-            disabled={isSaving || state.isSubmitting || progressOpen}
+            disabled={
+              isSaving || state.isSubmitting || progressOpen || loadingVisible
+            }
             className={styles.saveButton}
             title="Salvar o progresso do formulário (validação apenas dos Dados Gerais)"
           />
-        )}{" "}
+        )}
         <ProgressModal
           open={progressOpen}
           percent={progressPercent}

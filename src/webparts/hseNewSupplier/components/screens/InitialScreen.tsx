@@ -20,6 +20,7 @@ import {
   IUserFormSummary,
 } from "../../types/IApplicationPhase";
 import { validators } from "../../utils/validators";
+import { formatters } from "../../utils/formatters";
 
 // Componente Card simples para substituir o Card do Fluent UI
 const SimpleCard: React.FC<{
@@ -273,7 +274,7 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
               Iniciar Formulário
             </Text>
           </Stack>{" "}
-          <Stack horizontal tokens={{ childrenGap: 12 }} verticalAlign="end">
+          <Stack horizontal tokens={{ childrenGap: 12 }} verticalAlign="start">
             <Stack style={{ flexGrow: 1 }}>
               <TextField
                 label="CNPJ da Empresa"
@@ -285,30 +286,44 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                 errorMessage={cnpjError}
                 autoComplete="off"
               />
-              {cnpjValidation.message && (
-                <Text
-                  variant="small"
-                  style={{
-                    color: cnpjValidation.isValid ? "#107c10" : "#d13438",
-                    fontWeight: 500,
-                    marginTop: 4,
-                  }}
-                >
-                  {cnpjValidation.message}
-                </Text>
-              )}
+              <div
+                style={{
+                  height: 24,
+                  minHeight: 24,
+                  display: "flex",
+                  alignItems: "flex-start",
+                }}
+              >
+                {cnpjValidation.message && (
+                  <Text
+                    variant="small"
+                    style={{
+                      color: cnpjValidation.isValid ? "#107c10" : "#d13438",
+                      fontWeight: 500,
+                      marginTop: 4,
+                    }}
+                  >
+                    {cnpjValidation.message}
+                  </Text>
+                )}
+              </div>
             </Stack>
-            <PrimaryButton
-              text="Iniciar"
-              iconProps={{ iconName: "Play" }}
-              onClick={handleSearchCNPJ}
-              disabled={
-                !cnpj ||
-                !cnpjValidation.isValid ||
-                searchingCNPJ ||
-                state.isLoading
-              }
-            />
+            <Stack
+              style={{ paddingTop: 28, minHeight: 80 }}
+              verticalAlign="start"
+            >
+              <PrimaryButton
+                text="Iniciar"
+                iconProps={{ iconName: "Play" }}
+                onClick={handleSearchCNPJ}
+                disabled={
+                  !cnpj ||
+                  !cnpjValidation.isValid ||
+                  searchingCNPJ ||
+                  state.isLoading
+                }
+              />
+            </Stack>
           </Stack>{" "}
           {searchingCNPJ && (
             <Stack
@@ -442,9 +457,9 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                       <Stack tokens={{ childrenGap: 4 }}>
                         <Text variant="medium" style={{ fontWeight: 600 }}>
                           {form.empresa || `CNPJ: ${form.cnpj}`}
-                        </Text>
+                        </Text>{" "}
                         <Text variant="small" style={{ color: "#605e5c" }}>
-                          CNPJ: {form.cnpj}
+                          CNPJ: {formatters.cnpj(form.cnpj)}
                         </Text>
                         <Text variant="small" style={{ color: "#605e5c" }}>
                           Última modificação:{" "}

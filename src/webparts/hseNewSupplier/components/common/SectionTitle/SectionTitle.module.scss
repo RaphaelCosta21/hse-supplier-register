@@ -1,0 +1,159 @@
+.sectionTitleContainer {
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.titleContent {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.iconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #003b5c;
+  box-shadow: 0 4px 12px rgba(0, 59, 92, 0.25);
+}
+
+.titleIcon {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.textContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mainTitle {
+  font-weight: 700;
+  font-size: 2.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+  margin: 0;
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 80px;
+    height: 3px;
+    background: #003b5c;
+    border-radius: 2px;
+  }
+}
+
+.subtitle {
+  color: #605e5c;
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.4;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.decorativeLine {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 59, 92, 0.3) 20%,
+    rgba(0, 59, 92, 0.6) 50%,
+    rgba(0, 59, 92, 0.3) 80%,
+    transparent 100%
+  );
+  position: relative;
+}
+
+// Variantes de estilo - todas usando a mesma cor
+.primary,
+.secondary,
+.tertiary {
+  .iconContainer {
+    background: #003b5c;
+  }
+
+  .mainTitle {
+    color: #1a1a1a;
+
+    &::after {
+      background: #003b5c;
+    }
+  }
+}
+
+// Responsividade
+@media (max-width: 768px) {
+  .titleContent {
+    gap: 12px;
+  }
+
+  .iconContainer {
+    width: 40px;
+    height: 40px;
+  }
+
+  .titleIcon {
+    font-size: 18px;
+  }
+
+  .mainTitle {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .titleContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .mainTitle {
+    font-size: 1.5rem;
+  }
+}
+
+// Modo de alto contraste
+@media (prefers-contrast: high) {
+  .mainTitle {
+    color: #000000;
+  }
+
+  .subtitle {
+    color: #424242;
+  }
+
+  .iconContainer {
+    border: 2px solid #000000;
+  }
+}
+
+// Respeitar preferências de movimento reduzido
+@media (prefers-reduced-motion: reduce) {
+  .iconContainer,
+  .mainTitle::after,
+  .subtitle,
+  .decorativeLine::before {
+    transition: none;
+    animation: none;
+  }
+}
