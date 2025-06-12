@@ -239,9 +239,9 @@ export class SharePointService {
       AnexosCount: attachmentCount,
       Observacoes: "",
     };
-
     try {
-      const list = this.sp.web.lists.getByTitle(this.listName); // Testar se conseguimos acessar as propriedades da lista
+      const list = this.sp.web.lists.getByTitle(this.listName);
+      // Testar se conseguimos acessar as propriedades da lista
       try {
         await list();
       } catch {
@@ -251,10 +251,18 @@ export class SharePointService {
       }
 
       const result = await list.items.add(itemData);
+      console.log("Formulário HSE enviado com sucesso! ID:", result.data.Id);
       return result.data.Id;
     } catch (error) {
       console.error("Erro ao enviar formulário:", error);
-      throw new Error(`Falha ao enviar formulário: ${error.message}`);
+
+      // Se chegou até aqui mas deu erro, pode ser um problema de rede/timeout após o sucesso
+      // Vamos re-lançar o erro mas com uma mensagem mais específica
+      if (error instanceof Error) {
+        throw new Error(`Falha ao enviar formulário: ${error.message}`);
+      } else {
+        throw new Error(`Falha ao enviar formulário: Erro desconhecido`);
+      }
     }
   }
   public async updateFormData(

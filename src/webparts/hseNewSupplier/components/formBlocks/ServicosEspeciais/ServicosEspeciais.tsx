@@ -8,6 +8,7 @@ import {
   Separator,
 } from "@fluentui/react";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
+import { SectionTitle } from "../../common/SectionTitle";
 import {
   MARITIME_CERTIFICATES,
   LIFTING_DOCUMENTS,
@@ -110,11 +111,12 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
   return (
     <div className={styles.servicosEspeciais}>
       <Stack tokens={{ childrenGap: 20 }}>
-        <div className={styles.sectionHeader}>
-          <Text variant="xLarge" className={styles.sectionTitle}>
-            Serviços Especializados
-          </Text>
-        </div>
+        <SectionTitle
+          title="C - Serviços Especializados"
+          subtitle="Indique os tipos de serviços especializados que sua empresa fornece"
+          icon="Settings"
+          variant="tertiary"
+        />
         <MessageBar messageBarType={MessageBarType.info}>
           Indique quais tipos de serviços especializados sua empresa fornece.
           Documentos adicionais serão solicitados conforme aplicável.

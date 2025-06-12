@@ -23,6 +23,7 @@ import {
 } from "../../../utils/formConstants";
 import styles from "./ConformidadeLegal.module.scss";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
+import { SectionTitle } from "../../common/SectionTitle";
 
 export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
   value,
@@ -350,11 +351,12 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
   return (
     <div className={styles.conformidadeLegal}>
       <Stack tokens={{ childrenGap: 20 }}>
-        <div className={styles.sectionHeader}>
-          <Text variant="xLarge" className={styles.sectionTitle}>
-            B - Cumprimento da Legislação Básica
-          </Text>
-        </div>
+        <SectionTitle
+          title="B - Cumprimento da Legislação Básica"
+          subtitle="Selecione apenas os blocos de NRs aplicáveis ao seu tipo de atividade"
+          icon="ComplianceAudit"
+          variant="secondary"
+        />
         <MessageBar messageBarType={MessageBarType.info}>
           Selecione apenas os blocos de Normas Regulamentadoras que se aplicam
           ao seu tipo de atividade/fornecimento. Para cada questão dos blocos

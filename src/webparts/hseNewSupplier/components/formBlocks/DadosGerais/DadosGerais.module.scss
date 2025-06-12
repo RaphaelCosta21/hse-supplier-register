@@ -1,18 +1,7 @@
 @import "~@fluentui/react/dist/sass/References.scss";
 
 .dadosGerais {
-  padding: 30px;
-
-  .sectionHeader {
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid $ms-color-themePrimary;
-
-    .sectionTitle {
-      color: $ms-color-themePrimary;
-      font-weight: 600;
-    }
-  }
+  padding: 32px;
 
   .formGrid {
     .gridRow {
@@ -70,7 +59,7 @@
 // Responsividade
 @media (max-width: 768px) {
   .dadosGerais {
-    padding: 20px;
+    padding: 24px;
 
     .formGrid .gridRow {
       flex-direction: column;
