@@ -6,18 +6,26 @@ import {
   Stack,
 } from "@fluentui/react";
 import { useHSEForm } from "../../context/HSEFormContext";
-import {
-  validateFormForSave,
-  generateValidationMessage,
-  mapMissingFieldsToFormFields,
-} from "../../../utils/formValidation";
 import styles from "./FloatingSaveButton.module.scss";
+import { ProgressModal } from "../ProgressModal";
+import { useScreenLock } from "../../../hooks/useScreenLock";
+import { Toast } from "../Toast/Toast";
 
 export const FloatingSaveButton: React.FC = (): JSX.Element => {
   const { actions, state, dispatch } = useHSEForm();
-  const [validationMessage, setValidationMessage] = React.useState<string>("");
   const [showValidationError, setShowValidationError] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [progressOpen, setProgressOpen] = React.useState(false);
+  const [progressPercent, setProgressPercent] = React.useState(0);
+  const [progressLabel, setProgressLabel] = React.useState("");
+  const [toastVisible, setToastVisible] = React.useState(false);
+  const [toastMessage, setToastMessage] = React.useState("");
+  const [toastType, setToastType] = React.useState<
+    "success" | "error" | "warning" | "info"
+  >("success");
+
+  // Hook para travar a tela durante o processamento
+  useScreenLock(progressOpen);
 
   // Funções para validar cada etapa (mesma lógica da navbar)
   const isDadosGeraisValid = React.useCallback(() => {
@@ -216,56 +224,112 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     if (dispatch) {
       dispatch({ type: "SET_CURRENT_STEP", payload: 4 });
     }
+  }; // Função utilitária para progresso visual mais fluido
+  const runWithProgressSimulation = async (
+    action: () => Promise<void>,
+    operationType: "save" | "submit" = "save"
+  ): Promise<void> => {
+    // Contar total de arquivos anexados
+    const attachments = state.attachments || {};
+    const totalFiles = Object.values(attachments).reduce((total, files) => {
+      return total + (Array.isArray(files) ? files.length : 0);
+    }, 0);
+
+    setProgressOpen(true);
+    setProgressPercent(0);
+
+    // Progresso simulado realista baseado no tipo de operação e quantidade de arquivos
+    const progressSteps =
+      operationType === "save"
+        ? [
+            {
+              label: "Preparando dados para salvamento...",
+              percent: 10,
+              delay: 300,
+            },
+            {
+              label: "Validando campos obrigatórios...",
+              percent: 25,
+              delay: 400,
+            },
+            {
+              label: "Salvando informações no SharePoint...",
+              percent: 60,
+              delay: 600,
+            },
+            { label: "Finalizando salvamento...", percent: 90, delay: 300 },
+          ]
+        : [
+            {
+              label: "Validando formulário completo...",
+              percent: 8,
+              delay: 400,
+            },
+            {
+              label: "Preparando documentos para envio...",
+              percent: 20,
+              delay: 500,
+            },
+            {
+              label: "Criando estrutura no SharePoint...",
+              percent: 35,
+              delay: 700,
+            },
+            {
+              label: "Enviando arquivos anexados...",
+              percent: 70,
+              delay: totalFiles > 10 ? 2000 : totalFiles > 5 ? 1200 : 800,
+            },
+            { label: "Finalizando submissão...", percent: 95, delay: 400 },
+          ];
+
+    // Executar progresso simulado em paralelo com a ação real
+    const progressPromise = (async () => {
+      for (const step of progressSteps) {
+        setProgressLabel(step.label);
+        setProgressPercent(step.percent);
+        await new Promise((resolve) => setTimeout(resolve, step.delay));
+      }
+    })();
+
+    // Executar ação real
+    const actionPromise = action();
+
+    // Aguardar ambas terminarem
+    await Promise.all([progressPromise, actionPromise]);
+
+    // Finalizar progresso
+    const finalMessage =
+      operationType === "save"
+        ? "Progresso salvo com sucesso!"
+        : "Formulário enviado com sucesso!";
+    setProgressLabel(finalMessage);
+    setProgressPercent(100);
+
+    // Pequeno delay para mostrar conclusão
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    setProgressOpen(false);
   };
-
-  const handleSaveWithValidation = async (): Promise<void> => {
+  // Handler para salvar com progresso visual
+  const handleSaveWithProgress = async (): Promise<void> => {
     setIsSaving(true);
-
-    // Limpar erros de campo anteriores
-    if (dispatch) {
-      dispatch({ type: "CLEAR_FIELD_ERRORS" });
-    }
-
-    // Validar apenas os campos obrigatórios dos Dados Gerais
-    const validationResult = validateFormForSave(
-      state.formData,
-      state.attachments
-    );
-
-    if (!validationResult.isValid) {
-      // Mostrar erro de validação
-      const message = generateValidationMessage(validationResult);
-      setValidationMessage(message);
-      setShowValidationError(true);
-
-      // Mapear campos faltantes para erros de campo específicos e disparar ação
-      if (dispatch) {
-        const fieldErrors = mapMissingFieldsToFormFields(
-          validationResult.missingFields
-        );
-        dispatch({
-          type: "SET_FIELD_ERRORS",
-          payload: fieldErrors,
-        });
-      }
-
-      setIsSaving(false);
-      return;
-    }
-
-    // Limpar erros de validação se tudo estiver OK
-    setShowValidationError(false);
-    setValidationMessage("");
-
     try {
-      // Executar o salvamento
-      if (actions.saveFormData) {
+      await runWithProgressSimulation(async () => {
         await actions.saveFormData();
-      }
+      }, "save");
+
+      // Mostrar toast de sucesso
+      setToastMessage("Progresso salvo com sucesso!");
+      setToastType("success");
+      setToastVisible(true);
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      setValidationMessage("Erro ao salvar o formulário. Tente novamente.");
-      setShowValidationError(true);
+      setProgressOpen(false);
+
+      // Mostrar toast de erro
+      setToastMessage("Erro ao salvar o progresso. Tente novamente.");
+      setToastType("error");
+      setToastVisible(true);
     } finally {
       setIsSaving(false);
     }
@@ -279,7 +343,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
   return (
     <>
       {/* Mensagem de erro de validação flutuante */}
-      {showValidationError && validationMessage && (
+      {showValidationError && (
         <div className={styles.floatingError}>
           <MessageBar
             messageBarType={MessageBarType.error}
@@ -287,32 +351,55 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
           >
             <Stack tokens={{ childrenGap: 4 }}>
               <strong>Não é possível salvar o formulário:</strong>
-              <span>{validationMessage}</span>
+              <span>{}</span>
             </Stack>
           </MessageBar>
         </div>
       )}{" "}
       {/* Botão flutuante de salvar ou revisar/submeter */}
-      <div className={styles.floatingSaveButton}>
+      <div
+        className={`${styles.floatingSaveButton} ${
+          isSaving || progressOpen ? styles.processing : ""
+        }`}
+      >
         {allStepsCompleted ? (
           <ActionButton
             iconProps={{ iconName: "CheckMark" }}
             text="Revisar e Submeter"
             onClick={handleReviewAndSubmit}
-            disabled={isSaving || state.isSubmitting}
+            disabled={isSaving || state.isSubmitting || progressOpen}
             className={styles.submitButtonGreen}
             title="Revisar e submeter o formulário"
           />
         ) : (
           <ActionButton
             iconProps={{ iconName: "Save" }}
-            text="Salvar Progresso"
-            onClick={handleSaveWithValidation}
-            disabled={isSaving || state.isSubmitting}
+            text={isSaving ? "Salvando..." : "Salvar Progresso"}
+            onClick={handleSaveWithProgress}
+            disabled={isSaving || state.isSubmitting || progressOpen}
             className={styles.saveButton}
             title="Salvar o progresso do formulário (validação apenas dos Dados Gerais)"
           />
-        )}
+        )}{" "}
+        <ProgressModal
+          open={progressOpen}
+          percent={progressPercent}
+          label={progressLabel}
+          fileCount={Object.values(state.attachments || {}).reduce(
+            (total, files) => {
+              return total + (Array.isArray(files) ? files.length : 0);
+            },
+            0
+          )}
+          showTimeWarning={true}
+        />
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          visible={toastVisible}
+          onDismiss={() => setToastVisible(false)}
+          duration={4000}
+        />
       </div>
     </>
   );

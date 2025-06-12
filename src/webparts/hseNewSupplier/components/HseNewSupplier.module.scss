@@ -1,4 +1,5 @@
 @import "~@fluentui/react/dist/sass/References.scss";
+@import "../styles/modern-design-system.scss";
 
 .hseNewSupplier {
   min-height: 100vh;
@@ -197,7 +198,6 @@
       .navPanel {
         padding: 20px 0;
         flex: 1;
-
         :global(.ms-Nav-link) {
           padding: 12px 20px;
           border-radius: 0;
@@ -213,20 +213,81 @@
             font-weight: bold;
             font-size: 16px;
           }
-
           &.is-selected {
             background-color: rgba(0, 120, 212, 0.1);
             border-right: 3px solid #0078d4;
           }
 
-          &.is-disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+          // Adicionalmente para garantir que o item selecionado seja destacado
+          &[aria-selected="true"] {
+            background-color: rgba(0, 120, 212, 0.1);
+            border-right: 3px solid #0078d4;
           }
         }
 
+        // Estilos para links de navegação desabilitados - multiple selectors para garantir compatibilidade
+        :global(.ms-Nav-link.is-disabled),
+        :global(.ms-Nav-link[aria-disabled="true"]),
+        :global(.ms-Nav-link[disabled]),
+        :global(.ms-Nav-link:disabled) {
+          opacity: 0.6 !important;
+          cursor: not-allowed !important;
+
+          :global(.ms-Nav-linkText) {
+            color: var(--gray-500, #adb5bd) !important;
+          }
+        }
+
+        // Fallback para quando o disabled é aplicado via JavaScript
+        :global(.ms-Nav-link) {
+          &.is-disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+
+            :global(.ms-Nav-linkText) {
+              color: var(--gray-500, #adb5bd) !important;
+            }
+          }
+
+          // Fluent UI aplica is-disabled automaticamente quando disabled=true
+          &[aria-disabled="true"] {
+            opacity: 0.6;
+            cursor: not-allowed;
+
+            :global(.ms-Nav-linkText) {
+              color: var(--gray-500, #adb5bd) !important;
+            }
+          }
+        }
         :global(.ms-Nav-linkText) {
           font-weight: 500;
+        } // Adicionais para garantir que itens desabilitados sejam cinza
+        :global(.ms-Nav-link[aria-disabled="true"]) {
+          :global(.ms-Nav-linkText) {
+            color: var(--gray-500, #adb5bd) !important;
+          }
+        }
+
+        :global(.ms-Nav-link.is-disabled) {
+          :global(.ms-Nav-linkText) {
+            color: var(--gray-500, #adb5bd) !important;
+          }
+        }
+
+        // Force override for disabled nav links text color with maximum specificity
+        :global(
+            .ms-Nav
+              .ms-Nav-compositeLink
+              .ms-Nav-link[aria-disabled="true"]
+              .ms-Nav-linkText
+          ),
+        :global(
+            .ms-Nav
+              .ms-Nav-compositeLink
+              .ms-Nav-link.is-disabled
+              .ms-Nav-linkText
+          ) {
+          color: #adb5bd !important;
         }
       }
 

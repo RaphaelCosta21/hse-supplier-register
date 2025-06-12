@@ -524,6 +524,7 @@ const HseNewSupplierContent: React.FC = () => {
         icon: step.icon,
         url: "",
         isExpanded: currentStep === step.id,
+        isSelected: currentStep === step.id,
         disabled: !formSelectors.canProceedToStep(state, step.id),
         onClick: (ev?: React.MouseEvent<HTMLElement>) => {
           ev?.preventDefault();
@@ -534,6 +535,39 @@ const HseNewSupplierContent: React.FC = () => {
       };
     });
   }, [currentStep, state, dispatch]);
+
+  // useEffect para aplicar estilos customizados aos links desabilitados
+  React.useEffect(() => {
+    const applyDisabledStyles = (): void => {
+      // Encontrar todos os links de navegação
+      const navLinks = document.querySelectorAll(".ms-Nav-link");
+      navLinks.forEach((link, index) => {
+        const stepId = index + 1; // IDs dos steps começam em 1
+        const isDisabled = !formSelectors.canProceedToStep(state, stepId);
+        const linkText = link.querySelector(".ms-Nav-linkText") as HTMLElement;
+
+        if (linkText) {
+          if (isDisabled) {
+            linkText.style.color = "#adb5bd";
+            linkText.style.opacity = "0.6";
+            link.setAttribute("aria-disabled", "true");
+          } else {
+            linkText.style.color = "";
+            linkText.style.opacity = "";
+            link.removeAttribute("aria-disabled");
+          }
+        }
+      });
+    };
+
+    // Aplicar estilos imediatamente
+    applyDisabledStyles();
+
+    // Aplicar novamente após um pequeno delay para garantir que o DOM foi renderizado
+    const timeoutId = setTimeout(applyDisabledStyles, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [currentStep, state]);
 
   // Renderização baseada no estado
   if (isProcessing) {
@@ -645,6 +679,7 @@ const HseNewSupplierContent: React.FC = () => {
           </div>
           <Nav
             groups={[{ links: navLinks }]}
+            selectedKey={currentStep.toString()}
             className={styles.navPanel}
             onRenderLink={(link, defaultRender) => {
               if (!link || !defaultRender) return null;

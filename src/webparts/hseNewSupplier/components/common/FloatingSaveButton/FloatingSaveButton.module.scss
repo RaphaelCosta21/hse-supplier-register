@@ -7,8 +7,15 @@
   border-radius: 50px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
+  min-width: 180px; // Prevent button width changes
 
-  &:hover {
+  // Prevent flickering during state changes
+  &.stabilized {
+    animation: none;
+    transform: none;
+  }
+
+  &:hover:not(.stabilized) {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
     transform: translateY(-2px);
   }
@@ -20,6 +27,8 @@
     color: white;
     border: none;
     font-weight: 600;
+    min-width: 160px; // Consistent button width
+    transition: all 0.2s ease;
 
     &:hover {
       background: #106ebe;
@@ -29,6 +38,7 @@
     &:disabled {
       background: #cccccc;
       color: #666666;
+      cursor: not-allowed;
     }
 
     :global(.ms-Button-icon) {
@@ -54,7 +64,8 @@
   color: white;
   border: none;
   font-weight: 600;
-  transition: background 0.2s;
+  min-width: 160px; // Consistent button width
+  transition: all 0.2s ease;
 
   &:hover {
     background: #198754;
@@ -64,6 +75,7 @@
   &:disabled {
     background: #cccccc;
     color: #666666;
+    cursor: not-allowed;
   }
 
   :global(.ms-Button-icon) {
@@ -71,10 +83,25 @@
   }
 }
 
+// Processing state styles
+.processing {
+  .floatingSaveButton {
+    pointer-events: none;
+    opacity: 0.8;
+  }
+}
+
 @media (max-width: 768px) {
   .floatingSaveButton {
     bottom: 20px;
     right: 20px;
+
+    .saveButton,
+    .submitButtonGreen {
+      min-width: 140px;
+      padding: 10px 16px;
+      font-size: 14px;
+    }
   }
 
   .floatingError {

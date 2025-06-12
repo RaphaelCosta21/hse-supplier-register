@@ -1,0 +1,43 @@
+.loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 99998; // Below progress modal but above everything else
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(1px);
+  pointer-events: all;
+  user-select: none;
+}
+
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  min-width: 200px;
+}
+
+.spinner {
+  margin-bottom: 16px;
+}
+
+.loadingMessage {
+  font-weight: 600;
+  color: #323130;
+  margin-bottom: 8px;
+}
+
+.loadingSubMessage {
+  color: #605e5c;
+  font-style: italic;
+  max-width: 300px;
+}

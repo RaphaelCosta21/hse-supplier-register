@@ -14,16 +14,122 @@ import {
 } from "@fluentui/react";
 import { useHSEForm } from "../../context/HSEFormContext";
 import { NR_QUESTIONS_MAP } from "../../../utils/formConstants";
+import { ProgressModal } from "../../common/ProgressModal";
+import { Toast } from "../../common/Toast/Toast";
+import { LoadingOverlay } from "../../common/LoadingOverlay/LoadingOverlay";
 import styles from "./RevisaoFinal.module.scss";
 
 export const RevisaoFinal: React.FC = () => {
-  const { state, actions, dispatch } = useHSEForm();
+  const { state, actions, dispatch, sharePointService, sharePointFileService } =
+    useHSEForm();
 
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConformidadePanel, setShowConformidadePanel] =
     React.useState(false);
   const [selectedNR, setSelectedNR] = React.useState<string>("");
+
+  // Progress Modal state
+  const [progressOpen, setProgressOpen] = React.useState(false);
+  const [progressPercent, setProgressPercent] = React.useState(0);
+  const [progressLabel, setProgressLabel] = React.useState("");
+
+  // Toast state
+  const [toastVisible, setToastVisible] = React.useState(false);
+  const [toastMessage, setToastMessage] = React.useState("");
+  const [toastType, setToastType] = React.useState<
+    "success" | "error" | "warning" | "info"
+  >("success");
+  // Loading Overlay state
+  const [loadingVisible, setLoadingVisible] = React.useState(false);
+  const [loadingMessage, setLoadingMessage] = React.useState("");
+
+  // Progress simulation function (similar to FloatingSaveButton)
+  const runWithProgressSimulation = async (
+    action: () => Promise<void>,
+    operationType: "save" | "submit" = "save"
+  ): Promise<void> => {
+    // Count total attached files
+    const attachments = state.attachments || {};
+    const totalFiles = Object.values(attachments).reduce((total, files) => {
+      return total + (Array.isArray(files) ? files.length : 0);
+    }, 0);
+
+    setProgressOpen(true);
+    setProgressPercent(0);
+
+    // Realistic progress simulation based on operation type and file count
+    const progressSteps =
+      operationType === "save"
+        ? [
+            {
+              label: "Preparando dados para salvamento...",
+              percent: 10,
+              delay: 300,
+            },
+            {
+              label: "Validando campos obrigatórios...",
+              percent: 25,
+              delay: 400,
+            },
+            {
+              label: "Salvando informações no SharePoint...",
+              percent: 60,
+              delay: 600,
+            },
+            { label: "Finalizando salvamento...", percent: 90, delay: 300 },
+          ]
+        : [
+            {
+              label: "Validando formulário completo...",
+              percent: 8,
+              delay: 400,
+            },
+            {
+              label: "Preparando documentos para envio...",
+              percent: 20,
+              delay: 500,
+            },
+            {
+              label: "Criando estrutura no SharePoint...",
+              percent: 35,
+              delay: 700,
+            },
+            {
+              label: "Enviando arquivos anexados...",
+              percent: 70,
+              delay: totalFiles > 10 ? 2000 : totalFiles > 5 ? 1200 : 800,
+            },
+            { label: "Finalizando submissão...", percent: 95, delay: 400 },
+          ];
+
+    // Execute simulated progress in parallel with real action
+    const progressPromise = (async () => {
+      for (const step of progressSteps) {
+        setProgressLabel(step.label);
+        setProgressPercent(step.percent);
+        await new Promise((resolve) => setTimeout(resolve, step.delay));
+      }
+    })();
+
+    // Execute real action
+    const actionPromise = action();
+
+    // Wait for both to finish
+    await Promise.all([progressPromise, actionPromise]);
+
+    // Finalize progress
+    const finalMessage =
+      operationType === "save"
+        ? "Progresso salvo com sucesso!"
+        : "Formulário enviado com sucesso!";
+    setProgressLabel(finalMessage);
+    setProgressPercent(100);
+
+    // Small delay to show completion
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    setProgressOpen(false);
+  };
 
   // Função para formatar CNPJ
   const formatCNPJ = (cnpj: string): string => {
@@ -340,17 +446,78 @@ export const RevisaoFinal: React.FC = () => {
   const handleSubmit = async (): Promise<void> => {
     setIsSubmitting(true);
     try {
-      const success = await actions.submitForm();
-      if (success) {
-        setShowSubmitDialog(false);
-        // Redirecionar ou mostrar mensagem de sucesso
-      }
+      await runWithProgressSimulation(async () => {
+        // Save attachments first if needed
+        let savedAttachments = state.attachments;
+        const cnpj = state.formData.dadosGerais.cnpj;
+        const empresa = state.formData.dadosGerais.empresa;
+
+        if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
+          savedAttachments = await sharePointFileService.saveFormAttachments(
+            cnpj,
+            empresa,
+            state.attachments
+          );
+        }
+
+        // Call submitFormData directly
+        await sharePointService.submitFormData(
+          {
+            ...state.formData,
+            statusFormulario: "Enviado",
+          },
+          savedAttachments
+        );
+
+        // Clear local draft after successful submission
+        localStorage.removeItem("hse_form_draft");
+      }, "submit");
+
+      setShowSubmitDialog(false);
+
+      // Show success toast
+      setToastMessage("Formulário enviado com sucesso!");
+      setToastType("success");
+      setToastVisible(true);
     } catch (error) {
       console.error("Erro no envio:", error);
+      setProgressOpen(false);
+
+      // Show error toast
+      setToastMessage("Erro ao enviar o formulário. Tente novamente.");
+      setToastType("error");
+      setToastVisible(true);
     } finally {
       setIsSubmitting(false);
     }
   };
+  // Handler for save button with progress
+  const handleSaveWithProgress = async (): Promise<void> => {
+    setLoadingVisible(true);
+    setLoadingMessage("Salvando progresso...");
+
+    try {
+      await runWithProgressSimulation(async () => {
+        await actions.saveFormData();
+      }, "save");
+
+      // Show success toast
+      setToastMessage("Progresso salvo com sucesso!");
+      setToastType("success");
+      setToastVisible(true);
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      setProgressOpen(false);
+
+      // Show error toast
+      setToastMessage("Erro ao salvar o progresso. Tente novamente.");
+      setToastType("error");
+      setToastVisible(true);
+    } finally {
+      setLoadingVisible(false);
+    }
+  };
+
   const handleEditSection = (step: number): void => {
     // Navegar para a seção específica para edição usando o dispatch do contexto
     if (dispatch) {
@@ -627,15 +794,15 @@ export const RevisaoFinal: React.FC = () => {
               <DefaultButton
                 text="Salvar Progresso"
                 iconProps={{ iconName: "Save" }}
-                onClick={() => actions.saveFormData()}
+                onClick={handleSaveWithProgress}
                 className={styles.saveButton}
-                disabled={isSubmitting}
+                disabled={isSubmitting || progressOpen || loadingVisible}
               />{" "}
               <PrimaryButton
                 text={isSubmitting ? "Enviando..." : "Submeter Formulário"}
                 iconProps={{ iconName: isSubmitting ? "Sync" : "Send" }}
                 onClick={() => setShowSubmitDialog(true)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || progressOpen || loadingVisible}
                 className={styles.submitButton}
               />
             </div>
@@ -655,17 +822,18 @@ export const RevisaoFinal: React.FC = () => {
             isBlocking: true,
           }}
         >
+          {" "}
           <DialogFooter>
             <PrimaryButton
               onClick={handleSubmit}
               text={isSubmitting ? "Enviando..." : "Confirmar Envio"}
-              disabled={isSubmitting}
+              disabled={isSubmitting || progressOpen || loadingVisible}
               iconProps={{ iconName: isSubmitting ? "Sync" : "Send" }}
             />
             <DefaultButton
               onClick={() => setShowSubmitDialog(false)}
               text="Cancelar"
-              disabled={isSubmitting}
+              disabled={isSubmitting || progressOpen || loadingVisible}
             />
           </DialogFooter>
         </Dialog>{" "}
@@ -780,7 +948,6 @@ export const RevisaoFinal: React.FC = () => {
                   </div>
                 );
               })()}
-
               <div className={styles.panelActions}>
                 <PrimaryButton
                   text="Editar esta NR"
@@ -794,10 +961,33 @@ export const RevisaoFinal: React.FC = () => {
                   text="Fechar"
                   onClick={() => setSelectedNR("")}
                 />
-              </div>
+              </div>{" "}
             </div>
           )}
         </Panel>
+        {/* Progress Modal for visual feedback */}
+        <ProgressModal
+          open={progressOpen}
+          percent={progressPercent}
+          label={progressLabel}
+          fileCount={Object.values(state.attachments || {}).reduce(
+            (total, files) => {
+              return total + (Array.isArray(files) ? files.length : 0);
+            },
+            0
+          )}
+          showTimeWarning={true}
+        />
+        {/* Toast Notifications */}
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          visible={toastVisible}
+          onDismiss={() => setToastVisible(false)}
+          duration={4000}
+        />
+        {/* Loading Overlay */}
+        <LoadingOverlay visible={loadingVisible} message={loadingMessage} />
       </Stack>
     </div>
   );

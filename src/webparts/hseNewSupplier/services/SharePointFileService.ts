@@ -15,6 +15,11 @@ export interface ISharePointFileResult {
   metadata?: IAttachmentMetadata;
 }
 
+// Interface para callback de progresso
+export interface IProgressCallback {
+  onProgress: (step: string, percent: number) => void;
+}
+
 // Mapeamento de categorias de anexos para subpastas
 export const ATTACHMENT_FOLDER_MAP: { [key: string]: string } = {
   // Dados Gerais
@@ -134,7 +139,6 @@ export class SharePointFileService {
       fileData: file, // Arquivo real para upload posterior
     };
   }
-
   /**
    * Salva todos os anexos do formulário no SharePoint com estrutura de pastas
    * Este método só deve ser chamado no momento da submissão do formulário
@@ -143,7 +147,8 @@ export class SharePointFileService {
     cnpj: string,
     nomeEmpresa: string,
     attachments: { [category: string]: IAttachmentMetadata[] },
-    formularioId?: number
+    formularioId?: number,
+    progressCallback?: IProgressCallback
   ): Promise<{ [category: string]: IAttachmentMetadata[] }> {
     try {
       console.log("=== SALVANDO ANEXOS DO FORMULÁRIO ===");
@@ -151,13 +156,22 @@ export class SharePointFileService {
       console.log("Empresa:", nomeEmpresa);
       console.log("Anexos recebidos:", Object.keys(attachments));
 
+      progressCallback?.onProgress(
+        "Verificando biblioteca de documentos...",
+        5
+      );
+
       // Verificar se a biblioteca existe
       const libraryExists = await this.checkDocumentLibraryExists();
       if (!libraryExists) {
         throw new Error(
           `Document Library '${this.documentLibraryName}' não encontrada`
         );
-      } // Criar nome da pasta principal (remover pontos e barras do CNPJ)
+      }
+
+      progressCallback?.onProgress("Criando estrutura de pastas...", 10);
+
+      // Criar nome da pasta principal (remover pontos e barras do CNPJ)
       const cleanCNPJ = cnpj.replace(/[.\-/]/g, "");
       const mainFolderName = `${cleanCNPJ}-${this.sanitizeFolderName(
         nomeEmpresa
@@ -166,9 +180,19 @@ export class SharePointFileService {
 
       // Garantir que a pasta principal existe
       await this.ensureMainFolder(mainFolderName);
+      progressCallback?.onProgress("Pasta principal criada...", 15);
 
       const savedAttachments: { [category: string]: IAttachmentMetadata[] } =
-        {};
+        {}; // Calcular progresso baseado no número de categorias e arquivos
+      const totalCategories = Object.keys(attachments).filter(
+        (key) => attachments[key].length > 0
+      ).length;
+      const totalFiles = Object.values(attachments).reduce(
+        (acc, files) => acc + files.length,
+        0
+      );
+      let processedCategories = 0;
+      let processedFiles = 0;
 
       // Processar cada categoria de anexos
       for (const [category, files] of Object.entries(attachments)) {
@@ -180,87 +204,77 @@ export class SharePointFileService {
           continue;
         }
 
-        savedAttachments[category] = []; // Criar subpasta para a categoria usando o mapeamento correto
+        savedAttachments[category] = [];
+
+        // Criar subpasta para a categoria usando o mapeamento correto
         const subFolderName =
           ATTACHMENT_FOLDER_MAP[category] || category.toUpperCase();
         console.log(
-          `Tentando criar subpasta: ${subFolderName} para categoria: ${category}`
+          `Criando subpasta: ${subFolderName} para categoria: ${category}`
         );
+
+        const folderProgress =
+          20 + (processedCategories / totalCategories) * 30;
+        progressCallback?.onProgress(
+          `Criando pasta ${subFolderName}...`,
+          folderProgress
+        );
+
         const targetFolderPath = await this.ensureSubFolder(
           mainFolderName,
           subFolderName
         );
-        console.log("Pasta de destino definida:", targetFolderPath);
+        console.log("✅ Pasta de destino confirmada:", targetFolderPath);
 
-        // Aguardar um pouco para garantir que a pasta foi criada no SharePoint
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Salvar cada arquivo na pasta/subpasta
+        // TIMING FIX: Aguardar mais 2 segundos após confirmar subpasta antes de salvar arquivos
+        console.log(
+          "⏳ Aguardando 2 segundos antes de iniciar upload dos arquivos..."
+        );
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // Salvar cada arquivo na subpasta
         for (const fileMetadata of files) {
           if (fileMetadata.fileData && fileMetadata.fileData instanceof File) {
-            try {
-              console.log(
-                `📁 Salvando arquivo: ${fileMetadata.originalName} na pasta: ${targetFolderPath}`
-              );
+            console.log(
+              `📁 Salvando arquivo: ${fileMetadata.originalName} na pasta: ${targetFolderPath}`
+            );
 
-              // Manter o nome original do arquivo
-              const fileName = fileMetadata.originalName;
+            const fileProgress = 50 + (processedFiles / totalFiles) * 45;
+            progressCallback?.onProgress(
+              `Salvando ${fileMetadata.originalName}...`,
+              fileProgress
+            );
 
-              // Verificar se a pasta de destino existe antes de tentar salvar
-              console.log(
-                `🔍 Verificando se a pasta ${targetFolderPath} existe...`
-              );
+            const savedMetadata = await this.saveFileToFolder(
+              fileMetadata.fileData,
+              targetFolderPath,
+              fileMetadata.originalName,
+              cnpj,
+              nomeEmpresa,
+              category,
+              formularioId
+            );
 
-              const savedMetadata = await this.saveFileToFolder(
-                fileMetadata.fileData,
-                targetFolderPath,
-                fileName,
-                cnpj,
-                nomeEmpresa,
-                category,
-                formularioId
-              );
+            savedAttachments[category].push(savedMetadata);
+            console.log(
+              `✅ Arquivo ${fileMetadata.originalName} salvo com sucesso na subpasta ${subFolderName}`
+            );
 
-              savedAttachments[category].push(savedMetadata);
-              console.log(
-                `✅ Arquivo ${fileName} salvo com sucesso na subpasta ${subFolderName}`
-              );
-            } catch (fileError) {
-              console.error(
-                `❌ ERRO CRÍTICO ao salvar arquivo ${fileMetadata.originalName} na subpasta ${subFolderName}:`,
-                fileError
-              );
-
-              // Tentar salvar na pasta principal como fallback
-              try {
-                console.log("Tentando fallback na pasta principal...");
-                // Manter nome original também no fallback
-                const fallbackFileName = fileMetadata.originalName;
-                const fallbackMetadata = await this.saveFileToFolder(
-                  fileMetadata.fileData as File,
-                  mainFolderName,
-                  fallbackFileName,
-                  cnpj,
-                  nomeEmpresa,
-                  category,
-                  formularioId
-                );
-
-                savedAttachments[category].push(fallbackMetadata);
-                console.log(
-                  `✅ Arquivo salvo com fallback: ${fallbackFileName}`
-                );
-              } catch (fallbackError) {
-                console.error("❌ Fallback também falhou:", fallbackError);
-                // Continuar com outros arquivos
-              }
-            }
+            processedFiles++;
           } else {
             console.warn("Arquivo não encontrado no metadata:", fileMetadata);
+            processedFiles++;
           }
         }
+
+        processedCategories++;
       }
 
+      progressCallback?.onProgress("Finalizando processo...", 95);
       console.log("=== PROCESSO DE SALVAMENTO CONCLUÍDO ===");
       console.log("Categorias processadas:", Object.keys(savedAttachments));
+
+      progressCallback?.onProgress("Upload concluído!", 100);
 
       return savedAttachments;
     } catch (error) {
@@ -318,57 +332,75 @@ export class SharePointFileService {
 
     try {
       // Tentar acessar a subpasta para ver se já existe
-      const existingFolder = await this.sp.web.lists
+      await this.sp.web.lists
         .getByTitle(this.documentLibraryName)
         .rootFolder.folders.getByUrl(subFolderPath)();
 
-      console.log("✅ Subpasta já existe:", existingFolder.Name);
+      console.log("✅ Subpasta já existe:", subFolderPath);
       return subFolderPath;
     } catch {
-      // Se não existe, criar a subpasta
-      console.log("🔄 Subpasta não existe, criando...");
+      // Se não existe, criar a subpasta usando método que funciona (via pasta pai)
+      console.log("🔄 Subpasta não existe, criando via pasta pai...");
 
       try {
-        const newSubFolder = await this.sp.web.lists
+        const parentFolder = await this.sp.web.lists
           .getByTitle(this.documentLibraryName)
-          .rootFolder.folders.addUsingPath(subFolderPath);
+          .rootFolder.folders.getByUrl(mainFolderName);
+        const newSubFolder = await parentFolder.folders.addUsingPath(
+          subFolderName
+        );
+        console.log("✅ Subpasta criada via pasta pai:", newSubFolder.Name);
 
-        console.log("✅ Subpasta criada com sucesso:", newSubFolder.Name);
-        console.log("📍 Caminho verificado:", subFolderPath);
+        // TIMING FIX: Aguardar 3 segundos para SharePoint processar completamente
+        console.log("⏳ Aguardando 3 segundos para SharePoint processar...");
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        // Confirmar que a pasta existe e está acessível usando método mais robusto
+        try {
+          await this.sp.web.lists
+            .getByTitle(this.documentLibraryName)
+            .rootFolder.folders.getByUrl(subFolderPath)();
+
+          console.log(
+            "✅ Subpasta confirmada e pronta para uso:",
+            subFolderPath
+          );
+        } catch (confirmError) {
+          console.warn(
+            "⚠️ Não foi possível confirmar subpasta, mas ela foi criada:",
+            confirmError.message
+          );
+          console.log("🔄 Tentando confirmar via pasta pai...");
+
+          // Tentar confirmar via pasta pai como alternativa
+          try {
+            const confirmedFolder = await parentFolder.folders.getByUrl(
+              subFolderName
+            )();
+            console.log(
+              "✅ Subpasta confirmada via pasta pai:",
+              confirmedFolder.Name
+            );
+          } catch (confirmError2) {
+            console.warn(
+              "⚠️ Confirmação alternativa falhou, mas prosseguindo:",
+              confirmError2.message
+            );
+          }
+        }
+
         return subFolderPath;
       } catch (createError) {
-        console.error("❌ Erro ao criar subpasta:", createError);
+        console.error(
+          "❌ FALHA CRÍTICA: Não foi possível criar subpasta",
+          subFolderName
+        );
+        console.error("Erro:", createError);
 
-        // Última tentativa: tentar criar a subpasta na pasta pai diretamente
-        try {
-          console.log(
-            "🔄 Tentativa alternativa: criando subpasta diretamente na pasta pai..."
-          );
-          const parentFolder = await this.sp.web.lists
-            .getByTitle(this.documentLibraryName)
-            .rootFolder.folders.getByUrl(mainFolderName);
-
-          const altSubFolder = await parentFolder.folders.addUsingPath(
-            subFolderName
-          );
-          console.log(
-            "✅ Subpasta criada com método alternativo:",
-            altSubFolder.Name
-          );
-          console.log("📍 Caminho alternativo verificado:", subFolderPath);
-          return subFolderPath;
-        } catch (altError) {
-          console.error("❌ Método alternativo também falhou:", altError);
-          console.error(
-            "🚫 FALHA CRÍTICA: Não foi possível criar a subpasta",
-            subFolderName
-          );
-
-          // NÃO retornar pasta principal como fallback - lançar erro
-          throw new Error(
-            `Falha crítica ao criar subpasta ${subFolderName}: ${altError.message}`
-          );
-        }
+        throw new Error(
+          `Falha crítica ao criar subpasta ${subFolderName}. ` +
+            `Erro: ${createError.message}`
+        );
       }
     }
   }
@@ -386,85 +418,89 @@ export class SharePointFileService {
   ): Promise<IAttachmentMetadata> {
     try {
       console.log(`=== SALVANDO ARQUIVO: ${fileName} ===`);
-      console.log("Pasta de destino:", folderPath);
+      console.log("📁 Pasta de destino:", folderPath);
+
+      // Verificar se temos permissão na biblioteca primeiro
+      try {
+        const libraryInfo = await this.sp.web.lists
+          .getByTitle(this.documentLibraryName)
+          .select("Id", "Title", "BasePermissions")();
+        console.log("📚 Informações da biblioteca:", libraryInfo);
+      } catch (permError) {
+        console.error(
+          "❌ Erro ao verificar permissões da biblioteca:",
+          permError
+        );
+      }
 
       // Ler o arquivo como ArrayBuffer
       const fileBuffer = await file.arrayBuffer();
-      console.log("Arquivo lido, tamanho:", fileBuffer.byteLength, "bytes"); // MÚLTIPLAS TENTATIVAS para verificar pasta
-      let folderExists = false;
-      const maxRetries = 5; // Tenta até 5 vezes com delays progressivos
+      console.log("📄 Arquivo lido, tamanho:", fileBuffer.byteLength, "bytes");
 
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          console.log(
-            `🔍 Tentativa ${attempt}/${maxRetries} de verificar pasta: ${folderPath}`
-          );
+      // AGUARDAR ADICIONAL: Garantir que pasta está pronta para receber arquivos
+      console.log(
+        "⏳ Aguardando 2 segundos para garantir que pasta está pronta..."
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-          await this.sp.web.lists
-            .getByTitle(this.documentLibraryName)
-            .rootFolder.folders.getByUrl(folderPath)();
-
-          console.log(
-            `✅ Pasta confirmada na tentativa ${attempt}: ${folderPath}`
-          );
-          folderExists = true;
-          break; // Pasta encontrada, sair do loop
-        } catch {
-          if (attempt < maxRetries) {
-            const delayMs = attempt * 1000; // Delay progressivo: 1s, 2s, 3s, 4s, 5s
-            console.warn(
-              `⏳ Pasta não encontrada, aguardando ${delayMs}ms antes da próxima tentativa...`
-            );
-            await new Promise((resolve) => setTimeout(resolve, delayMs));
-          } else {
-            console.error("❌ Pasta não encontrada após todas as tentativas");
-          }
-        }
-      }
-
-      // Se pasta não existe após todas as tentativas, tentar uma última abordagem
-      if (!folderExists) {
-        console.warn("⚠️ Tentando upload direto mesmo sem confirmar pasta...");
-        // Vamos tentar o upload diretamente e ver o que acontece
-      }
-
+      // Upload via pasta pai (sem checar via .select() ou getByUrl antes)
+      console.log("🔄 Upload via pasta pai (método único e confiável)...");
       try {
-        // Fazer upload do arquivo (mesmo se não confirmamos a pasta)
-        const fileAddResult = await this.sp.web.lists
+        // Obter referência da pasta principal
+        const mainFolderName = folderPath.split("/")[0];
+        const subFolderName = folderPath.split("/")[1];
+        const parentFolder = await this.sp.web.lists
           .getByTitle(this.documentLibraryName)
-          .rootFolder.folders.getByUrl(folderPath)
-          .files.addUsingPath(fileName, fileBuffer, { Overwrite: true });
+          .rootFolder.folders.getByUrl(mainFolderName);
+        const targetFolder = parentFolder.folders.getByUrl(subFolderName);
 
-        console.log("✅ Arquivo salvo com sucesso:", fileAddResult.Name);
-        console.log("📍 Localização final:", fileAddResult.ServerRelativeUrl);
-
-        // Retornar metadata do arquivo salvo
-        const metadata: IAttachmentMetadata = {
-          id: fileAddResult.UniqueId,
-          fileName: fileName,
-          originalName: file.name,
-          fileSize: file.size,
-          fileType: file.type || this.getFileTypeFromName(file.name),
-          url: fileAddResult.ServerRelativeUrl,
-          uploadDate: new Date().toISOString(),
-          category: category,
-          sharepointItemId: undefined,
-        };
-
-        return metadata;
+        // Upload via pasta pai
+        await targetFolder.files.addUsingPath(fileName, fileBuffer, {
+          Overwrite: true,
+        });
+        console.log("✅ Upload via pasta pai bem-sucedido");
       } catch (uploadError) {
-        // Se ainda falhar o upload, então sim, lançar erro
-        console.error(
-          `❌ Upload falhou após todas as tentativas:`,
-          uploadError
-        );
+        console.error("❌ Falha no upload via pasta pai:", uploadError);
         throw new Error(
-          `Falha ao fazer upload para ${folderPath}: ${uploadError.message}`
+          `Falha ao fazer upload do arquivo ${fileName} na pasta ${folderPath}. ` +
+            `Erro: ${uploadError.message}`
         );
       }
+
+      // Obter informações detalhadas do arquivo salvo via pasta pai
+      const mainFolderName = folderPath.split("/")[0];
+      const subFolderName = folderPath.split("/")[1];
+      const parentFolder = await this.sp.web.lists
+        .getByTitle(this.documentLibraryName)
+        .rootFolder.folders.getByUrl(mainFolderName);
+      const targetFolder = parentFolder.folders.getByUrl(subFolderName);
+      const fileInfo = await targetFolder.files
+        .getByUrl(fileName)
+        .select("Name", "ServerRelativeUrl", "UniqueId", "Length")();
+
+      console.log("✅ Arquivo salvo com sucesso:", fileInfo.Name);
+      console.log("📍 Localização final:", fileInfo.ServerRelativeUrl);
+
+      // Retornar metadata do arquivo salvo
+      const metadata: IAttachmentMetadata = {
+        id: fileInfo.UniqueId,
+        fileName: fileName,
+        originalName: file.name,
+        fileSize: file.size,
+        fileType: file.type || this.getFileTypeFromName(file.name),
+        url: fileInfo.ServerRelativeUrl,
+        uploadDate: new Date().toISOString(),
+        category: category,
+        sharepointItemId: undefined,
+      };
+
+      return metadata;
     } catch (error) {
-      console.error(`❌ Erro ao salvar arquivo ${fileName}:`, error);
-      throw new Error(`Falha ao salvar arquivo: ${error.message}`);
+      console.error(
+        `❌ Erro ao salvar arquivo ${fileName} na pasta ${folderPath}:`,
+        error
+      );
+      throw new Error(`Falha ao salvar arquivo ${fileName}: ${error.message}`);
     }
   }
 
@@ -548,9 +584,9 @@ export class SharePointFileService {
    */
   private sanitizeFolderName(name: string): string {
     return name
-      .replace(/[<>:"/\\|?*]/g, "") // Remove caracteres inválidos
-      .replace(/\s+/g, "_") // Substitui espaços por underscore
-      .substring(0, 30) // Limita tamanho para o nome do arquivo
+      .replace(/[<>:"/\\|?*]/g, "") // Removes invalid characters
+      .replace(/\s+/g, "_") // Replaces spaces with underscores
+      .substring(0, 30) // Limits the length for the file name
       .toLowerCase();
   }
 
