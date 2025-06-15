@@ -89,6 +89,7 @@ export const ATTACHMENT_FOLDER_MAP: { [key: string]: string } = {
 export class SharePointFileService {
   private sp: ReturnType<typeof spfi>;
   private documentLibraryName: string;
+  private context: WebPartContext;
 
   constructor(
     context: WebPartContext,
@@ -96,6 +97,7 @@ export class SharePointFileService {
   ) {
     this.sp = spfi().using(SPFx(context));
     this.documentLibraryName = documentLibraryName;
+    this.context = context;
   }
 
   /**
@@ -169,17 +171,15 @@ export class SharePointFileService {
         );
       }
 
-      progressCallback?.onProgress("Criando estrutura de pastas...", 10);
-
-      // Criar nome da pasta principal (remover pontos e barras do CNPJ)
+      progressCallback?.onProgress("Criando estrutura de pastas...", 10); // Criar nome da pasta principal (remover pontos e barras do CNPJ)
       const cleanCNPJ = cnpj.replace(/[.\-/]/g, "");
       const mainFolderName = `${cleanCNPJ}-${this.sanitizeFolderName(
         nomeEmpresa
       )}`;
       console.log("Pasta principal:", mainFolderName);
 
-      // Garantir que a pasta principal existe
-      await this.ensureMainFolder(mainFolderName);
+      // Garantir que a pasta principal existe e verificar se foi criada agora
+      const folderWasCreated = await this.ensureMainFolder(mainFolderName);
       progressCallback?.onProgress("Pasta principal criada...", 15);
 
       const savedAttachments: { [category: string]: IAttachmentMetadata[] } =
@@ -269,10 +269,29 @@ export class SharePointFileService {
 
         processedCategories++;
       }
-
       progressCallback?.onProgress("Finalizando processo...", 95);
       console.log("=== PROCESSO DE SALVAMENTO CONCLUÍDO ===");
       console.log("Categorias processadas:", Object.keys(savedAttachments));
+
+      // Se a pasta foi criada neste processo, adicionar entrada na lista
+      if (folderWasCreated) {
+        try {
+          console.log(
+            "Pasta foi criada agora, adicionando entrada na lista..."
+          );
+          const userEmail = this.context.pageContext.user.email;
+          await this.addSupplierRegisterEntry(mainFolderName, userEmail);
+          console.log("✅ Entrada adicionada na lista hse-new-register-sup");
+        } catch (listError) {
+          console.warn(
+            "Erro ao adicionar entrada na lista, mas arquivos foram salvos com sucesso:",
+            listError
+          );
+          // Não falhar o processo todo por causa do erro na lista
+        }
+      } else {
+        console.log("Pasta já existia, não adicionando entrada na lista");
+      }
 
       progressCallback?.onProgress("Upload concluído!", 100);
 
@@ -285,9 +304,39 @@ export class SharePointFileService {
   }
 
   /**
-   * Garante que a pasta principal existe
+   * Adiciona um item na lista "hse-new-register-sup" com o nome da pasta e email do usuário
    */
-  private async ensureMainFolder(mainFolderName: string): Promise<void> {
+  private async addSupplierRegisterEntry(
+    folderName: string,
+    userEmail: string
+  ): Promise<void> {
+    try {
+      console.log(`=== ADICIONANDO ENTRADA NA LISTA HSE-NEW-REGISTER-SUP ===`);
+      console.log("Nome da pasta:", folderName);
+      console.log("Email do usuário:", userEmail);
+
+      await this.sp.web.lists.getByTitle("hse-new-register-sup").items.add({
+        Title: folderName,
+        userEmail: userEmail,
+      });
+
+      console.log(
+        "✅ Item adicionado com sucesso na lista hse-new-register-sup"
+      );
+    } catch (error) {
+      console.error(
+        "❌ Erro ao adicionar item na lista hse-new-register-sup:",
+        error
+      );
+      throw new Error(`Falha ao adicionar item na lista: ${error.message}`);
+    }
+  }
+
+  /**
+   * Garante que a pasta principal existe
+   * Retorna true se a pasta foi criada agora, false se já existia
+   */
+  private async ensureMainFolder(mainFolderName: string): Promise<boolean> {
     try {
       console.log(`=== VERIFICANDO PASTA PRINCIPAL: ${mainFolderName} ===`);
 
@@ -298,6 +347,7 @@ export class SharePointFileService {
           .rootFolder.folders.getByUrl(mainFolderName)();
 
         console.log("Pasta principal já existe:", existingFolder.Name);
+        return false; // Pasta já existia
       } catch {
         // Se não existe, criar a pasta principal
         console.log("Pasta principal não existe, criando...");
@@ -307,6 +357,7 @@ export class SharePointFileService {
           .rootFolder.folders.addUsingPath(mainFolderName);
 
         console.log("Pasta principal criada com sucesso:", newFolder.Name);
+        return true; // Pasta foi criada agora
       }
     } catch (error) {
       console.error("Erro ao criar pasta principal:", error);
@@ -323,9 +374,7 @@ export class SharePointFileService {
   ): Promise<string> {
     console.log(
       `=== CRIANDO/VERIFICANDO SUBPASTA: ${subFolderName} DENTRO DE ${mainFolderName} ===`
-    );
-
-    // Garantir que a pasta principal existe
+    ); // Garantir que a pasta principal existe
     await this.ensureMainFolder(mainFolderName);
 
     const subFolderPath = `${mainFolderName}/${subFolderName}`;
