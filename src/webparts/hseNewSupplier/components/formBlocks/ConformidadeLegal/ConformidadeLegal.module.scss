@@ -10,13 +10,12 @@
 .nrSection {
   background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
   border-radius: 12px;
-  padding: 28px 36px 24px 36px;
+  padding: 12px 20px; // Reduzido ainda mais para compactar quando fechada
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid #e3e8ee;
-  margin-bottom: 28px;
+  margin-bottom: 12px; // Reduzido mais o espaçamento entre seções
   position: relative;
   transition: all 0.3s ease;
-
   &::before {
     content: "";
     position: absolute;
@@ -24,8 +23,8 @@
     left: 0;
     width: 4px;
     height: 100%;
-    background: linear-gradient(180deg, #0078d4, #106ebe);
-    border-radius: 0 0 0 12px;
+    background: #003b5c; // Tom cinza escuro para a seção principal
+    border-radius: 12px 0 0 12px; // Curva apenas nos cantos esquerdos para seguir a curvatura da caixa
   }
 
   &:hover {
@@ -55,78 +54,81 @@
 }
 
 .blocksContainer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; // Reduzido para compactar as seções quando fechadas
   margin-bottom: 24px;
 }
 
 .singleBlock {
-  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .questionContainer {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   padding: 20px 24px;
-  border: 1px solid #e8eef7;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
-  align-items: start;
+  border: 1px solid #e3e8ee;
+  border-radius: 8px;
+  background: #ffffff;
+  display: flex;
+  align-items: flex-start;
+  gap: 0; // Removendo gap aqui pois usaremos margin no ícone
   position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
   &::before {
     content: "";
     position: absolute;
     top: 0;
     left: 0;
-    width: 0;
+    width: 4px;
     height: 100%;
-    background: linear-gradient(180deg, #0078d4, #4caf50);
-    border-radius: 12px 0 0 12px;
-    transition: width 0.3s ease;
+    background: #5b7f95; // Tom cinza médio para questões individuais
+    border-radius: 8px 0 0 8px; // Curva apenas nos cantos esquerdos para seguir a curvatura da caixa
   }
-
   &:hover {
-    border-color: #b3e5fc;
-    box-shadow: 0 4px 16px rgba(0, 120, 212, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     transform: translateY(-1px);
-
-    &::before {
-      width: 4px;
-    }
-  }
-
-  &:focus-within {
-    border-color: #0078d4;
-    box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
-
-    &::before {
-      width: 4px;
-    }
   }
 }
 
 .questionText {
   font-weight: 500;
-  color: #222;
+  color: #323130;
   margin-bottom: 0;
   line-height: 1.4;
+  flex: 1;
 }
 
 .questionSection {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 0; // Removendo gap pois o margin do ícone já controla
+  flex: 1;
+  margin-right: 20px; // Espaçamento entre pergunta e resposta
 }
 
 .responseSection {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  min-width: 200px;
+  margin-left: auto;
+  padding: 12px;
+  background-color: #f8f9fa; // Fundo cinza claro
+  border-radius: 8px; // Arredondamento em todos os cantos para seguir a curvatura
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    background: #0097a9; // Tom cinza claro
+    border-radius: 8px 0 0 8px; // Curva apenas nos cantos esquerdos para seguir a curvatura da caixa
+  }
 }
 
 .responseDropdown {
@@ -137,6 +139,42 @@
 .commentField {
   margin-bottom: 0;
   width: 100%;
+}
+
+// Estilo para seção de comentários gerais
+.generalComments {
+  margin-top: 24px;
+  padding: 0;
+
+  .commentLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: #323130;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .commentTextArea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 1px solid #d2d0ce;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.4;
+    resize: vertical;
+
+    &:focus {
+      border-color: #0078d4;
+      box-shadow: 0 0 0 1px #0078d4;
+      outline: none;
+    }
+
+    &::placeholder {
+      color: #a19f9d;
+    }
+  }
 }
 
 .required {
@@ -629,13 +667,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 8px; // Reduzido para compactar quando fechada
 }
 
 .blockTitleSection {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px; // Reduzido para compactar
   flex: 1;
 }
 
@@ -645,6 +683,7 @@
     font-weight: 600;
     color: #1a1a1a;
     margin-bottom: 0;
+    line-height: 1.2; // Reduzido para compactar mais
     order: 2;
   }
 
@@ -725,5 +764,129 @@
     opacity: 1;
     max-height: 1000px;
     transform: translateY(0);
+  }
+}
+
+// Classes necessárias para resolver erros TypeScript
+.questionNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #00263e; // Azul mais escuro
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-right: 24px; // Mais espaçamento entre ícone e pergunta
+}
+
+.responseControls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 200px;
+  padding: 12px;
+
+  border-radius: 0 8px 8px 0; // Arredondamento só na direita
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 0;
+    width: 4px;
+    height: 100%;
+
+    border-radius: 8px; // Efeito curvo nas pontas
+  }
+}
+
+.dropdownContainer {
+  display: block;
+  width: 100%;
+
+  :global(.ms-ComboBox) {
+    min-width: 200px;
+  }
+}
+
+.attachmentContainer {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 12px;
+
+  // Customização para o componente de upload ficar mais compacto
+  :global(.ms-Stack) {
+    gap: 6px !important;
+  }
+
+  :global(.ms-Label) {
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 3px;
+    color: #323130;
+  }
+
+  // Torna a área de drop mais compacta
+  :global(.dropzone-container) {
+    min-height: 60px !important;
+    padding: 8px !important;
+    border-radius: 6px;
+  }
+
+  :global(.dropzone-content) {
+    font-size: 11px !important;
+    line-height: 1.3;
+  }
+
+  :global(.file-list) {
+    margin-top: 6px !important;
+  }
+
+  :global(.file-item) {
+    padding: 6px !important;
+    font-size: 10px !important;
+  }
+
+  // Estilos para campos de texto com bordas arredondadas como na imagem
+  :global(.ms-TextField-field) {
+    border-radius: 8px !important; // Bordas bem arredondadas
+    border: 1px solid #d2d0ce !important;
+    padding: 12px 16px !important;
+    transition: all 0.2s ease !important;
+
+    &:focus {
+      border-color: #0078d4 !important;
+      box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2) !important;
+      outline: none !important;
+    }
+  }
+
+  :global(.ms-TextField-fieldGroup) {
+    border-radius: 8px !important;
+    border: 1px solid #d2d0ce !important;
+
+    &:hover {
+      border-color: #0078d4 !important;
+    }
+
+    &.is-focused {
+      border-color: #0078d4 !important;
+      box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2) !important;
+    }
+  }
+
+  // Para TextArea também
+  :global(.ms-TextField-field[data-automation-id*="textArea"]) {
+    border-radius: 8px !important;
+    min-height: 80px !important;
+    resize: vertical !important;
   }
 }

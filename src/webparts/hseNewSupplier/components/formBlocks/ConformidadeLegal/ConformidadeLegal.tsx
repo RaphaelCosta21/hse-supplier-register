@@ -24,12 +24,15 @@ import {
 import styles from "./ConformidadeLegal.module.scss";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
 import { SectionTitle } from "../../common/SectionTitle";
+import { useHSEForm } from "../../context/HSEFormContext";
 
 export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
   value,
   onChange,
   errors,
 }) => {
+  const { state } = useHSEForm();
+
   // Estados para controlar blocos aplicáveis e expandidos
   const [applicableBlocks, setApplicableBlocks] = React.useState<{
     [key: string]: boolean;
@@ -42,29 +45,43 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
     blockKey: string;
     blockTitle: string;
   }>({ isOpen: false, blockKey: "", blockTitle: "" });
-
   // useEffect para inicializar estados com base nos dados existentes
   React.useEffect(() => {
     const initialApplicableBlocks: { [key: string]: boolean } = {};
     const initialExpandedBlocks: { [key: string]: boolean } = {};
 
-    // Verificar se há dados preenchidos em cada bloco
+    // Verificar estado de aplicabilidade em cada bloco
     Object.keys(value).forEach((blockKey) => {
       const blockValue = value[blockKey as keyof typeof value];
       if (blockValue && typeof blockValue === "object") {
-        const blockObj = blockValue as unknown as { [k: string]: unknown };
-        const hasData = Object.keys(blockObj).some((questionKey) => {
-          const questionObj = blockObj[questionKey];
-          return (
-            questionObj &&
-            typeof questionObj === "object" &&
-            (questionObj as { resposta?: string }).resposta
-          );
-        });
+        const blockObj = blockValue as unknown as {
+          [k: string]: unknown;
+          aplicavel?: boolean;
+        };
 
-        if (hasData) {
+        // Verificar se o bloco tem a flag de aplicabilidade
+        if (blockObj.aplicavel === true) {
           initialApplicableBlocks[blockKey] = true;
           initialExpandedBlocks[blockKey] = false; // Começar colapsado
+        } else if (blockObj.aplicavel === false) {
+          // Bloco explicitamente marcado como não aplicável
+          initialApplicableBlocks[blockKey] = false;
+          initialExpandedBlocks[blockKey] = false;
+        } else {
+          // Compatibilidade com dados antigos: verificar se há dados preenchidos
+          const hasData = Object.keys(blockObj).some((questionKey) => {
+            const questionObj = blockObj[questionKey];
+            return (
+              questionObj &&
+              typeof questionObj === "object" &&
+              (questionObj as { resposta?: string }).resposta
+            );
+          });
+
+          if (hasData) {
+            initialApplicableBlocks[blockKey] = true;
+            initialExpandedBlocks[blockKey] = false;
+          }
         }
       }
     });
@@ -72,7 +89,6 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
     setApplicableBlocks(initialApplicableBlocks);
     setExpandedBlocks(initialExpandedBlocks);
   }, []); // Executa apenas uma vez ao montar o componente
-
   // Função para lidar com respostas das NRs
   const handleNRResponse = (
     nrKey: keyof typeof value,
@@ -90,8 +106,11 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       nrBlockObj[questionKey] !== null
         ? (nrBlockObj[questionKey] as { [k: string]: unknown })
         : {};
+
+    // Preservar a flag de aplicabilidade ao atualizar respostas
     onChange(nrKey, {
       ...nrBlockObj,
+      aplicavel: true, // Garantir que está marcado como aplicável quando há respostas
       [questionKey]: {
         ...questionObj,
         [field]: val,
@@ -118,22 +137,20 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
         ...prev,
         [blockKey]: isApplicable,
       }));
-
       if (isApplicable) {
         // Expandir automaticamente quando marcar como aplicável
         setExpandedBlocks((prev) => ({
           ...prev,
           [blockKey]: true,
         }));
-        // Criar objeto vazio no formData para o bloco ao marcar como aplicável
-        onChange(blockKey as keyof typeof value, {});
+        // Criar objeto com flag de aplicabilidade para o bloco ao marcar como aplicável
+        onChange(blockKey as keyof typeof value, { aplicavel: true });
       } else {
-        // Limpar dados do bloco quando desmarcar
-        onChange(blockKey as keyof typeof value, {});
+        // Marcar como não aplicável (mas manter registro para distinguir de "nunca marcado")
+        onChange(blockKey as keyof typeof value, { aplicavel: false });
       }
     }
   };
-
   // Função para confirmar desmarcação do bloco
   const confirmBlockRemoval = (): void => {
     const { blockKey } = confirmDialog;
@@ -145,8 +162,8 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       ...prev,
       [blockKey]: false,
     }));
-    // Limpar dados do bloco
-    onChange(blockKey as keyof typeof value, {});
+    // Marcar como não aplicável (mantém registro para distinguir de "nunca marcado")
+    onChange(blockKey as keyof typeof value, { aplicavel: false });
     setConfirmDialog({ isOpen: false, blockKey: "", blockTitle: "" });
   };
 
@@ -161,32 +178,60 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       ...prev,
       [blockKey]: !prev[blockKey],
     }));
-  };
+  }; // Função para verificar se um bloco NR está completo
+  const isBlockComplete = React.useCallback(
+    (
+      blockKey: string,
+      questions: Array<{ key: string; idx: number }>
+    ): boolean => {
+      // Se o bloco não é aplicável, considera como completo
+      if (!applicableBlocks[blockKey]) {
+        return true;
+      }
 
-  // Função para verificar se um bloco NR está completo
-  const isBlockComplete = (
-    blockKey: string,
-    questions: Array<{ key: string; idx: number }>
-  ): boolean => {
-    // Se o bloco não é aplicável, considera como completo
-    if (!applicableBlocks[blockKey]) {
-      return true;
-    }
+      const blockValue = getBlockValue(blockKey as keyof typeof value) as {
+        [key: string]: unknown;
+      };
 
-    const blockValue = getBlockValue(blockKey as keyof typeof value) as {
-      [key: string]: unknown;
-    };
+      if (!blockValue) return false;
 
-    if (!blockValue) return false;
+      // Verifica se todas as questões têm resposta preenchida e anexos quando necessário
+      return questions.every((q) => {
+        const questionObj = blockValue[q.key] as
+          | { resposta?: string }
+          | undefined;
 
-    // Verifica se todas as questões têm resposta preenchida
-    return questions.every((q) => {
-      const questionObj = blockValue[q.key] as
-        | { resposta?: string }
-        | undefined;
-      return questionObj && questionObj.resposta && questionObj.resposta !== "";
-    });
-  };
+        // Verificar se a pergunta tem resposta
+        if (
+          !questionObj ||
+          !questionObj.resposta ||
+          questionObj.resposta === ""
+        ) {
+          return false;
+        }
+
+        // Se a resposta é "SIM", verificar se há anexo obrigatório
+        if (questionObj.resposta === "SIM") {
+          const questionMeta = (
+            NR_QUESTIONS_MAP as Record<
+              string,
+              { text: string; attachment?: string }
+            >
+          )[String(q.idx)];
+
+          // Se a pergunta requer anexo e a resposta é SIM
+          if (questionMeta && questionMeta.attachment) {
+            const categoryFiles =
+              state.attachments[questionMeta.attachment] || [];
+            return categoryFiles.length > 0;
+          }
+        }
+
+        return true;
+      });
+    },
+    [applicableBlocks, value, state.attachments]
+  );
 
   // Mapeamento das NRs e blocos do formulário conforme o modelo de dados e PDF
   const NR_BLOCKS = [
@@ -356,15 +401,33 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
           subtitle="Selecione apenas os blocos de NRs aplicáveis ao seu tipo de atividade"
           icon="ComplianceAudit"
           variant="secondary"
-        />
+        />{" "}
         <MessageBar messageBarType={MessageBarType.info}>
-          Selecione apenas os blocos de Normas Regulamentadoras que se aplicam
-          ao seu tipo de atividade/fornecimento. Para cada questão dos blocos
-          selecionados, escolha SIM, NÃO ou NÃO APLICÁVEL (NA). Para respostas
-          &quot;SIM&quot; em questões específicas, será solicitado anexo de
-          documento comprobatório.
+          <Stack tokens={{ childrenGap: 8 }}>
+            <Text
+              variant="mediumPlus"
+              style={{ fontWeight: 600, color: "#0078d4" }}
+            >
+              📋 INSTRUÇÕES IMPORTANTES:
+            </Text>
+            <Text variant="medium">
+              <strong style={{ color: "#d83b01" }}>SELECIONE</strong> apenas os
+              blocos de Normas Regulamentadoras que se aplicam ao seu tipo de
+              atividade/fornecimento.
+            </Text>
+            <Text variant="medium">
+              Para cada questão dos blocos selecionados, escolha{" "}
+              <strong>SIM</strong>, <strong>NÃO</strong> ou{" "}
+              <strong>NÃO APLICÁVEL (NA)</strong>.
+            </Text>{" "}
+            <Text variant="medium">
+              Para respostas{" "}
+              <strong style={{ color: "#107c10" }}>&quot;SIM&quot;</strong> em
+              questões específicas, será solicitado anexo de documento
+              comprobatório.
+            </Text>
+          </Stack>
         </MessageBar>
-
         <div className={styles.blocksContainer}>
           {/* Primeira coluna - Blocos 1-8 */}
           <div className={styles.singleBlock}>
@@ -443,44 +506,57 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                           const showUpload =
                             requiresAttachment &&
                             questionObj.resposta === "SIM";
-
                           return (
                             <div
                               key={q.key}
                               className={styles.questionContainer}
                             >
                               <div className={styles.questionSection}>
-                                <Text
-                                  variant="medium"
-                                  className={styles.questionText}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                  }}
                                 >
-                                  {q.idx}.{" "}
-                                  {questionMeta?.text || `Pergunta ${q.idx}`}
-                                </Text>
+                                  <span className={styles.questionNumber}>
+                                    {q.idx}
+                                  </span>
+                                  <Text
+                                    variant="medium"
+                                    className={styles.questionText}
+                                    style={{ flex: 1 }}
+                                  >
+                                    {questionMeta?.text || `Pergunta ${q.idx}`}
+                                  </Text>
+                                </div>
                               </div>
 
                               <div className={styles.responseSection}>
-                                <Dropdown
-                                  label="Resposta"
-                                  options={RESPOSTA_OPTIONS}
-                                  selectedKey={
-                                    typeof questionObj.resposta === "string"
-                                      ? questionObj.resposta
-                                      : ""
-                                  }
-                                  onChange={(_, option) =>
-                                    handleNRResponse(
-                                      block.key as keyof typeof value,
-                                      q.key,
-                                      "resposta",
-                                      option?.key as string
-                                    )
-                                  }
-                                  required
-                                  className={styles.responseDropdown}
-                                />
+                                <div className={styles.responseControls}>
+                                  <div className={styles.dropdownContainer}>
+                                    <Dropdown
+                                      label="Resposta"
+                                      options={RESPOSTA_OPTIONS}
+                                      selectedKey={
+                                        typeof questionObj.resposta === "string"
+                                          ? questionObj.resposta
+                                          : ""
+                                      }
+                                      onChange={(_, option) =>
+                                        handleNRResponse(
+                                          block.key as keyof typeof value,
+                                          q.key,
+                                          "resposta",
+                                          option?.key as string
+                                        )
+                                      }
+                                      required
+                                      className={styles.responseDropdown}
+                                    />
+                                  </div>
+                                </div>
                                 {showUpload && (
-                                  <div style={{ marginTop: 8 }}>
+                                  <div className={styles.attachmentContainer}>
                                     <HSEFileUpload
                                       label={`Anexar documento comprobatório (${
                                         questionMeta.attachment
@@ -514,6 +590,7 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                             onChange={(_, v) =>
                               onChange(block.key as keyof typeof value, {
                                 ...blockValue,
+                                aplicavel: true, // Preservar flag de aplicabilidade
                                 comentarios: v || "",
                               })
                             }
@@ -608,37 +685,50 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                         return (
                           <div key={q.key} className={styles.questionContainer}>
                             <div className={styles.questionSection}>
-                              <Text
-                                variant="medium"
-                                className={styles.questionText}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "flex-start",
+                                }}
                               >
-                                {q.idx}.{" "}
-                                {questionMeta?.text || `Pergunta ${q.idx}`}
-                              </Text>
-                            </div>
-
+                                <span className={styles.questionNumber}>
+                                  {q.idx}
+                                </span>
+                                <Text
+                                  variant="medium"
+                                  className={styles.questionText}
+                                  style={{ flex: 1 }}
+                                >
+                                  {questionMeta?.text || `Pergunta ${q.idx}`}
+                                </Text>
+                              </div>
+                            </div>{" "}
                             <div className={styles.responseSection}>
-                              <Dropdown
-                                label="Resposta"
-                                options={RESPOSTA_OPTIONS}
-                                selectedKey={
-                                  typeof questionObj.resposta === "string"
-                                    ? questionObj.resposta
-                                    : ""
-                                }
-                                onChange={(_, option) =>
-                                  handleNRResponse(
-                                    block.key as keyof typeof value,
-                                    q.key,
-                                    "resposta",
-                                    option?.key as string
-                                  )
-                                }
-                                required
-                                className={styles.responseDropdown}
-                              />
+                              <div className={styles.responseControls}>
+                                <div className={styles.dropdownContainer}>
+                                  <Dropdown
+                                    label="Resposta"
+                                    options={RESPOSTA_OPTIONS}
+                                    selectedKey={
+                                      typeof questionObj.resposta === "string"
+                                        ? questionObj.resposta
+                                        : ""
+                                    }
+                                    onChange={(_, option) =>
+                                      handleNRResponse(
+                                        block.key as keyof typeof value,
+                                        q.key,
+                                        "resposta",
+                                        option?.key as string
+                                      )
+                                    }
+                                    required
+                                    className={styles.responseDropdown}
+                                  />
+                                </div>
+                              </div>
                               {showUpload && (
-                                <div style={{ marginTop: 8 }}>
+                                <div className={styles.attachmentContainer}>
                                   <HSEFileUpload
                                     label={`Anexar documento comprobatório (${
                                       questionMeta.attachment
@@ -672,6 +762,7 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                           onChange={(_, v) =>
                             onChange(block.key as keyof typeof value, {
                               ...blockValue,
+                              aplicavel: true, // Preservar flag de aplicabilidade
                               comentarios: v || "",
                             })
                           }

@@ -6,7 +6,7 @@ export const ProgressIndicator: React.FC<IProgressIndicatorProps> = ({
   label,
   description,
   percentComplete = 0,
-  color = "#2196f3",
+  color = "#0097a9",
   showLabel = true,
   size = "medium",
   className,

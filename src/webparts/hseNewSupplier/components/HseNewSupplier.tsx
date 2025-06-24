@@ -15,7 +15,7 @@ import { ConformidadeLegal } from "./formBlocks/ConformidadeLegal/ConformidadeLe
 import { ServicosEspeciais } from "./formBlocks/ServicosEspeciais/ServicosEspeciais";
 import { RevisaoFinal } from "./formBlocks/RevisaoFinal/RevisaoFinal";
 import { InitialScreen } from "./screens/InitialScreen";
-import { FORM_STEPS } from "../utils/formConstants";
+import { FORM_STEPS, NR_QUESTIONS_MAP } from "../utils/formConstants";
 import { IHseNewSupplierProps } from "./IHseNewSupplierProps";
 import { ICNPJVerificationResult } from "../types/IApplicationPhase";
 import styles from "./HseNewSupplier.module.scss";
@@ -24,9 +24,13 @@ import { LoadingSpinner } from "./common/LoadingSpinner/LoadingSpinner";
 import { FloatingSaveButton } from "./common/FloatingSaveButton/FloatingSaveButton";
 import { formSelectors } from "./context/formReducer";
 import { BackToHomeButton } from "./common/BackToHomeButton/BackToHomeButton";
+import { useSharePointHeaderOverrides } from "../hooks/useSharePointOverrides";
 
 // Componente interno que usa os hooks do contexto HSE
 const HseNewSupplierContent: React.FC = () => {
+  // Hook para ocultar elementos do cabeçalho do SharePoint
+  useSharePointHeaderOverrides();
+
   // Estados locais para controle de processamento e erros
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -44,7 +48,7 @@ const HseNewSupplierContent: React.FC = () => {
   }
 
   // Extrair dados do contexto
-  const { state, actions, dispatch, applicationPhase } = context;
+  const { state, actions, dispatch, applicationPhase, currentUser } = context;
   const { currentStep, isLoading, validationErrors } = state;
 
   // Handler para quando CNPJ é verificado na tela inicial
@@ -214,132 +218,168 @@ const HseNewSupplierContent: React.FC = () => {
     return camposOk && remOk;
   }, [state.formData, state.attachments]);
 
-  // Função para validar Conformidade Legal (navbar só mostra check se TODOS os blocos aplicáveis tiverem check verde)
+  // Função para validar Conformidade Legal (versão simplificada - usa a mesma lógica dos checks individuais)
   const isConformidadeLegalValid = React.useCallback(() => {
     const conformidade = state.formData.conformidadeLegal || {};
 
-    // Estrutura dos blocos (deve ser igual ao do componente ConformidadeLegal)
-    const NR_BLOCKS = [
-      {
-        key: "nr01",
-        questions: [
-          { key: "questao1" },
-          { key: "questao2" },
-          { key: "questao3" },
-          { key: "questao4" },
-          { key: "questao5" },
-        ],
-      },
-      { key: "nr04", questions: [{ key: "questao7" }, { key: "questao8" }] },
-      { key: "nr05", questions: [{ key: "questao10" }, { key: "questao11" }] },
-      { key: "nr06", questions: [{ key: "questao13" }, { key: "questao14" }] },
-      {
-        key: "nr07",
-        questions: [
-          { key: "questao16" },
-          { key: "questao17" },
-          { key: "questao18" },
-        ],
-      },
-      {
-        key: "nr09",
-        questions: [
-          { key: "questao20" },
-          { key: "questao21" },
-          { key: "questao22" },
-        ],
-      },
-      {
-        key: "nr10",
-        questions: [
-          { key: "questao24" },
-          { key: "questao25" },
-          { key: "questao26" },
-        ],
-      },
-      { key: "nr11", questions: [{ key: "questao28" }, { key: "questao29" }] },
-      { key: "nr12", questions: [{ key: "questao31" }, { key: "questao32" }] },
-      { key: "nr13", questions: [{ key: "questao34" }] },
-      { key: "nr15", questions: [{ key: "questao36" }] },
-      {
-        key: "nr23",
-        questions: [
-          { key: "questao38" },
-          { key: "questao39" },
-          { key: "questao40" },
-        ],
-      },
-      { key: "licencasAmbientais", questions: [{ key: "questao42" }] },
-      {
-        key: "legislacaoMaritima",
-        questions: [
-          { key: "questao44" },
-          { key: "questao45" },
-          { key: "questao46" },
-          { key: "questao47" },
-          { key: "questao48" },
-          { key: "questao49" },
-        ],
-      },
-      {
-        key: "treinamentos",
-        questions: [
-          { key: "questao51" },
-          { key: "questao52" },
-          { key: "questao53" },
-        ],
-      },
-      {
-        key: "gestaoSMS",
-        questions: [
-          { key: "questao55" },
-          { key: "questao56" },
-          { key: "questao57" },
-          { key: "questao58" },
-          { key: "questao59" },
-        ],
-      },
+    // Lista de todos os possíveis blocos NR
+    const possibleBlocks = [
+      "nr01",
+      "nr04",
+      "nr05",
+      "nr06",
+      "nr07",
+      "nr09",
+      "nr10",
+      "nr11",
+      "nr12",
+      "nr13",
+      "nr15",
+      "nr23",
+      "licencasAmbientais",
+      "legislacaoMaritima",
+      "treinamentos",
+      "gestaoSMS",
     ];
 
-    // Reconstrói o applicableBlocks: um bloco é aplicável se o objeto do bloco existe (foi inicializado pelo toggle)
-    const applicableBlocks: { [key: string]: boolean } = {};
-    NR_BLOCKS.forEach((block) => {
-      const bloco = conformidade[block.key as keyof typeof conformidade];
-      if (bloco && typeof bloco === "object") {
-        applicableBlocks[block.key] = true;
-      }
-    });
-
-    // Função para saber se o bloco está "completo" (check verde individual)
-    const isBlockComplete = (
-      blockKey: string,
-      questions: Array<{ key: string }>
-    ): boolean => {
+    // Identificar blocos aplicáveis (que foram marcados como aplicáveis pelo usuário)
+    const applicableBlocks = possibleBlocks.filter((blockKey) => {
       const bloco = conformidade[blockKey as keyof typeof conformidade];
       if (!bloco || typeof bloco !== "object") return false;
-      // Para o bloco estar completo, todas as questões devem ter resposta preenchida (SIM, NÃO ou NA)
+
+      // Usar a nova flag de aplicabilidade
+      const blockObj = bloco as unknown as { aplicavel?: boolean };
+      return blockObj.aplicavel === true;
+    });
+
+    // Se nenhum bloco aplicável, não está válido
+    if (applicableBlocks.length === 0) return false;
+
+    // IMPORTANTE: Para cada bloco aplicável, usar a MESMA lógica de validação do componente ConformidadeLegal
+    // Isso garante que o check da sidebar só apareça quando TODOS os checks individuais estão verdes
+
+    // Estrutura de questões por bloco (incluindo índices para buscar attachment info)
+    const blockQuestions: Record<
+      string,
+      Array<{ key: string; idx: number }>
+    > = {
+      nr01: [
+        { key: "questao1", idx: 1 },
+        { key: "questao2", idx: 2 },
+        { key: "questao3", idx: 3 },
+        { key: "questao4", idx: 4 },
+        { key: "questao5", idx: 5 },
+      ],
+      nr04: [
+        { key: "questao7", idx: 7 },
+        { key: "questao8", idx: 8 },
+      ],
+      nr05: [
+        { key: "questao10", idx: 10 },
+        { key: "questao11", idx: 11 },
+      ],
+      nr06: [
+        { key: "questao13", idx: 13 },
+        { key: "questao14", idx: 14 },
+      ],
+      nr07: [
+        { key: "questao16", idx: 16 },
+        { key: "questao17", idx: 17 },
+        { key: "questao18", idx: 18 },
+      ],
+      nr09: [
+        { key: "questao20", idx: 20 },
+        { key: "questao21", idx: 21 },
+        { key: "questao22", idx: 22 },
+      ],
+      nr10: [
+        { key: "questao24", idx: 24 },
+        { key: "questao25", idx: 25 },
+        { key: "questao26", idx: 26 },
+      ],
+      nr11: [
+        { key: "questao28", idx: 28 },
+        { key: "questao29", idx: 29 },
+      ],
+      nr12: [
+        { key: "questao31", idx: 31 },
+        { key: "questao32", idx: 32 },
+      ],
+      nr13: [{ key: "questao34", idx: 34 }],
+      nr15: [{ key: "questao36", idx: 36 }],
+      nr23: [
+        { key: "questao38", idx: 38 },
+        { key: "questao39", idx: 39 },
+        { key: "questao40", idx: 40 },
+      ],
+      licencasAmbientais: [{ key: "questao42", idx: 42 }],
+      legislacaoMaritima: [
+        { key: "questao44", idx: 44 },
+        { key: "questao45", idx: 45 },
+        { key: "questao46", idx: 46 },
+        { key: "questao47", idx: 47 },
+        { key: "questao48", idx: 48 },
+        { key: "questao49", idx: 49 },
+      ],
+      treinamentos: [
+        { key: "questao51", idx: 51 },
+        { key: "questao52", idx: 52 },
+        { key: "questao53", idx: 53 },
+      ],
+      gestaoSMS: [
+        { key: "questao55", idx: 55 },
+        { key: "questao56", idx: 56 },
+        { key: "questao57", idx: 57 },
+        { key: "questao58", idx: 58 },
+        { key: "questao59", idx: 59 },
+      ],
+    };
+
+    // Função para verificar se um bloco individual está completo (MESMA LÓGICA do ConformidadeLegal)
+    const isBlockComplete = (blockKey: string): boolean => {
+      const bloco = conformidade[blockKey as keyof typeof conformidade];
+      if (!bloco || typeof bloco !== "object") return false;
+
+      const questions = blockQuestions[blockKey] || [];
+
       return questions.every((q) => {
         const questionObj = (
           bloco as unknown as Record<string, { resposta?: string }>
         )[q.key];
-        return (
-          questionObj &&
-          typeof questionObj.resposta === "string" &&
-          questionObj.resposta !== ""
-        );
+
+        // Verificar se a pergunta tem resposta
+        if (
+          !questionObj ||
+          !questionObj.resposta ||
+          questionObj.resposta === ""
+        ) {
+          return false;
+        }
+
+        // Se a resposta é "SIM", verificar se há anexo obrigatório
+        if (questionObj.resposta === "SIM") {
+          const questionMeta = (
+            NR_QUESTIONS_MAP as Record<
+              string,
+              { text: string; attachment?: string }
+            >
+          )[String(q.idx)];
+
+          // Se a pergunta requer anexo e a resposta é SIM
+          if (questionMeta && questionMeta.attachment) {
+            const categoryFiles =
+              state.attachments[questionMeta.attachment] || [];
+            return categoryFiles.length > 0;
+          }
+        }
+
+        return true;
       });
     };
 
-    // Lista de blocos aplicáveis
-    const blocosAplicaveis = NR_BLOCKS.filter(
-      (block) => applicableBlocks[block.key]
-    );
-    if (blocosAplicaveis.length === 0) return false;
-    // Só mostra check verde se TODOS os blocos aplicáveis estão completos
-    return blocosAplicaveis.every((block) =>
-      isBlockComplete(block.key, block.questions)
-    );
-  }, [state.formData]);
+    // Verificar se TODOS os blocos aplicáveis estão completos (têm check verde individual)
+    return applicableBlocks.every((blockKey) => isBlockComplete(blockKey));
+  }, [state.formData, state.attachments]);
 
   // Função para validar Serviços Especializados
   const isServicosEspeciaisValid = React.useCallback(() => {
@@ -524,7 +564,6 @@ const HseNewSupplierContent: React.FC = () => {
         icon: step.icon,
         url: "",
         isExpanded: currentStep === step.id,
-        isSelected: currentStep === step.id,
         disabled: !formSelectors.canProceedToStep(state, step.id),
         onClick: (ev?: React.MouseEvent<HTMLElement>) => {
           ev?.preventDefault();
@@ -711,9 +750,82 @@ const HseNewSupplierContent: React.FC = () => {
             }}
           />
 
-          {/* Botão Voltar ao Início na navbar */}
-          <div className={styles.navFooter}>
-            <BackToHomeButton />
+          {/* Informação do usuário na navbar - integrado ao botão Voltar */}
+          <div style={{ marginTop: "auto" }}>
+            {/* Informação do usuário */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderTop: "1px solid #e1dfdd",
+                backgroundColor: "#faf9f8",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  backgroundColor: "#0078d4",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <span
+                  style={{
+                    color: "white",
+                    fontWeight: "600",
+                    fontSize: "14px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  {(() => {
+                    const userName = currentUser?.displayName || "Usuário";
+                    return userName
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((name) => name.charAt(0).toUpperCase())
+                      .join("");
+                  })()}
+                </span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#323130",
+                    lineHeight: "20px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {currentUser?.displayName || "Usuário"}
+                </div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#605e5c",
+                    lineHeight: "16px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {currentUser?.email || "email@exemplo.com"}
+                </div>
+              </div>
+            </div>
+
+            {/* Botão Voltar ao Início - sem espaçamento */}
+            <div className={styles.navFooter} style={{ marginTop: 0 }}>
+              <BackToHomeButton />
+            </div>
           </div>
         </div>
 

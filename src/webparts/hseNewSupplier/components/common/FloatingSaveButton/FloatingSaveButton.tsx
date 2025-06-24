@@ -15,6 +15,7 @@ import {
   generateValidationMessage,
   mapMissingFieldsToFormFields,
 } from "../../../utils/formValidation";
+import { NR_QUESTIONS_MAP } from "../../../utils/formConstants";
 import { LoadingOverlay } from "../LoadingOverlay/LoadingOverlay";
 
 export const FloatingSaveButton: React.FC = (): JSX.Element => {
@@ -54,126 +55,164 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     const remOk = attachments.rem && attachments.rem.length > 0;
     return camposOk && remOk;
   }, [state.formData, state.attachments]);
-
   const isConformidadeLegalValid = React.useCallback(() => {
     const conformidade = state.formData.conformidadeLegal || {};
 
-    const NR_BLOCKS = [
-      {
-        key: "nr01",
-        questions: [
-          { key: "questao1" },
-          { key: "questao2" },
-          { key: "questao3" },
-          { key: "questao4" },
-          { key: "questao5" },
-        ],
-      },
-      { key: "nr04", questions: [{ key: "questao7" }, { key: "questao8" }] },
-      { key: "nr05", questions: [{ key: "questao10" }, { key: "questao11" }] },
-      { key: "nr06", questions: [{ key: "questao13" }, { key: "questao14" }] },
-      {
-        key: "nr07",
-        questions: [
-          { key: "questao16" },
-          { key: "questao17" },
-          { key: "questao18" },
-        ],
-      },
-      {
-        key: "nr09",
-        questions: [
-          { key: "questao20" },
-          { key: "questao21" },
-          { key: "questao22" },
-        ],
-      },
-      {
-        key: "nr10",
-        questions: [
-          { key: "questao24" },
-          { key: "questao25" },
-          { key: "questao26" },
-        ],
-      },
-      { key: "nr11", questions: [{ key: "questao28" }, { key: "questao29" }] },
-      { key: "nr12", questions: [{ key: "questao31" }, { key: "questao32" }] },
-      { key: "nr13", questions: [{ key: "questao34" }] },
-      { key: "nr15", questions: [{ key: "questao36" }] },
-      {
-        key: "nr23",
-        questions: [
-          { key: "questao38" },
-          { key: "questao39" },
-          { key: "questao40" },
-        ],
-      },
-      { key: "licencasAmbientais", questions: [{ key: "questao42" }] },
-      {
-        key: "legislacaoMaritima",
-        questions: [
-          { key: "questao44" },
-          { key: "questao45" },
-          { key: "questao46" },
-          { key: "questao47" },
-          { key: "questao48" },
-          { key: "questao49" },
-        ],
-      },
-      {
-        key: "treinamentos",
-        questions: [
-          { key: "questao51" },
-          { key: "questao52" },
-          { key: "questao53" },
-        ],
-      },
-      {
-        key: "gestaoSMS",
-        questions: [
-          { key: "questao55" },
-          { key: "questao56" },
-          { key: "questao57" },
-          { key: "questao58" },
-          { key: "questao59" },
-        ],
-      },
+    // Lista de todos os possíveis blocos NR
+    const possibleBlocks = [
+      "nr01",
+      "nr04",
+      "nr05",
+      "nr06",
+      "nr07",
+      "nr09",
+      "nr10",
+      "nr11",
+      "nr12",
+      "nr13",
+      "nr15",
+      "nr23",
+      "licencasAmbientais",
+      "legislacaoMaritima",
+      "treinamentos",
+      "gestaoSMS",
     ];
 
-    const applicableBlocks: { [key: string]: boolean } = {};
-    NR_BLOCKS.forEach((block) => {
-      const bloco = conformidade[block.key as keyof typeof conformidade];
-      if (bloco && typeof bloco === "object") {
-        applicableBlocks[block.key] = true;
-      }
-    });
-
-    const isBlockComplete = (
-      blockKey: string,
-      questions: Array<{ key: string }>
-    ): boolean => {
+    // Identificar blocos aplicáveis (que foram marcados como aplicáveis pelo usuário)
+    const applicableBlocks = possibleBlocks.filter((blockKey) => {
       const bloco = conformidade[blockKey as keyof typeof conformidade];
       if (!bloco || typeof bloco !== "object") return false;
+
+      // Usar a nova flag de aplicabilidade
+      const blockObj = bloco as unknown as { aplicavel?: boolean };
+      return blockObj.aplicavel === true;
+    });
+
+    // Se nenhum bloco aplicável, não está válido
+    if (applicableBlocks.length === 0) return false;
+
+    // Estrutura de questões por bloco (incluindo índices para buscar attachment info)
+    const blockQuestions: Record<
+      string,
+      Array<{ key: string; idx: number }>
+    > = {
+      nr01: [
+        { key: "questao1", idx: 1 },
+        { key: "questao2", idx: 2 },
+        { key: "questao3", idx: 3 },
+        { key: "questao4", idx: 4 },
+        { key: "questao5", idx: 5 },
+      ],
+      nr04: [
+        { key: "questao7", idx: 7 },
+        { key: "questao8", idx: 8 },
+      ],
+      nr05: [
+        { key: "questao10", idx: 10 },
+        { key: "questao11", idx: 11 },
+      ],
+      nr06: [
+        { key: "questao13", idx: 13 },
+        { key: "questao14", idx: 14 },
+      ],
+      nr07: [
+        { key: "questao16", idx: 16 },
+        { key: "questao17", idx: 17 },
+        { key: "questao18", idx: 18 },
+      ],
+      nr09: [
+        { key: "questao20", idx: 20 },
+        { key: "questao21", idx: 21 },
+        { key: "questao22", idx: 22 },
+      ],
+      nr10: [
+        { key: "questao24", idx: 24 },
+        { key: "questao25", idx: 25 },
+        { key: "questao26", idx: 26 },
+      ],
+      nr11: [
+        { key: "questao28", idx: 28 },
+        { key: "questao29", idx: 29 },
+      ],
+      nr12: [
+        { key: "questao31", idx: 31 },
+        { key: "questao32", idx: 32 },
+      ],
+      nr13: [{ key: "questao34", idx: 34 }],
+      nr15: [{ key: "questao36", idx: 36 }],
+      nr23: [
+        { key: "questao38", idx: 38 },
+        { key: "questao39", idx: 39 },
+        { key: "questao40", idx: 40 },
+      ],
+      licencasAmbientais: [{ key: "questao42", idx: 42 }],
+      legislacaoMaritima: [
+        { key: "questao44", idx: 44 },
+        { key: "questao45", idx: 45 },
+        { key: "questao46", idx: 46 },
+        { key: "questao47", idx: 47 },
+        { key: "questao48", idx: 48 },
+        { key: "questao49", idx: 49 },
+      ],
+      treinamentos: [
+        { key: "questao51", idx: 51 },
+        { key: "questao52", idx: 52 },
+        { key: "questao53", idx: 53 },
+      ],
+      gestaoSMS: [
+        { key: "questao55", idx: 55 },
+        { key: "questao56", idx: 56 },
+        { key: "questao57", idx: 57 },
+        { key: "questao58", idx: 58 },
+        { key: "questao59", idx: 59 },
+      ],
+    };
+
+    // Função para verificar se um bloco individual está completo (MESMA LÓGICA do ConformidadeLegal)
+    const isBlockComplete = (blockKey: string): boolean => {
+      const bloco = conformidade[blockKey as keyof typeof conformidade];
+      if (!bloco || typeof bloco !== "object") return false;
+
+      const questions = blockQuestions[blockKey] || [];
+
       return questions.every((q) => {
         const questionObj = (
           bloco as unknown as Record<string, { resposta?: string }>
         )[q.key];
-        return (
-          questionObj &&
-          typeof questionObj.resposta === "string" &&
-          questionObj.resposta !== ""
-        );
+
+        // Verificar se a pergunta tem resposta
+        if (
+          !questionObj ||
+          !questionObj.resposta ||
+          questionObj.resposta === ""
+        ) {
+          return false;
+        }
+
+        // Se a resposta é "SIM", verificar se há anexo obrigatório
+        if (questionObj.resposta === "SIM") {
+          const questionMeta = (
+            NR_QUESTIONS_MAP as Record<
+              string,
+              { text: string; attachment?: string }
+            >
+          )[String(q.idx)];
+
+          // Se a pergunta requer anexo e a resposta é SIM
+          if (questionMeta && questionMeta.attachment) {
+            const categoryFiles =
+              state.attachments[questionMeta.attachment] || [];
+            return categoryFiles.length > 0;
+          }
+        }
+
+        return true;
       });
     };
 
-    const blocosAplicaveis = NR_BLOCKS.filter(
-      (block) => applicableBlocks[block.key]
-    );
-    if (blocosAplicaveis.length === 0) return false;
-    return blocosAplicaveis.every((block) =>
-      isBlockComplete(block.key, block.questions)
-    );
-  }, [state.formData]);
+    // Verificar se TODOS os blocos aplicáveis estão completos (têm check verde individual)
+    return applicableBlocks.every((blockKey) => isBlockComplete(blockKey));
+  }, [state.formData, state.attachments]);
 
   const isServicosEspeciaisValid = React.useCallback(() => {
     const { servicosEspeciais } = state.formData;

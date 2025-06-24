@@ -1,12 +1,11 @@
 @import "~@fluentui/react/dist/sass/References.scss";
-@import "../styles/modern-design-system.scss";
 
 .hseNewSupplier {
   min-height: 100vh;
   background-color: $ms-color-neutralLighter;
   .header {
-    background: linear-gradient(135deg, #0078d4 0%, #106ebe 50%, #004578 100%);
-    color: white;
+    background: linear-gradient(135deg, #003b5c 0%, #00263e 100%);
+    color: #fff;
     padding: 24px 32px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     position: relative;
@@ -170,12 +169,14 @@
     min-height: calc(100vh - 140px);
     .navigation {
       width: 280px;
-      background-color: white;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
       border-right: 1px solid $ms-color-neutralLight;
       box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 140px);
+      height: calc(100vh - 450px);
+      position: sticky;
+      top: 0px;
 
       .navHeader {
         display: flex;
@@ -198,6 +199,7 @@
       .navPanel {
         padding: 20px 0;
         flex: 1;
+
         :global(.ms-Nav-link) {
           padding: 12px 20px;
           border-radius: 0;
@@ -213,89 +215,74 @@
             font-weight: bold;
             font-size: 16px;
           }
+
           &.is-selected {
             background-color: rgba(0, 120, 212, 0.1);
             border-right: 3px solid #0078d4;
           }
 
-          // Adicionalmente para garantir que o item selecionado seja destacado
-          &[aria-selected="true"] {
-            background-color: rgba(0, 120, 212, 0.1);
-            border-right: 3px solid #0078d4;
-          }
-        }
-
-        // Estilos para links de navegação desabilitados - multiple selectors para garantir compatibilidade
-        :global(.ms-Nav-link.is-disabled),
-        :global(.ms-Nav-link[aria-disabled="true"]),
-        :global(.ms-Nav-link[disabled]),
-        :global(.ms-Nav-link:disabled) {
-          opacity: 0.6 !important;
-          cursor: not-allowed !important;
-
-          :global(.ms-Nav-linkText) {
-            color: var(--gray-500, #adb5bd) !important;
-          }
-        }
-
-        // Fallback para quando o disabled é aplicado via JavaScript
-        :global(.ms-Nav-link) {
           &.is-disabled {
             opacity: 0.6;
             cursor: not-allowed;
-
-            :global(.ms-Nav-linkText) {
-              color: var(--gray-500, #adb5bd) !important;
-            }
-          }
-
-          // Fluent UI aplica is-disabled automaticamente quando disabled=true
-          &[aria-disabled="true"] {
-            opacity: 0.6;
-            cursor: not-allowed;
-
-            :global(.ms-Nav-linkText) {
-              color: var(--gray-500, #adb5bd) !important;
-            }
           }
         }
+
         :global(.ms-Nav-linkText) {
           font-weight: 500;
-        } // Adicionais para garantir que itens desabilitados sejam cinza
-        :global(.ms-Nav-link[aria-disabled="true"]) {
-          :global(.ms-Nav-linkText) {
-            color: var(--gray-500, #adb5bd) !important;
-          }
-        }
-
-        :global(.ms-Nav-link.is-disabled) {
-          :global(.ms-Nav-linkText) {
-            color: var(--gray-500, #adb5bd) !important;
-          }
-        }
-
-        // Force override for disabled nav links text color with maximum specificity
-        :global(
-            .ms-Nav
-              .ms-Nav-compositeLink
-              .ms-Nav-link[aria-disabled="true"]
-              .ms-Nav-linkText
-          ),
-        :global(
-            .ms-Nav
-              .ms-Nav-compositeLink
-              .ms-Nav-link.is-disabled
-              .ms-Nav-linkText
-          ) {
-          color: #adb5bd !important;
         }
       }
-
       .navFooter {
-        padding: 20px;
+        padding: 16px 20px;
         border-top: 1px solid $ms-color-neutralLight;
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .userInfo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0;
+        margin: 0;
+        background: none;
+        border: none;
+        box-shadow: none;
+        border-radius: 0;
+
+        .userAvatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #003b5c 0%, #0078d4 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 4px rgba(0, 59, 92, 0.15);
+          flex-shrink: 0;
+
+          .userInitials {
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+          }
+        }
+
+        .userDetails {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+
+          > * {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
       }
     }
 
