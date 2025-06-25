@@ -77,11 +77,11 @@ export const ATTACHMENT_CATEGORIES = {
   CLASSIFICACAO_CASCO: "classificacaoCasco",
   CLASSIFICACAO_MAQUINAS: "classificacaoMaquinas",
   BORDA_LIVRE: "bordaLivre",
-  SEGURO_OBRIGATORIO: "seguroObrigatorio",
-  AUTORIZACAO_ANTAQ: "autorizacaoANTAQ",
+  SEGURO_OBRIGATORIO: "seguroDepem",
+  AUTORIZACAO_ANTAQ: "autorizacaoAntaq",
   TRIPULACAO_SEGURANCA: "tripulacaoSeguranca",
-  COMPENSACAO_AGULHA: "compensacaoAgulha",
-  REVISAO_BALSA: "revisaoBalsa",
+  COMPENSACAO_AGULHA: "agulhaMagnetica",
+  REVISAO_BALSA: "balsaInflavel",
   LICENCA_RADIO: "licencaRadio",
 
   // Içamento (questões 88-93)
@@ -98,90 +98,216 @@ export const NR_QUESTIONS_MAP = {
   // NR 01 - Disposições Gerais
   1: {
     category: "NR01",
-    text: "A CONTRATADA tem conhecimento, cumpre e faz cumprir as disposições legais e regulamentares sobre segurança e medicina do trabalho?",
+    text: "A CONTRATADA tem conhecimento, cumpre e faz cumprir as disposições legais e regulamentares sobre segurança e medicina do trabalho determinadas na legislação federal, estadual e/ou municipal?",
   },
   2: {
     category: "NR01",
-    text: "Elabora ordens de serviços sobre segurança e saúde, conscientizando empregados quanto aos riscos?",
+    text: "Elabora ordens de serviços sobre segurança e saúde, conscientizando seus empregados quanto aos riscos existentes e os seus mecanismos de prevenção e controle?",
   },
   3: {
     category: "NR01",
-    text: "Elabora ordens de serviços sobre obrigações e condições exigíveis nas leis sobre acidentes de trabalho?",
+    text: "Elabora ordens de serviços sobre segurança e saúde, conscientizando seus empregados quanto às obrigações e condições exigíveis nas leis e regulamentos dos acidentes de trabalho (empregado tem 24h para comunicar um acidente) e aos procedimentos a serem adotados em caso de acidente e doença do trabalho?",
   },
   4: {
     category: "NR01",
-    text: "Elabora ordens de serviços sobre resultados de exames médicos e avaliações ambientais?",
+    text: "Elabora ordens de serviços sobre segurança e saúde, conscientizando seus empregados quanto aos resultados dos exames médicos e avaliações ambientais nos locais de trabalho?",
   },
   5: {
     category: "NR01",
-    text: "A CONTRATADA mantém o Livro de Inspeção exigido pela legislação do trabalho (MTE)?",
+    text: "A CONTRATADA mantém o Livro de Inspeção exigido pela legislação do trabalho (MTE) no local de trabalho?",
   },
 
   // NR 04 - SESMT
-  7: {
+  6: {
     category: "NR04",
     text: "A CONTRATADA possui SESMT registrado no órgão regional do MTE?",
     attachment: ATTACHMENT_CATEGORIES.SESMT,
   },
-  8: {
+  7: {
     category: "NR04",
     text: "O SESMT está dimensionado para quadro atual de empregados?",
   },
 
   // NR 05 - CIPA
-  10: {
+  8: {
     category: "NR05",
     text: "A CONTRATADA possui CIPA registrada no órgão regional do MTE?",
     attachment: ATTACHMENT_CATEGORIES.CIPA,
   },
-  11: {
+  9: {
     category: "NR05",
     text: "A CIPA está dimensionada para quadro atual de empregados?",
   },
 
   // NR 06 - EPI
-  13: {
+  10: {
     category: "NR06",
-    text: "A CONTRATADA fornece EPI adequado ao risco conforme NR-6?",
+    text: "A CONTRATADA fornece EPI adequado ao risco, em perfeito estado de conservação e funcionamento, com preenchimento de cautela e gratuitamente a seus empregados conforme disposições contidas na NR-6?",
     attachment: ATTACHMENT_CATEGORIES.CA_EPI,
   },
-  14: {
+  11: {
     category: "NR06",
-    text: "A CONTRATADA orienta empregados quanto à obrigatoriedade do uso, guarda e manutenção do EPI?",
+    text: "A CONTRATADA orienta os empregados quanto à obrigatoriedade do uso, guarda, manutenção e substituição do EPI?",
   },
 
   // NR 07 - PCMSO
-  16: {
+  12: {
     category: "NR07",
     text: "A CONTRATADA elabora e implementa PCMSO?",
     attachment: ATTACHMENT_CATEGORIES.PCMSO,
   },
-  17: {
+  13: {
     category: "NR07",
-    text: "A CONTRATADA realiza os exames médicos previstos na NR 7?",
+    text: "A CONTRATADA realiza os exames médicos previstos na NR 7? Controle de ASO.",
     attachment: ATTACHMENT_CATEGORIES.ASO,
   },
-  18: {
+  14: {
     category: "NR07",
     text: "A CONTRATADA tem arquivo comprovando que realizou e custeou os exames previstos na NR 7?",
   },
 
   // NR 09 - PPRA
-  20: {
+  15: {
     category: "NR09",
     text: "A CONTRATADA tem o PPRA atualizado?",
     attachment: ATTACHMENT_CATEGORIES.PPRA,
   },
-  21: {
+  16: {
     category: "NR09",
     text: "O PPRA da CONTRATADA está adequado aos riscos apresentados por suas atividades?",
   },
-  22: {
+  17: {
     category: "NR09",
     text: "Os trabalhadores foram informados sobre os riscos ambientais?",
   },
 
-  // Continuar com todas as outras questões...
+  // NR 10 - Instalações e Serviços em Eletricidade
+  18: {
+    category: "NR10",
+    text: "As instalações elétricas estão de acordo com a norma regulamentadora?",
+  },
+  19: {
+    category: "NR10",
+    text: "As instalações elétricas foram projetadas de acordo com as normas técnicas brasileiras e/ou internacionais vigentes?",
+  },
+  20: {
+    category: "NR10",
+    text: "Os profissionais são habilitados para trabalhos com eletricidade?",
+  },
+
+  // NR 11 - Transporte, Movimentação, Armazenagem e Manuseio de Materiais
+  21: {
+    category: "NR11",
+    text: "Os equipamentos utilizados na movimentação de materiais e /ou pessoal estão dentro das condições especiais de segurança?",
+  },
+  22: {
+    category: "NR11",
+    text: "Os operadores de transporte possuem habilitação, sendo submetidos a treinamento específico?",
+  },
+
+  // NR 12 - Máquinas e Equipamentos
+  23: {
+    category: "NR12",
+    text: "A CONTRATADA possui um plano de Inspeção/Manutenção para as máquinas e equipamentos?",
+  },
+  24: {
+    category: "NR12",
+    text: "Os dispositivos de acionamento, partida e parada estão em conformidade com a NR?",
+  },
+
+  // NR 13 - Caldeiras e Vasos de Pressão
+  25: {
+    category: "NR13",
+    text: "A CONTRATADA possui uma sistemática de calibração e manutenção dos Equipamentos Críticos e instrumentos contemplados nesta NR?",
+  },
+
+  // NR 15 - Atividades e Operações Insalubres
+  26: {
+    category: "NR15",
+    text: "A CONTRATADA atende aos requisitos estabelecidos na NR 15 e em seus anexos, no que se refere às atividades e operações insalubres?",
+  },
+
+  // NR 23 - Proteção Contra Incêndios
+  27: {
+    category: "NR23",
+    text: "Os equipamentos de Combate a Incêndios encontram-se devidamente identificados e com a manutenção em dia?",
+  },
+  28: {
+    category: "NR23",
+    text: "Os equipamentos de Combate a Incêndios encontram-se distribuídos e em quantidade de acordo com o que é estabelecido na NR?",
+  },
+  29: {
+    category: "NR23",
+    text: "O Extintor de incêncio possui a certificação do INMETRO?",
+  },
+
+  // Licenças Ambientais
+  30: {
+    category: "LICENCAS_AMBIENTAIS",
+    text: "A CONTRATADA possui licença de operação emitida pelo órgão ambiental competente?",
+  },
+
+  // Legislação Marítima
+  31: {
+    category: "LEGISLACAO_MARITIMA",
+    text: "A CONTRATADA está em conformidade com os regulamentos do MODU CODE?",
+  },
+  32: {
+    category: "LEGISLACAO_MARITIMA",
+    text: "A CONTRATADA está em conformidade com os regulamentos da NORMAN?",
+  },
+  33: {
+    category: "LEGISLACAO_MARITIMA",
+    text: "A CONTRATADAestá em conformidade com os regulamentos da MARPOL?",
+  },
+  34: {
+    category: "LEGISLACAO_MARITIMA",
+    text: "A CONTRATADA está em conformidade com os regulamentos da STCW?",
+  },
+  35: {
+    category: "LEGISLACAO_MARITIMA",
+    text: "A CONTRATADA está em conformidade com os regulamentos do ISM CODE?",
+  },
+  36: {
+    category: "LEGISLACAO_MARITIMA",
+    text: "A CONTRATADA está em conformidade com os regulamentos do SOLAS?",
+  },
+
+  // Treinamentos Obrigatórios
+  37: {
+    category: "TREINAMENTOS_OBRIGATORIOS",
+    text: "A CONTRATADA tem Programa Educativo contemplando a temática de Prevenção de Acidentes, Meio Ambiente e Doenças do Trabalho?",
+  },
+  38: {
+    category: "TREINAMENTOS_OBRIGATORIOS",
+    text: "Todos os empregados recebem treinamento admissional e periódico, visando executar suas funções com segurança?",
+  },
+  39: {
+    category: "TREINAMENTOS_OBRIGATORIOS",
+    text: "Nos treinamentos os empregados recebem cópias ou têm os procedimentos em local acessível, para que as operações sejam realizadas com segurança e ambientalmente corretas?",
+  },
+
+  // Gestão de SMS (Saúde, Meio Ambiente e Segurança)
+  40: {
+    category: "GESTAO_SMS",
+    text: "A CONTRATADA tem procedimento para análise e registro de acidentes?",
+  },
+  41: {
+    category: "GESTAO_SMS",
+    text: "A CONTRATADA realiza inspeções de SMS programadas ?",
+  },
+  42: {
+    category: "GESTAO_SMS",
+    text: "A CONTRATADA tem procedimento para minimização e disposição de resíduos?",
+  },
+  43: {
+    category: "GESTAO_SMS",
+    text: "A CONTRATADA divulga as Metas e Programa de Segurança, Meio Ambiente e Saúde?",
+  },
+  44: {
+    category: "GESTAO_SMS",
+    text: "A CONTRATADA tem um Programa das Atividades de Segurança Meio Ambiente e Saúde para o ano em curso?",
+  },
 };
 
 // Validações de campos
@@ -246,7 +372,7 @@ export const FORM_STEPS = [
     id: 3,
     title: "Serviços Especializados",
     description: "Embarcações e içamento de carga",
-    icon: "Settings",
+    icon: "Repair",
     requiredFields: [],
     requiredAttachments: [], // Condicional
   },
@@ -423,7 +549,7 @@ export const LIFTING_DOCUMENTS = [
   {
     id: 89,
     name: "CREA do Engenheiro",
-    category: "creaEngenheiro",
+    category: "registroCREA",
     isRequired: true,
     description: "Registro CREA do Engenheiro",
   },
@@ -444,7 +570,7 @@ export const LIFTING_DOCUMENTS = [
   {
     id: 92,
     name: "Fumaça Preta",
-    category: "fumacaPreta",
+    category: "monitoramentoFumaca",
     isRequired: true,
     description: "Controle de Emissão de Fumaça Preta",
   },

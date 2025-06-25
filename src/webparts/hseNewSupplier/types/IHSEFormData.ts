@@ -215,10 +215,10 @@ export interface IEmbarcacoes {
 // Interface para documentos de içamento (questões 88-93)
 export interface IIcamento {
   testeCarga: IQuestaoConformidade; // Questão 88
-  creaEngenheiro: IQuestaoConformidade; // Questão 89
+  registroCREA: IQuestaoConformidade; // Questão 89
   art: IQuestaoConformidade; // Questão 90
   planoManutencao: IQuestaoConformidade; // Questão 91
-  fumacaPreta: IQuestaoConformidade; // Questão 92
+  monitoramentoFumaca: IQuestaoConformidade; // Questão 92
   certificacaoEquipamentos: IQuestaoConformidade; // Questão 93
 }
 
@@ -250,10 +250,10 @@ export interface IAnexosFormulario {
   };
   icamento?: {
     testeCarga?: IAttachmentMetadata;
-    creaEngenheiro?: IAttachmentMetadata;
+    registroCREA?: IAttachmentMetadata;
     art?: IAttachmentMetadata;
     planoManutencao?: IAttachmentMetadata;
-    fumacaPreta?: IAttachmentMetadata;
+    monitoramentoFumaca?: IAttachmentMetadata;
     certificacaoEquipamentos?: IAttachmentMetadata;
   };
 }

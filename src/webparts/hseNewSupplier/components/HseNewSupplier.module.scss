@@ -177,6 +177,7 @@
       height: calc(100vh - 450px);
       position: sticky;
       top: 0px;
+      overflow: visible; // Permitir que tooltips apareçam fora da navegação
 
       .navHeader {
         display: flex;
@@ -199,6 +200,7 @@
       .navPanel {
         padding: 20px 0;
         flex: 1;
+        overflow: visible; // Permitir que tooltips apareçam fora do painel
 
         :global(.ms-Nav-link) {
           padding: 12px 20px;
@@ -224,6 +226,7 @@
           &.is-disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            position: relative;
           }
         }
 
@@ -364,6 +367,27 @@
   }
   50% {
     opacity: 0.8;
+  }
+}
+
+// Mensagem de aviso para etapa bloqueada (estilo similar ao questionCounter)
+.stepBlockedMessage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px 6px 20px;
+  margin: 4px 20px 8px 20px;
+  background-color: rgba(102, 102, 102, 0.1);
+  border-radius: 4px;
+  font-style: italic;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.4;
+
+  .stepBlockedIcon {
+    color: #666;
+    font-size: 12px;
+    flex-shrink: 0;
   }
 }
 

@@ -144,13 +144,11 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
             }
             return prev + 10;
           });
-        }, 100);
-
-        // Fazer upload usando o contexto HSE - usar category como subcategory para criar subpasta
+        }, 100); // Fazer upload usando o contexto HSE - usar subcategory correta para criar subpasta
         const uploadedFile = await actions.uploadAttachment(
           file,
-          category, // categoria principal
-          category // subcategoria = nome do campo para criar subpasta
+          category, // categoria principal (nome da pasta específica)
+          subcategory || "geral" // subcategoria correta para organização
         );
 
         // Finalizar progresso

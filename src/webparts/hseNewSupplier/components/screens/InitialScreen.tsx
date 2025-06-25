@@ -19,6 +19,7 @@ import {
 } from "../../types/IApplicationPhase";
 import { validators } from "../../utils/validators";
 import { formatters } from "../../utils/formatters";
+import styles from "../HseNewSupplier.module.scss";
 
 // Assets da Oceaneering
 import logoWhite from "../../assets/logo-white.png";
@@ -412,17 +413,11 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                 }}
               >
                 Iniciar Formulário
-              </Text>
-              <Text
-                variant="small"
-                style={{
-                  color: oceaneeringColors.textSecondary,
-                  fontStyle: "italic",
-                  marginTop: "4px",
-                }}
-              >
+              </Text>{" "}
+              <div className={styles.stepBlockedMessage}>
+                <Icon iconName="Info" className={styles.stepBlockedIcon} />
                 Apenas para novos cadastros
-              </Text>
+              </div>
             </Stack>
 
             <Stack

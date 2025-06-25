@@ -191,7 +191,9 @@ export const RevisaoFinal: React.FC = () => {
           attachments.rem?.length > 0
       ),
     };
-  }; // Função para obter resumo da conformidade legal
+  };
+
+  // Função para obter resumo da conformidade legal
   const getConformidadeLegalResumo = (): {
     nrsRespondidas: Array<{
       nr: string;
@@ -201,6 +203,15 @@ export const RevisaoFinal: React.FC = () => {
         texto: string;
         resposta: string;
         anexo?: string;
+      }>;
+    }>;
+    outrosItensRespondidos: Array<{
+      key: string;
+      titulo: string;
+      questoes: Array<{
+        id: number;
+        texto: string;
+        resposta: string;
       }>;
     }>;
     anexos: string[];
@@ -213,13 +224,12 @@ export const RevisaoFinal: React.FC = () => {
     if (!conformidade) {
       return {
         nrsRespondidas: [],
+        outrosItensRespondidos: [],
         anexos: [],
         isComplete: false,
         totalRespondidas: 0,
       };
-    }
-
-    // Mapeamento dos blocos de NR para extrair dados estruturados
+    } // Mapeamento dos blocos de NR para extrair dados estruturados
     const NR_BLOCKS = [
       {
         key: "nr01",
@@ -236,27 +246,128 @@ export const RevisaoFinal: React.FC = () => {
         key: "nr04",
         titulo: "NR 04 - SESMT",
         questoes: [
-          { key: "questao7", idx: 7 },
-          { key: "questao8", idx: 8 },
+          { key: "questao1", idx: 6 },
+          { key: "questao2", idx: 7 },
         ],
       },
       {
         key: "nr05",
         titulo: "NR 05 - CIPA",
         questoes: [
-          { key: "questao10", idx: 10 },
-          { key: "questao11", idx: 11 },
+          { key: "questao1", idx: 8 },
+          { key: "questao2", idx: 9 },
         ],
       },
       {
         key: "nr06",
         titulo: "NR 06 - EPI",
         questoes: [
-          { key: "questao13", idx: 13 },
-          { key: "questao14", idx: 14 },
+          { key: "questao1", idx: 10 },
+          { key: "questao2", idx: 11 },
         ],
       },
-      // Adicionar outros blocos conforme necessário
+      {
+        key: "nr07",
+        titulo: "NR 07 - PCMSO",
+        questoes: [
+          { key: "questao1", idx: 12 },
+          { key: "questao2", idx: 13 },
+          { key: "questao3", idx: 14 },
+        ],
+      },
+      {
+        key: "nr09",
+        titulo: "NR 09 - PPRA",
+        questoes: [
+          { key: "questao1", idx: 15 },
+          { key: "questao2", idx: 16 },
+          { key: "questao3", idx: 17 },
+        ],
+      },
+      {
+        key: "nr10",
+        titulo: "NR 10 - Instalações e Serviços em Eletricidade",
+        questoes: [
+          { key: "questao1", idx: 18 },
+          { key: "questao2", idx: 19 },
+          { key: "questao3", idx: 20 },
+        ],
+      },
+      {
+        key: "nr11",
+        titulo:
+          "NR 11 - Transporte, Movimentação, Armazenagem e Manuseio de Materiais",
+        questoes: [
+          { key: "questao1", idx: 21 },
+          { key: "questao2", idx: 22 },
+        ],
+      },
+      {
+        key: "nr12",
+        titulo: "NR 12 - Máquinas e Equipamentos",
+        questoes: [
+          { key: "questao1", idx: 23 },
+          { key: "questao2", idx: 24 },
+        ],
+      },
+      {
+        key: "nr13",
+        titulo: "NR 13 - Caldeiras e Vasos de Pressão",
+        questoes: [{ key: "questao1", idx: 25 }],
+      },
+      {
+        key: "nr15",
+        titulo: "NR 15 - Atividades e Operações Insalubres",
+        questoes: [{ key: "questao1", idx: 26 }],
+      },
+      {
+        key: "nr23",
+        titulo: "NR 23 - Proteção Contra Incêndios",
+        questoes: [
+          { key: "questao1", idx: 27 },
+          { key: "questao2", idx: 28 },
+          { key: "questao3", idx: 29 },
+        ],
+      },
+    ]; // Mapeamento dos outros itens de conformidade (não-NRs)
+    const OUTROS_CONFORMIDADE = [
+      {
+        key: "licencasAmbientais",
+        titulo: "Licenças Ambientais",
+        questoes: [{ key: "questao1", idx: 30 }],
+      },
+      {
+        key: "legislacaoMaritima",
+        titulo: "Legislação Marítima",
+        questoes: [
+          { key: "questao1", idx: 31 },
+          { key: "questao2", idx: 32 },
+          { key: "questao3", idx: 33 },
+          { key: "questao4", idx: 34 },
+          { key: "questao5", idx: 35 },
+          { key: "questao6", idx: 36 },
+        ],
+      },
+      {
+        key: "treinamentos",
+        titulo: "Treinamentos Obrigatórios",
+        questoes: [
+          { key: "questao1", idx: 37 },
+          { key: "questao2", idx: 38 },
+          { key: "questao3", idx: 39 },
+        ],
+      },
+      {
+        key: "gestaoSMS",
+        titulo: "Gestão de SMS (Saúde, Meio Ambiente e Segurança)",
+        questoes: [
+          { key: "questao1", idx: 40 },
+          { key: "questao2", idx: 41 },
+          { key: "questao3", idx: 42 },
+          { key: "questao4", idx: 43 },
+          { key: "questao5", idx: 44 },
+        ],
+      },
     ];
     const nrsRespondidas = NR_BLOCKS.filter((block) => {
       const nrData = conformidade[block.key as keyof typeof conformidade];
@@ -305,7 +416,44 @@ export const RevisaoFinal: React.FC = () => {
           questoes,
         };
       })
-      .filter((nr) => nr.questoes.length > 0); // Só NRs com questões respondidas    // Obter anexos de conformidade
+      .filter((nr) => nr.questoes.length > 0); // Só NRs com questões respondidas
+
+    // Processar outros itens de conformidade (não-NRs)
+    const outrosItensRespondidos = OUTROS_CONFORMIDADE.filter((block) => {
+      const itemData = conformidade[block.key as keyof typeof conformidade];
+      return itemData && typeof itemData === "object";
+    })
+      .map((block) => {
+        const itemData = conformidade[
+          block.key as keyof typeof conformidade
+        ] as unknown as Record<string, { resposta?: string }>;
+
+        const questoes = block.questoes
+          .map((q) => {
+            const questionObj = itemData[q.key] || {};
+            const questionMeta = (
+              NR_QUESTIONS_MAP as Record<
+                string,
+                { text: string; attachment?: string }
+              >
+            )[q.idx];
+            const resposta = questionObj.resposta || "";
+
+            return {
+              id: q.idx,
+              texto: questionMeta?.text || `Questão ${q.idx}`,
+              resposta,
+            };
+          })
+          .filter((q) => q.resposta && q.resposta !== ""); // Só questões respondidas
+
+        return {
+          key: block.key,
+          titulo: block.titulo,
+          questoes,
+        };
+      })
+      .filter((item) => item.questoes.length > 0); // Só itens com questões respondidas// Obter anexos de conformidade
     const anexosConformidade = [] as string[];
 
     // Verificar todas as categorias de anexos de conformidade legal baseadas no ATTACHMENT_CATEGORIES
@@ -331,9 +479,9 @@ export const RevisaoFinal: React.FC = () => {
         );
       }
     });
-
     return {
       nrsRespondidas,
+      outrosItensRespondidos,
       anexos: anexosConformidade,
       isComplete: nrsRespondidas.length > 0,
       totalRespondidas: nrsRespondidas.length,
@@ -389,10 +537,10 @@ export const RevisaoFinal: React.FC = () => {
       // Verificar todas as categorias de documentos de içamento obrigatórios
       const icamentoCategories = [
         { key: "testeCarga", label: "Teste de Carga" },
-        { key: "creaEngenheiro", label: "CREA Engenheiro" },
+        { key: "registroCREA", label: "CREA Engenheiro" },
         { key: "art", label: "ART" },
         { key: "planoManutencao", label: "Plano de Manutenção" },
-        { key: "fumacaPreta", label: "Fumaça Preta" },
+        { key: "monitoramentoFumaca", label: "Fumaça Preta" },
         {
           key: "certificacaoEquipamentos",
           label: "Certificação de Equipamentos",
@@ -441,10 +589,10 @@ export const RevisaoFinal: React.FC = () => {
         (!isIcamento ||
           [
             "testeCarga",
-            "creaEngenheiro",
+            "registroCREA",
             "art",
             "planoManutencao",
-            "fumacaPreta",
+            "monitoramentoFumaca",
             "certificacaoEquipamentos",
           ].every((cat) => attachments[cat]?.length > 0)),
     };
@@ -720,7 +868,51 @@ export const RevisaoFinal: React.FC = () => {
                           </button>
                         </div>
                       </div>
-                    ))}
+                    ))}{" "}
+                  </div>
+                </div>
+              )}{" "}
+              {conformidadeLegalResumo.outrosItensRespondidos.length > 0 && (
+                <div className={styles.nrsListSection}>
+                  <Text variant="mediumPlus" className={styles.nrsTitle}>
+                    <Icon
+                      iconName="ComplianceAudit"
+                      className={styles.checkIcon}
+                    />
+                    Outros Itens de Conformidade (
+                    {conformidadeLegalResumo.outrosItensRespondidos.length}):
+                  </Text>
+                  <div className={styles.nrCardsContainer}>
+                    {conformidadeLegalResumo.outrosItensRespondidos.map(
+                      (item) => (
+                        <div key={item.key} className={styles.nrCard}>
+                          <div className={styles.nrCardHeader}>
+                            <Text
+                              variant="medium"
+                              className={styles.nrCardTitle}
+                            >
+                              {item.titulo}
+                            </Text>
+                            <Text
+                              variant="small"
+                              className={styles.nrCardSubtitle}
+                            >
+                              {item.questoes.length} questões respondidas
+                            </Text>{" "}
+                          </div>
+                          <div className={styles.nrCardActions}>
+                            <button
+                              className={styles.detailsButton}
+                              onClick={() => setSelectedNR(item.key)}
+                              title="Ver detalhes das respostas"
+                            >
+                              <Icon iconName="Info" />
+                              Ver Detalhes
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -889,8 +1081,7 @@ export const RevisaoFinal: React.FC = () => {
             <div className={styles.conformidadeDetails}>
               <Text variant="large" className={styles.panelSectionTitle}>
                 Resumo Geral da Conformidade
-              </Text>
-
+              </Text>{" "}
               {conformidadeLegalResumo.nrsRespondidas.length > 0 && (
                 <div className={styles.nrGroup}>
                   <Text variant="mediumPlus" className={styles.nrGroupTitle}>
@@ -905,6 +1096,28 @@ export const RevisaoFinal: React.FC = () => {
                       </Text>
                     </div>
                   ))}
+                </div>
+              )}
+              {conformidadeLegalResumo.outrosItensRespondidos.length > 0 && (
+                <div className={styles.nrGroup}>
+                  <Text variant="mediumPlus" className={styles.nrGroupTitle}>
+                    <Icon
+                      iconName="ComplianceAudit"
+                      className={styles.checkIcon}
+                    />
+                    Outros Itens de Conformidade (
+                    {conformidadeLegalResumo.outrosItensRespondidos.length})
+                  </Text>
+                  {conformidadeLegalResumo.outrosItensRespondidos.map(
+                    (item) => (
+                      <div key={item.key} className={styles.nrItem}>
+                        <Text variant="medium">
+                          {item.titulo} - {item.questoes.length} questões
+                          respondidas
+                        </Text>
+                      </div>
+                    )
+                  )}
                 </div>
               )}
             </div>
@@ -924,8 +1137,8 @@ export const RevisaoFinal: React.FC = () => {
               />
             </div>
           </div>
-        </Panel>
-        {/* Panel de detalhes específicos de uma NR */}
+        </Panel>{" "}
+        {/* Panel de detalhes específicos de uma NR ou Outro Item */}
         <Panel
           isOpen={selectedNR !== ""}
           onDismiss={() => setSelectedNR("")}
@@ -933,29 +1146,42 @@ export const RevisaoFinal: React.FC = () => {
           headerText={`Detalhes - ${
             conformidadeLegalResumo.nrsRespondidas.find(
               (nr) => nr.nr === selectedNR
-            )?.titulo || ""
+            )?.titulo ||
+            conformidadeLegalResumo.outrosItensRespondidos.find(
+              (item) => item.key === selectedNR
+            )?.titulo ||
+            ""
           }`}
           className={styles.detailsPanel}
         >
           {selectedNR && (
             <div className={styles.panelContent}>
               {(() => {
+                // Primeiro, tentar encontrar nas NRs
                 const nrData = conformidadeLegalResumo.nrsRespondidas.find(
                   (nr) => nr.nr === selectedNR
                 );
-                if (!nrData) return null;
+
+                // Se não encontrar nas NRs, buscar nos outros itens
+                const outroItemData =
+                  conformidadeLegalResumo.outrosItensRespondidos.find(
+                    (item) => item.key === selectedNR
+                  );
+
+                const data = nrData || outroItemData;
+                if (!data) return null;
 
                 return (
                   <div className={styles.nrDetailCard}>
                     <Text variant="large" className={styles.nrDetailTitle}>
-                      {nrData.titulo}
+                      {data.titulo}
                     </Text>
                     <Text variant="medium" className={styles.nrDetailCount}>
-                      {nrData.questoes.length} questões respondidas
+                      {data.questoes.length} questões respondidas
                     </Text>
 
                     <div className={styles.questionsDetail}>
-                      {nrData.questoes.map((questao) => (
+                      {data.questoes.map((questao) => (
                         <div
                           key={questao.id}
                           className={styles.questionDetailItem}
@@ -967,13 +1193,14 @@ export const RevisaoFinal: React.FC = () => {
                             {questao.id}. {questao.texto}
                           </Text>
                           <div className={styles.questionResponse}>
+                            {" "}
                             <Text
                               variant="small"
                               className={styles.responseLabel}
                             >
                               Resposta: <strong>{questao.resposta}</strong>
                             </Text>
-                            {questao.anexo && (
+                            {"anexo" in questao && questao.anexo && (
                               <Text
                                 variant="small"
                                 className={styles.attachmentInfo}
@@ -990,7 +1217,13 @@ export const RevisaoFinal: React.FC = () => {
               })()}
               <div className={styles.panelActions}>
                 <PrimaryButton
-                  text="Editar esta NR"
+                  text={`Editar ${
+                    conformidadeLegalResumo.nrsRespondidas.find(
+                      (nr) => nr.nr === selectedNR
+                    )
+                      ? "esta NR"
+                      : "este item"
+                  }`}
                   iconProps={{ iconName: "Edit" }}
                   onClick={() => {
                     handleEditSection(2);

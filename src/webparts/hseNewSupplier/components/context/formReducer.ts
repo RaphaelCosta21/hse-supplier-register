@@ -441,10 +441,10 @@ export const formSelectors = {
         if (servicosEspeciais.fornecedorIcamento && isServicosEspeciaisValid) {
           const required = [
             "testeCarga",
-            "creaEngenheiro",
+            "registroCREA",
             "art",
             "planoManutencao",
-            "fumacaPreta",
+            "monitoramentoFumaca",
             "certificacaoEquipamentos",
           ];
           for (const doc of required) {

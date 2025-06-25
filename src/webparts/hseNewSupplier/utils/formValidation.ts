@@ -83,9 +83,7 @@ export const validateFormForSave = (
 
   // NOVA VALIDAÇÃO: Conformidade Legal
   if (data.conformidadeLegal) {
-    const conformidade = data.conformidadeLegal;
-
-    // Estrutura de questões por bloco (incluindo índices para buscar attachment info)
+    const conformidade = data.conformidadeLegal; // Estrutura de questões por bloco (incluindo índices para buscar attachment info)
     const blockQuestions: Record<
       string,
       Array<{ key: string; idx: number; title: string }>
@@ -98,109 +96,109 @@ export const validateFormForSave = (
         { key: "questao5", idx: 5, title: "NR 01 - Disposições Gerais" },
       ],
       nr04: [
-        { key: "questao7", idx: 7, title: "NR 04 - SESMT" },
-        { key: "questao8", idx: 8, title: "NR 04 - SESMT" },
+        { key: "questao1", idx: 6, title: "NR 04 - SESMT" },
+        { key: "questao2", idx: 7, title: "NR 04 - SESMT" },
       ],
       nr05: [
-        { key: "questao10", idx: 10, title: "NR 05 - CIPA" },
-        { key: "questao11", idx: 11, title: "NR 05 - CIPA" },
+        { key: "questao1", idx: 8, title: "NR 05 - CIPA" },
+        { key: "questao2", idx: 9, title: "NR 05 - CIPA" },
       ],
       nr06: [
-        { key: "questao13", idx: 13, title: "NR 06 - EPI" },
-        { key: "questao14", idx: 14, title: "NR 06 - EPI" },
+        { key: "questao1", idx: 10, title: "NR 06 - EPI" },
+        { key: "questao2", idx: 11, title: "NR 06 - EPI" },
       ],
       nr07: [
-        { key: "questao16", idx: 16, title: "NR 07 - PCMSO" },
-        { key: "questao17", idx: 17, title: "NR 07 - PCMSO" },
-        { key: "questao18", idx: 18, title: "NR 07 - PCMSO" },
+        { key: "questao1", idx: 12, title: "NR 07 - PCMSO" },
+        { key: "questao2", idx: 13, title: "NR 07 - PCMSO" },
+        { key: "questao3", idx: 14, title: "NR 07 - PCMSO" },
       ],
       nr09: [
-        { key: "questao20", idx: 20, title: "NR 09 - PPRA" },
-        { key: "questao21", idx: 21, title: "NR 09 - PPRA" },
-        { key: "questao22", idx: 22, title: "NR 09 - PPRA" },
+        { key: "questao1", idx: 15, title: "NR 09 - PPRA" },
+        { key: "questao2", idx: 16, title: "NR 09 - PPRA" },
+        { key: "questao3", idx: 17, title: "NR 09 - PPRA" },
       ],
       nr10: [
         {
-          key: "questao24",
-          idx: 24,
+          key: "questao1",
+          idx: 18,
           title: "NR 10 - Segurança em Instalações Elétricas",
         },
         {
-          key: "questao25",
-          idx: 25,
+          key: "questao2",
+          idx: 19,
           title: "NR 10 - Segurança em Instalações Elétricas",
         },
         {
-          key: "questao26",
-          idx: 26,
+          key: "questao3",
+          idx: 20,
           title: "NR 10 - Segurança em Instalações Elétricas",
         },
       ],
       nr11: [
         {
-          key: "questao28",
-          idx: 28,
+          key: "questao1",
+          idx: 21,
           title: "NR 11 - Transporte e Movimentação de Materiais",
         },
         {
-          key: "questao29",
-          idx: 29,
+          key: "questao2",
+          idx: 22,
           title: "NR 11 - Transporte e Movimentação de Materiais",
         },
       ],
       nr12: [
-        { key: "questao31", idx: 31, title: "NR 12 - Máquinas e Equipamentos" },
-        { key: "questao32", idx: 32, title: "NR 12 - Máquinas e Equipamentos" },
+        { key: "questao1", idx: 23, title: "NR 12 - Máquinas e Equipamentos" },
+        { key: "questao2", idx: 24, title: "NR 12 - Máquinas e Equipamentos" },
       ],
       nr13: [
         {
-          key: "questao34",
-          idx: 34,
+          key: "questao1",
+          idx: 25,
           title: "NR 13 - Caldeiras e Vasos de Pressão",
         },
       ],
       nr15: [
-        { key: "questao36", idx: 36, title: "NR 15 - Atividades Insalubres" },
+        { key: "questao1", idx: 26, title: "NR 15 - Atividades Insalubres" },
       ],
       nr23: [
         {
-          key: "questao38",
-          idx: 38,
+          key: "questao1",
+          idx: 27,
           title: "NR 23 - Proteção Contra Incêndios",
         },
         {
-          key: "questao39",
-          idx: 39,
+          key: "questao2",
+          idx: 28,
           title: "NR 23 - Proteção Contra Incêndios",
         },
         {
-          key: "questao40",
-          idx: 40,
+          key: "questao3",
+          idx: 29,
           title: "NR 23 - Proteção Contra Incêndios",
         },
       ],
       licencasAmbientais: [
-        { key: "questao42", idx: 42, title: "Licenças Ambientais" },
+        { key: "questao1", idx: 30, title: "Licenças Ambientais" },
       ],
       legislacaoMaritima: [
-        { key: "questao44", idx: 44, title: "Legislação Marítima" },
-        { key: "questao45", idx: 45, title: "Legislação Marítima" },
-        { key: "questao46", idx: 46, title: "Legislação Marítima" },
-        { key: "questao47", idx: 47, title: "Legislação Marítima" },
-        { key: "questao48", idx: 48, title: "Legislação Marítima" },
-        { key: "questao49", idx: 49, title: "Legislação Marítima" },
+        { key: "questao1", idx: 31, title: "Legislação Marítima" },
+        { key: "questao2", idx: 32, title: "Legislação Marítima" },
+        { key: "questao3", idx: 33, title: "Legislação Marítima" },
+        { key: "questao4", idx: 34, title: "Legislação Marítima" },
+        { key: "questao5", idx: 35, title: "Legislação Marítima" },
+        { key: "questao6", idx: 36, title: "Legislação Marítima" },
       ],
       treinamentos: [
-        { key: "questao51", idx: 51, title: "Treinamentos Obrigatórios" },
-        { key: "questao52", idx: 52, title: "Treinamentos Obrigatórios" },
-        { key: "questao53", idx: 53, title: "Treinamentos Obrigatórios" },
+        { key: "questao1", idx: 37, title: "Treinamentos Obrigatórios" },
+        { key: "questao2", idx: 38, title: "Treinamentos Obrigatórios" },
+        { key: "questao3", idx: 39, title: "Treinamentos Obrigatórios" },
       ],
       gestaoSMS: [
-        { key: "questao55", idx: 55, title: "Gestão de SMS" },
-        { key: "questao56", idx: 56, title: "Gestão de SMS" },
-        { key: "questao57", idx: 57, title: "Gestão de SMS" },
-        { key: "questao58", idx: 58, title: "Gestão de SMS" },
-        { key: "questao59", idx: 59, title: "Gestão de SMS" },
+        { key: "questao1", idx: 40, title: "Gestão de SMS" },
+        { key: "questao2", idx: 41, title: "Gestão de SMS" },
+        { key: "questao3", idx: 42, title: "Gestão de SMS" },
+        { key: "questao4", idx: 43, title: "Gestão de SMS" },
+        { key: "questao5", idx: 44, title: "Gestão de SMS" },
       ],
     };
 
@@ -321,10 +319,13 @@ export const validateFormForSave = (
     if (servicosEspeciais.fornecedorIcamento === true) {
       const icamentoRequiredAttachments = [
         { category: "testeCarga", name: "Teste de Carga" },
-        { category: "creaEngenheiro", name: "CREA do Engenheiro Responsável" },
+        { category: "registroCREA", name: "CREA do Engenheiro Responsável" },
         { category: "art", name: "ART - Anotação de Responsabilidade Técnica" },
         { category: "planoManutencao", name: "Plano de Manutenção" },
-        { category: "fumacaPreta", name: "Certificado de Fumaça Preta" },
+        {
+          category: "monitoramentoFumaca",
+          name: "Certificado de Fumaça Preta",
+        },
         {
           category: "certificacaoEquipamentos",
           name: "Certificação de Equipamentos",

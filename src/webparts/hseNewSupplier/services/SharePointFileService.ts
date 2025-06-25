@@ -60,30 +60,11 @@ export const ATTACHMENT_FOLDER_MAP: { [key: string]: string } = {
   nr33: "NR33",
   nr34: "NR34",
   nr35: "NR35",
+  // Embarcações - Removido mapeamento antigo para "EMBARCACOES"
+  // Agora cada certificado marítimo cria sua própria pasta
 
-  // Embarcações
-  iopp: "EMBARCACOES",
-  registroArmador: "EMBARCACOES",
-  propriedadeMaritima: "EMBARCACOES",
-  arqueacao: "EMBARCACOES",
-  segurancaNavegacao: "EMBARCACOES",
-  classificacaoCasco: "EMBARCACOES",
-  classificacaoMaquinas: "EMBARCACOES",
-  bordaLivre: "EMBARCACOES",
-  seguroObrigatorio: "EMBARCACOES",
-  autorizacaoANTAQ: "EMBARCACOES",
-  tripulacaoSeguranca: "EMBARCACOES",
-  compensacaoAgulha: "EMBARCACOES",
-  revisaoBalsa: "EMBARCACOES",
-  licencaRadio: "EMBARCACOES",
-
-  // Içamento
-  testeCarga: "ICAMENTO",
-  registroCREA: "ICAMENTO",
-  art: "ICAMENTO",
-  planoManutencao: "ICAMENTO",
-  monitoramentoFumaca: "ICAMENTO",
-  certificacaoEquipamentos: "ICAMENTO",
+  // Içamento - Removido mapeamento antigo para "ICAMENTO"
+  // Agora cada categoria cria sua própria pasta
 };
 
 export class SharePointFileService {

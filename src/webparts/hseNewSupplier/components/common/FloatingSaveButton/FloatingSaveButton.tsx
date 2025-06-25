@@ -104,71 +104,69 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
         { key: "questao5", idx: 5 },
       ],
       nr04: [
-        { key: "questao7", idx: 7 },
-        { key: "questao8", idx: 8 },
+        { key: "questao1", idx: 6 },
+        { key: "questao2", idx: 7 },
       ],
       nr05: [
-        { key: "questao10", idx: 10 },
-        { key: "questao11", idx: 11 },
+        { key: "questao1", idx: 8 },
+        { key: "questao2", idx: 9 },
       ],
       nr06: [
-        { key: "questao13", idx: 13 },
-        { key: "questao14", idx: 14 },
+        { key: "questao1", idx: 10 },
+        { key: "questao2", idx: 11 },
       ],
       nr07: [
-        { key: "questao16", idx: 16 },
-        { key: "questao17", idx: 17 },
-        { key: "questao18", idx: 18 },
+        { key: "questao1", idx: 12 },
+        { key: "questao2", idx: 13 },
+        { key: "questao3", idx: 14 },
       ],
       nr09: [
-        { key: "questao20", idx: 20 },
-        { key: "questao21", idx: 21 },
-        { key: "questao22", idx: 22 },
+        { key: "questao1", idx: 15 },
+        { key: "questao2", idx: 16 },
+        { key: "questao3", idx: 17 },
       ],
       nr10: [
-        { key: "questao24", idx: 24 },
-        { key: "questao25", idx: 25 },
-        { key: "questao26", idx: 26 },
+        { key: "questao1", idx: 18 },
+        { key: "questao2", idx: 19 },
+        { key: "questao3", idx: 20 },
       ],
       nr11: [
-        { key: "questao28", idx: 28 },
-        { key: "questao29", idx: 29 },
+        { key: "questao1", idx: 21 },
+        { key: "questao2", idx: 22 },
       ],
       nr12: [
-        { key: "questao31", idx: 31 },
-        { key: "questao32", idx: 32 },
+        { key: "questao1", idx: 23 },
+        { key: "questao2", idx: 24 },
       ],
-      nr13: [{ key: "questao34", idx: 34 }],
-      nr15: [{ key: "questao36", idx: 36 }],
+      nr13: [{ key: "questao1", idx: 25 }],
+      nr15: [{ key: "questao1", idx: 26 }],
       nr23: [
-        { key: "questao38", idx: 38 },
-        { key: "questao39", idx: 39 },
-        { key: "questao40", idx: 40 },
+        { key: "questao1", idx: 27 },
+        { key: "questao2", idx: 28 },
+        { key: "questao3", idx: 29 },
       ],
-      licencasAmbientais: [{ key: "questao42", idx: 42 }],
+      licencasAmbientais: [{ key: "questao1", idx: 30 }],
       legislacaoMaritima: [
-        { key: "questao44", idx: 44 },
-        { key: "questao45", idx: 45 },
-        { key: "questao46", idx: 46 },
-        { key: "questao47", idx: 47 },
-        { key: "questao48", idx: 48 },
-        { key: "questao49", idx: 49 },
+        { key: "questao1", idx: 31 },
+        { key: "questao2", idx: 32 },
+        { key: "questao3", idx: 33 },
+        { key: "questao4", idx: 34 },
+        { key: "questao5", idx: 35 },
+        { key: "questao6", idx: 36 },
       ],
       treinamentos: [
-        { key: "questao51", idx: 51 },
-        { key: "questao52", idx: 52 },
-        { key: "questao53", idx: 53 },
+        { key: "questao1", idx: 37 },
+        { key: "questao2", idx: 38 },
+        { key: "questao3", idx: 39 },
       ],
       gestaoSMS: [
-        { key: "questao55", idx: 55 },
-        { key: "questao56", idx: 56 },
-        { key: "questao57", idx: 57 },
-        { key: "questao58", idx: 58 },
-        { key: "questao59", idx: 59 },
+        { key: "questao1", idx: 40 },
+        { key: "questao2", idx: 41 },
+        { key: "questao3", idx: 42 },
+        { key: "questao4", idx: 43 },
+        { key: "questao5", idx: 44 },
       ],
-    };
-
-    // Função para verificar se um bloco individual está completo (MESMA LÓGICA do ConformidadeLegal)
+    }; // Função para verificar se um bloco individual está completo (MESMA LÓGICA do ConformidadeLegal)
     const isBlockComplete = (blockKey: string): boolean => {
       const bloco = conformidade[blockKey as keyof typeof conformidade];
       if (!bloco || typeof bloco !== "object") return false;
@@ -208,9 +206,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
 
         return true;
       });
-    };
-
-    // Verificar se TODOS os blocos aplicáveis estão completos (têm check verde individual)
+    }; // Verificar se TODOS os blocos aplicáveis estão completos (têm check verde individual)
     return applicableBlocks.every((blockKey) => isBlockComplete(blockKey));
   }, [state.formData, state.attachments]);
 
