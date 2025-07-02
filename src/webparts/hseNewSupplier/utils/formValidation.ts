@@ -83,7 +83,12 @@ export const validateFormForSave = (
 
   // NOVA VALIDAÇÃO: Conformidade Legal
   if (data.conformidadeLegal) {
-    const conformidade = data.conformidadeLegal; // Estrutura de questões por bloco (incluindo índices para buscar attachment info)
+    const conformidade = data.conformidadeLegal;
+
+    // NRs obrigatórias que sempre devem estar completas
+    const MANDATORY_NR_BLOCKS = ["nr01", "nr04", "nr05", "nr06", "nr07"];
+
+    // Estrutura de questões por bloco (incluindo índices para buscar attachment info)
     const blockQuestions: Record<
       string,
       Array<{ key: string; idx: number; title: string }>
@@ -91,119 +96,174 @@ export const validateFormForSave = (
       nr01: [
         { key: "questao1", idx: 1, title: "NR 01 - Disposições Gerais" },
         { key: "questao2", idx: 2, title: "NR 01 - Disposições Gerais" },
-        { key: "questao3", idx: 3, title: "NR 01 - Disposições Gerais" },
-        { key: "questao4", idx: 4, title: "NR 01 - Disposições Gerais" },
-        { key: "questao5", idx: 5, title: "NR 01 - Disposições Gerais" },
       ],
       nr04: [
-        { key: "questao1", idx: 6, title: "NR 04 - SESMT" },
-        { key: "questao2", idx: 7, title: "NR 04 - SESMT" },
+        { key: "questao1", idx: 3, title: "NR 04 - SESMT" },
+        { key: "questao2", idx: 4, title: "NR 04 - SESMT" },
       ],
       nr05: [
-        { key: "questao1", idx: 8, title: "NR 05 - CIPA" },
-        { key: "questao2", idx: 9, title: "NR 05 - CIPA" },
+        { key: "questao1", idx: 5, title: "NR 05 - CIPA" },
+        { key: "questao2", idx: 6, title: "NR 05 - CIPA" },
       ],
       nr06: [
-        { key: "questao1", idx: 10, title: "NR 06 - EPI" },
-        { key: "questao2", idx: 11, title: "NR 06 - EPI" },
+        { key: "questao1", idx: 7, title: "NR 06 - EPI" },
+        { key: "questao2", idx: 8, title: "NR 06 - EPI" },
       ],
       nr07: [
-        { key: "questao1", idx: 12, title: "NR 07 - PCMSO" },
-        { key: "questao2", idx: 13, title: "NR 07 - PCMSO" },
-        { key: "questao3", idx: 14, title: "NR 07 - PCMSO" },
-      ],
-      nr09: [
-        { key: "questao1", idx: 15, title: "NR 09 - PPRA" },
-        { key: "questao2", idx: 16, title: "NR 09 - PPRA" },
-        { key: "questao3", idx: 17, title: "NR 09 - PPRA" },
+        { key: "questao1", idx: 9, title: "NR 07 - PCMSO" },
+        { key: "questao2", idx: 10, title: "NR 07 - PCMSO" },
+        { key: "questao3", idx: 11, title: "NR 07 - PCMSO" },
       ],
       nr10: [
         {
           key: "questao1",
-          idx: 18,
+          idx: 12,
           title: "NR 10 - Segurança em Instalações Elétricas",
         },
         {
           key: "questao2",
-          idx: 19,
+          idx: 13,
           title: "NR 10 - Segurança em Instalações Elétricas",
         },
         {
           key: "questao3",
-          idx: 20,
+          idx: 14,
           title: "NR 10 - Segurança em Instalações Elétricas",
         },
       ],
       nr11: [
         {
           key: "questao1",
-          idx: 21,
+          idx: 15,
           title: "NR 11 - Transporte e Movimentação de Materiais",
         },
         {
           key: "questao2",
-          idx: 22,
+          idx: 16,
           title: "NR 11 - Transporte e Movimentação de Materiais",
         },
       ],
       nr12: [
-        { key: "questao1", idx: 23, title: "NR 12 - Máquinas e Equipamentos" },
-        { key: "questao2", idx: 24, title: "NR 12 - Máquinas e Equipamentos" },
+        { key: "questao1", idx: 17, title: "NR 12 - Máquinas e Equipamentos" },
+        { key: "questao2", idx: 18, title: "NR 12 - Máquinas e Equipamentos" },
       ],
       nr13: [
         {
           key: "questao1",
-          idx: 25,
+          idx: 19,
           title: "NR 13 - Caldeiras e Vasos de Pressão",
         },
       ],
       nr15: [
-        { key: "questao1", idx: 26, title: "NR 15 - Atividades Insalubres" },
+        { key: "questao1", idx: 20, title: "NR 15 - Atividades Insalubres" },
+      ],
+      nr16: [
+        { key: "questao1", idx: 21, title: "NR 16 - Atividades Periculosas" },
       ],
       nr23: [
         {
           key: "questao1",
-          idx: 27,
+          idx: 22,
           title: "NR 23 - Proteção Contra Incêndios",
         },
         {
           key: "questao2",
-          idx: 28,
+          idx: 23,
           title: "NR 23 - Proteção Contra Incêndios",
         },
         {
           key: "questao3",
-          idx: 29,
+          idx: 24,
           title: "NR 23 - Proteção Contra Incêndios",
         },
       ],
       licencasAmbientais: [
-        { key: "questao1", idx: 30, title: "Licenças Ambientais" },
+        { key: "questao1", idx: 25, title: "Licenças Ambientais" },
       ],
       legislacaoMaritima: [
-        { key: "questao1", idx: 31, title: "Legislação Marítima" },
-        { key: "questao2", idx: 32, title: "Legislação Marítima" },
-        { key: "questao3", idx: 33, title: "Legislação Marítima" },
-        { key: "questao4", idx: 34, title: "Legislação Marítima" },
-        { key: "questao5", idx: 35, title: "Legislação Marítima" },
-        { key: "questao6", idx: 36, title: "Legislação Marítima" },
+        { key: "questao1", idx: 26, title: "Legislação Marítima" },
+        { key: "questao2", idx: 27, title: "Legislação Marítima" },
+        { key: "questao3", idx: 28, title: "Legislação Marítima" },
+        { key: "questao4", idx: 29, title: "Legislação Marítima" },
+        { key: "questao5", idx: 30, title: "Legislação Marítima" },
+        { key: "questao6", idx: 31, title: "Legislação Marítima" },
       ],
       treinamentos: [
-        { key: "questao1", idx: 37, title: "Treinamentos Obrigatórios" },
-        { key: "questao2", idx: 38, title: "Treinamentos Obrigatórios" },
-        { key: "questao3", idx: 39, title: "Treinamentos Obrigatórios" },
+        { key: "questao1", idx: 32, title: "Treinamentos Obrigatórios" },
+        { key: "questao2", idx: 33, title: "Treinamentos Obrigatórios" },
+        { key: "questao3", idx: 34, title: "Treinamentos Obrigatórios" },
       ],
       gestaoSMS: [
-        { key: "questao1", idx: 40, title: "Gestão de SMS" },
-        { key: "questao2", idx: 41, title: "Gestão de SMS" },
-        { key: "questao3", idx: 42, title: "Gestão de SMS" },
-        { key: "questao4", idx: 43, title: "Gestão de SMS" },
-        { key: "questao5", idx: 44, title: "Gestão de SMS" },
+        { key: "questao1", idx: 35, title: "Gestão de SMS" },
+        { key: "questao2", idx: 36, title: "Gestão de SMS" },
+        { key: "questao3", idx: 37, title: "Gestão de SMS" },
+        { key: "questao4", idx: 38, title: "Gestão de SMS" },
+        { key: "questao5", idx: 39, title: "Gestão de SMS" },
       ],
     };
 
-    // Verificar cada bloco aplicável
+    // Função para verificar se um bloco está completo
+    const isBlockComplete = (blockKey: string): boolean => {
+      const bloco = conformidade[blockKey as keyof typeof conformidade];
+      if (!bloco || typeof bloco !== "object") return false;
+
+      const questions = blockQuestions[blockKey] || [];
+      const blockObj = bloco as unknown as {
+        [key: string]: { resposta?: string } | unknown;
+      };
+
+      return questions.every((q) => {
+        const questionObj = blockObj[q.key] as
+          | { resposta?: string }
+          | undefined;
+
+        // Verificar se a pergunta tem resposta
+        if (
+          !questionObj ||
+          !questionObj.resposta ||
+          questionObj.resposta === ""
+        ) {
+          return false;
+        }
+
+        // Se a resposta é "SIM", verificar se há anexo obrigatório
+        if (questionObj.resposta === "SIM") {
+          const questionMeta = (
+            NR_QUESTIONS_MAP as Record<
+              string,
+              { text: string; attachment?: string }
+            >
+          )[String(q.idx)];
+
+          // Se a pergunta requer anexo e a resposta é SIM
+          if (questionMeta && questionMeta.attachment) {
+            const categoryFiles =
+              (attachments as Record<string, unknown[]>)[
+                questionMeta.attachment
+              ] || [];
+            return categoryFiles.length > 0;
+          }
+        }
+
+        return true;
+      });
+    };
+
+    // 1. VALIDAR NRs OBRIGATÓRIAS (sempre devem estar completas)
+    MANDATORY_NR_BLOCKS.forEach((blockKey) => {
+      if (!isBlockComplete(blockKey)) {
+        const questions = blockQuestions[blockKey] || [];
+        if (questions.length > 0) {
+          incompleteConformidadeSections.push(questions[0].title);
+        }
+      }
+    });
+
+    // 2. VALIDAR NRs OPCIONAIS (só se foram marcadas como aplicáveis)
     Object.keys(conformidade).forEach((blockKey) => {
+      // Pular NRs obrigatórias (já validadas acima)
+      if (MANDATORY_NR_BLOCKS.includes(blockKey)) return;
+
       const bloco = conformidade[blockKey as keyof typeof conformidade];
       if (!bloco || typeof bloco !== "object") return;
 
@@ -214,46 +274,11 @@ export const validateFormForSave = (
 
       // Se o bloco está marcado como aplicável, deve estar completo
       if (blockObj.aplicavel === true) {
-        const questions = blockQuestions[blockKey] || [];
-        const isBlockComplete = questions.every((q) => {
-          const questionObj = blockObj[q.key] as
-            | { resposta?: string }
-            | undefined;
-
-          // Verificar se a pergunta tem resposta
-          if (
-            !questionObj ||
-            !questionObj.resposta ||
-            questionObj.resposta === ""
-          ) {
-            return false;
+        if (!isBlockComplete(blockKey)) {
+          const questions = blockQuestions[blockKey] || [];
+          if (questions.length > 0) {
+            incompleteConformidadeSections.push(questions[0].title);
           }
-
-          // Se a resposta é "SIM", verificar se há anexo obrigatório
-          if (questionObj.resposta === "SIM") {
-            const questionMeta = (
-              NR_QUESTIONS_MAP as Record<
-                string,
-                { text: string; attachment?: string }
-              >
-            )[String(q.idx)];
-
-            // Se a pergunta requer anexo e a resposta é SIM
-            if (questionMeta && questionMeta.attachment) {
-              const categoryFiles =
-                (attachments as Record<string, unknown[]>)[
-                  questionMeta.attachment
-                ] || [];
-              return categoryFiles.length > 0;
-            }
-          }
-
-          return true;
-        });
-
-        // Se o bloco não está completo, adicionar à lista de incompletos
-        if (!isBlockComplete && questions.length > 0) {
-          incompleteConformidadeSections.push(questions[0].title);
         }
       }
     });
@@ -376,11 +401,27 @@ export const generateValidationMessage = (
   }
 
   if (incompleteConformidadeSections.length > 0) {
-    messages.push(
-      `Seções de Conformidade Legal incompletas: ${incompleteConformidadeSections.join(
-        ", "
-      )}`
+    const mandatory = ["NR 01", "NR 04", "NR 05", "NR 06", "NR 07"];
+    const mandatoryIncomplete = incompleteConformidadeSections.filter(
+      (section) => mandatory.some((m) => section.includes(m))
     );
+    const optionalIncomplete = incompleteConformidadeSections.filter(
+      (section) => !mandatory.some((m) => section.includes(m))
+    );
+
+    if (mandatoryIncomplete.length > 0) {
+      messages.push(
+        `NRs obrigatórias incompletas: ${mandatoryIncomplete.join(", ")}`
+      );
+    }
+
+    if (optionalIncomplete.length > 0) {
+      messages.push(
+        `NRs opcionais selecionadas mas incompletas: ${optionalIncomplete.join(
+          ", "
+        )}`
+      );
+    }
   }
 
   return messages.join(". ");

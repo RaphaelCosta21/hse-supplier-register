@@ -276,8 +276,8 @@ export const RevisaoFinal: React.FC = () => {
         ],
       },
       {
-        key: "nr09",
-        titulo: "NR 09 - PPRA",
+        key: "nr10",
+        titulo: "NR 10 - Instalações e Serviços em Eletricidade",
         questoes: [
           { key: "questao1", idx: 15 },
           { key: "questao2", idx: 16 },
@@ -285,35 +285,26 @@ export const RevisaoFinal: React.FC = () => {
         ],
       },
       {
-        key: "nr10",
-        titulo: "NR 10 - Instalações e Serviços em Eletricidade",
-        questoes: [
-          { key: "questao1", idx: 18 },
-          { key: "questao2", idx: 19 },
-          { key: "questao3", idx: 20 },
-        ],
-      },
-      {
         key: "nr11",
         titulo:
           "NR 11 - Transporte, Movimentação, Armazenagem e Manuseio de Materiais",
         questoes: [
-          { key: "questao1", idx: 21 },
-          { key: "questao2", idx: 22 },
+          { key: "questao1", idx: 18 },
+          { key: "questao2", idx: 19 },
         ],
       },
       {
         key: "nr12",
         titulo: "NR 12 - Máquinas e Equipamentos",
         questoes: [
-          { key: "questao1", idx: 23 },
-          { key: "questao2", idx: 24 },
+          { key: "questao1", idx: 20 },
+          { key: "questao2", idx: 21 },
         ],
       },
       {
         key: "nr13",
         titulo: "NR 13 - Caldeiras e Vasos de Pressão",
-        questoes: [{ key: "questao1", idx: 25 }],
+        questoes: [{ key: "questao1", idx: 22 }],
       },
       {
         key: "nr15",
@@ -463,7 +454,6 @@ export const RevisaoFinal: React.FC = () => {
       { key: "treinamento", label: "Treinamentos" },
       { key: "treinamentoEPI", label: "Treinamento EPI" },
       { key: "caEPI", label: "CA EPI" },
-      { key: "ppra", label: "PPRA" },
       { key: "pcmso", label: "PCMSO" },
       { key: "aso", label: "ASO" },
       { key: "planoResiduos", label: "Plano de Resíduos" },

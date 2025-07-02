@@ -20,6 +20,7 @@ import { IConformidadeLegalProps } from "./IConformidadeLegalProps";
 import {
   RESPOSTA_OPTIONS,
   NR_QUESTIONS_MAP,
+  ATTACHMENT_CATEGORY_LABELS,
 } from "../../../utils/formConstants";
 import styles from "./ConformidadeLegal.module.scss";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
@@ -45,6 +46,9 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
     blockKey: string;
     blockTitle: string;
   }>({ isOpen: false, blockKey: "", blockTitle: "" });
+
+  // NRs obrigatórias que sempre estarão selecionadas
+  const MANDATORY_NR_BLOCKS = ["nr01", "nr04", "nr05", "nr06", "nr07"];
   // useEffect para inicializar estados com base nos dados existentes
   React.useEffect(() => {
     const initialApplicableBlocks: { [key: string]: boolean } = {};
@@ -59,30 +63,60 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
           aplicavel?: boolean;
         };
 
-        // Verificar se o bloco tem a flag de aplicabilidade
-        if (blockObj.aplicavel === true) {
+        // Se é uma NR obrigatória, sempre marcar como aplicável
+        if (MANDATORY_NR_BLOCKS.includes(blockKey)) {
           initialApplicableBlocks[blockKey] = true;
           initialExpandedBlocks[blockKey] = false; // Começar colapsado
-        } else if (blockObj.aplicavel === false) {
-          // Bloco explicitamente marcado como não aplicável
-          initialApplicableBlocks[blockKey] = false;
-          initialExpandedBlocks[blockKey] = false;
-        } else {
-          // Compatibilidade com dados antigos: verificar se há dados preenchidos
-          const hasData = Object.keys(blockObj).some((questionKey) => {
-            const questionObj = blockObj[questionKey];
-            return (
-              questionObj &&
-              typeof questionObj === "object" &&
-              (questionObj as { resposta?: string }).resposta
-            );
-          });
 
-          if (hasData) {
+          // Garantir que está marcado como aplicável no formulário
+          if (blockObj.aplicavel !== true) {
+            onChange(blockKey as keyof typeof value, {
+              ...blockObj,
+              aplicavel: true,
+            });
+          }
+        } else {
+          // Para NRs opcionais, verificar se o bloco tem a flag de aplicabilidade
+          if (blockObj.aplicavel === true) {
             initialApplicableBlocks[blockKey] = true;
+            initialExpandedBlocks[blockKey] = false; // Começar colapsado
+          } else if (blockObj.aplicavel === false) {
+            // Bloco explicitamente marcado como não aplicável
+            initialApplicableBlocks[blockKey] = false;
             initialExpandedBlocks[blockKey] = false;
+          } else {
+            // Compatibilidade com dados antigos: verificar se há dados preenchidos
+            const hasData = Object.keys(blockObj).some((questionKey) => {
+              const questionObj = blockObj[questionKey];
+              return (
+                questionObj &&
+                typeof questionObj === "object" &&
+                (questionObj as { resposta?: string }).resposta
+              );
+            });
+
+            if (hasData) {
+              initialApplicableBlocks[blockKey] = true;
+              initialExpandedBlocks[blockKey] = false;
+            }
           }
         }
+      } else {
+        // Se é uma NR obrigatória e não existe no formulário, criar entrada
+        if (MANDATORY_NR_BLOCKS.includes(blockKey)) {
+          initialApplicableBlocks[blockKey] = true;
+          initialExpandedBlocks[blockKey] = false;
+          onChange(blockKey as keyof typeof value, { aplicavel: true });
+        }
+      }
+    });
+
+    // Garantir que todas as NRs obrigatórias estejam marcadas, mesmo que não estejam no formulário
+    MANDATORY_NR_BLOCKS.forEach((blockKey) => {
+      if (!(blockKey in initialApplicableBlocks)) {
+        initialApplicableBlocks[blockKey] = true;
+        initialExpandedBlocks[blockKey] = false;
+        onChange(blockKey as keyof typeof value, { aplicavel: true });
       }
     });
 
@@ -124,6 +158,11 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
     blockTitle: string,
     isApplicable: boolean
   ): void => {
+    // Não permitir desmarcar NRs obrigatórias
+    if (MANDATORY_NR_BLOCKS.includes(blockKey)) {
+      return; // Ignora tentativa de alterar NRs obrigatórias
+    }
+
     if (!isApplicable && applicableBlocks[blockKey]) {
       // Se está desmarcando um bloco que era aplicável, mostrar confirmação
       setConfirmDialog({
@@ -154,6 +193,13 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
   // Função para confirmar desmarcação do bloco
   const confirmBlockRemoval = (): void => {
     const { blockKey } = confirmDialog;
+
+    // Não permitir remover NRs obrigatórias
+    if (MANDATORY_NR_BLOCKS.includes(blockKey)) {
+      setConfirmDialog({ isOpen: false, blockKey: "", blockTitle: "" });
+      return;
+    }
+
     setApplicableBlocks((prev) => ({
       ...prev,
       [blockKey]: false,
@@ -239,9 +285,6 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       questions: [
         { key: "questao1", idx: 1 },
         { key: "questao2", idx: 2 },
-        { key: "questao3", idx: 3 },
-        { key: "questao4", idx: 4 },
-        { key: "questao5", idx: 5 },
       ],
       comentarios: true,
     },
@@ -249,8 +292,8 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "nr04",
       title: "NR 04 - SESMT",
       questions: [
-        { key: "questao1", idx: 6 },
-        { key: "questao2", idx: 7 },
+        { key: "questao1", idx: 3 },
+        { key: "questao2", idx: 4 },
       ],
       comentarios: true,
     },
@@ -258,8 +301,8 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "nr05",
       title: "NR 05 - CIPA",
       questions: [
-        { key: "questao1", idx: 8 },
-        { key: "questao2", idx: 9 },
+        { key: "questao1", idx: 5 },
+        { key: "questao2", idx: 6 },
       ],
       comentarios: true,
     },
@@ -267,14 +310,24 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "nr06",
       title: "NR 06 - EPI",
       questions: [
-        { key: "questao1", idx: 10 },
-        { key: "questao2", idx: 11 },
+        { key: "questao1", idx: 7 },
+        { key: "questao2", idx: 8 },
       ],
       comentarios: true,
     },
     {
       key: "nr07",
       title: "NR 07 - PCMSO",
+      questions: [
+        { key: "questao1", idx: 9 },
+        { key: "questao2", idx: 10 },
+        { key: "questao3", idx: 11 },
+      ],
+      comentarios: true,
+    },
+    {
+      key: "nr10",
+      title: "NR 10 - Instalações e Serviços em Eletricidade",
       questions: [
         { key: "questao1", idx: 12 },
         { key: "questao2", idx: 13 },
@@ -283,32 +336,12 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       comentarios: true,
     },
     {
-      key: "nr09",
-      title: "NR 09 - PPRA",
-      questions: [
-        { key: "questao1", idx: 15 },
-        { key: "questao2", idx: 16 },
-        { key: "questao3", idx: 17 },
-      ],
-      comentarios: true,
-    },
-    {
-      key: "nr10",
-      title: "NR 10 - Instalações e Serviços em Eletricidade",
-      questions: [
-        { key: "questao1", idx: 18 },
-        { key: "questao2", idx: 19 },
-        { key: "questao3", idx: 20 },
-      ],
-      comentarios: true,
-    },
-    {
       key: "nr11",
       title:
         "NR 11 - Transporte, Movimentação, Armazenagem e Manuseio de Materiais",
       questions: [
-        { key: "questao1", idx: 21 },
-        { key: "questao2", idx: 22 },
+        { key: "questao1", idx: 15 },
+        { key: "questao2", idx: 16 },
       ],
       comentarios: true,
     },
@@ -316,30 +349,36 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "nr12",
       title: "NR 12 - Máquinas e Equipamentos",
       questions: [
-        { key: "questao1", idx: 23 },
-        { key: "questao2", idx: 24 },
+        { key: "questao1", idx: 17 },
+        { key: "questao2", idx: 18 },
       ],
       comentarios: true,
     },
     {
       key: "nr13",
       title: "NR 13 - Caldeiras e Vasos de Pressão",
-      questions: [{ key: "questao1", idx: 25 }],
+      questions: [{ key: "questao1", idx: 19 }],
       comentarios: true,
     },
     {
       key: "nr15",
       title: "NR 15 - Atividades e Operações Insalubres",
-      questions: [{ key: "questao1", idx: 26 }],
+      questions: [{ key: "questao1", idx: 20 }],
+      comentarios: true,
+    },
+    {
+      key: "nr16",
+      title: "NR 16 - Atividades e Operações Periculosas",
+      questions: [{ key: "questao1", idx: 21 }],
       comentarios: true,
     },
     {
       key: "nr23",
       title: "NR 23 - Proteção Contra Incêndios",
       questions: [
-        { key: "questao1", idx: 27 },
-        { key: "questao2", idx: 28 },
-        { key: "questao3", idx: 29 },
+        { key: "questao1", idx: 22 },
+        { key: "questao2", idx: 23 },
+        { key: "questao3", idx: 24 },
       ],
       comentarios: true,
     },
@@ -350,19 +389,19 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
     {
       key: "licencasAmbientais",
       title: "Licenças Ambientais",
-      questions: [{ key: "questao1", idx: 30 }],
+      questions: [{ key: "questao1", idx: 25 }],
       comentarios: true,
     },
     {
       key: "legislacaoMaritima",
       title: "Legislação Marítima",
       questions: [
-        { key: "questao1", idx: 31 },
-        { key: "questao2", idx: 32 },
-        { key: "questao3", idx: 33 },
-        { key: "questao4", idx: 34 },
-        { key: "questao5", idx: 35 },
-        { key: "questao6", idx: 36 },
+        { key: "questao1", idx: 26 },
+        { key: "questao2", idx: 27 },
+        { key: "questao3", idx: 28 },
+        { key: "questao4", idx: 29 },
+        { key: "questao5", idx: 30 },
+        { key: "questao6", idx: 31 },
       ],
       comentarios: true,
     },
@@ -370,9 +409,9 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "treinamentos",
       title: "Treinamentos Obrigatórios",
       questions: [
-        { key: "questao1", idx: 37 },
-        { key: "questao2", idx: 38 },
-        { key: "questao3", idx: 39 },
+        { key: "questao1", idx: 32 },
+        { key: "questao2", idx: 33 },
+        { key: "questao3", idx: 34 },
       ],
       comentarios: true,
     },
@@ -380,11 +419,11 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "gestaoSMS",
       title: "Gestão de SMS (Saúde, Meio Ambiente e Segurança)",
       questions: [
-        { key: "questao1", idx: 40 },
-        { key: "questao2", idx: 41 },
-        { key: "questao3", idx: 42 },
-        { key: "questao4", idx: 43 },
-        { key: "questao5", idx: 44 },
+        { key: "questao1", idx: 35 },
+        { key: "questao2", idx: 36 },
+        { key: "questao3", idx: 37 },
+        { key: "questao4", idx: 38 },
+        { key: "questao5", idx: 39 },
       ],
       comentarios: true,
     },
@@ -400,7 +439,7 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       <Stack tokens={{ childrenGap: 20 }}>
         <SectionTitle
           title="B - Cumprimento da Legislação Básica"
-          subtitle="Selecione apenas os blocos de NRs aplicáveis ao seu tipo de atividade"
+          subtitle="NRs 01, 04, 05, 06, 07 são obrigatórias • Selecione apenas as NRs adicionais aplicáveis ao seu tipo de atividade"
           icon="ComplianceAudit"
           variant="secondary"
         />{" "}
@@ -413,9 +452,14 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
               📋 INSTRUÇÕES IMPORTANTES:
             </Text>
             <Text variant="medium">
+              <strong style={{ color: "#107c10" }}>NRs OBRIGATÓRIAS</strong>: As
+              Normas Regulamentadoras 01, 04, 05, 06 e 07 são obrigatórias para
+              todas as empresas e já estão pré-selecionadas.
+            </Text>
+            <Text variant="medium">
               <strong style={{ color: "#d83b01" }}>SELECIONE</strong> apenas os
-              blocos de Normas Regulamentadoras que se aplicam ao seu tipo de
-              atividade/fornecimento.
+              blocos adicionais de Normas Regulamentadoras que se aplicam ao seu
+              tipo de atividade/fornecimento específico.
             </Text>
             <Text variant="medium">
               Para cada questão dos blocos selecionados, escolha{" "}
@@ -457,20 +501,51 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                     <div className={styles.blockHeader}>
                       <div className={styles.blockTitleSection}>
                         <div className={styles.toggleAndStatus}>
-                          <Toggle
-                            label={block.title}
-                            checked={isApplicable}
-                            onChange={(_, checked) =>
-                              handleBlockApplicabilityChange(
-                                block.key,
-                                block.title,
-                                checked || false
-                              )
-                            }
-                            onText="Selecionado"
-                            offText="Não Selecionado"
-                            className={styles.blockToggle}
-                          />
+                          {MANDATORY_NR_BLOCKS.includes(block.key) ? (
+                            // Para NRs obrigatórias, mostrar apenas o título com indicação de obrigatório
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
+                            >
+                              <Text
+                                variant="mediumPlus"
+                                style={{ fontWeight: 600 }}
+                              >
+                                {block.title}
+                              </Text>
+                              <div
+                                style={{
+                                  background: "#107c10",
+                                  color: "white",
+                                  padding: "2px 8px",
+                                  borderRadius: "4px",
+                                  fontSize: "11px",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                OBRIGATÓRIO
+                              </div>
+                            </div>
+                          ) : (
+                            // Para NRs opcionais, mostrar Toggle normal
+                            <Toggle
+                              label={block.title}
+                              checked={isApplicable}
+                              onChange={(_, checked) =>
+                                handleBlockApplicabilityChange(
+                                  block.key,
+                                  block.title,
+                                  checked || false
+                                )
+                              }
+                              onText="Selecionado"
+                              offText="Não Selecionado"
+                              className={styles.blockToggle}
+                            />
+                          )}
                           {isApplicable && (
                             <div className={styles.statusBadgeContainer}>
                               {isComplete ? (
@@ -606,13 +681,18 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                                     <HSEFileUpload
                                       label={`Anexar documento comprobatório (${
                                         questionMeta.attachment
-                                          ? questionMeta.attachment.toUpperCase()
+                                          ? ATTACHMENT_CATEGORY_LABELS[
+                                              questionMeta.attachment
+                                            ] ||
+                                            questionMeta.attachment.toUpperCase()
                                           : ""
                                       })`}
                                       required
                                       category={questionMeta.attachment || ""}
                                       subcategory={q.key}
-                                      accept={".pdf,.docx,.xlsx,.jpg,.png"}
+                                      accept={
+                                        ".pdf,.docx,.xlsx,.jpg,.png,.txt,.zip"
+                                      }
                                       maxFileSize={50}
                                       helpText="Anexe o documento solicitado para comprovação."
                                     />
@@ -677,20 +757,51 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                   <div className={styles.blockHeader}>
                     <div className={styles.blockTitleSection}>
                       <div className={styles.toggleAndStatus}>
-                        <Toggle
-                          label={block.title}
-                          checked={isApplicable}
-                          onChange={(_, checked) =>
-                            handleBlockApplicabilityChange(
-                              block.key,
-                              block.title,
-                              checked || false
-                            )
-                          }
-                          onText="Selecionado"
-                          offText="Não Selecionado"
-                          className={styles.blockToggle}
-                        />
+                        {MANDATORY_NR_BLOCKS.includes(block.key) ? (
+                          // Para NRs obrigatórias, mostrar apenas o título com indicação de obrigatório
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            <Text
+                              variant="mediumPlus"
+                              style={{ fontWeight: 600 }}
+                            >
+                              {block.title}
+                            </Text>
+                            <div
+                              style={{
+                                background: "#107c10",
+                                color: "white",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                fontSize: "11px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              OBRIGATÓRIO
+                            </div>
+                          </div>
+                        ) : (
+                          // Para NRs opcionais, mostrar Toggle normal
+                          <Toggle
+                            label={block.title}
+                            checked={isApplicable}
+                            onChange={(_, checked) =>
+                              handleBlockApplicabilityChange(
+                                block.key,
+                                block.title,
+                                checked || false
+                              )
+                            }
+                            onText="Selecionado"
+                            offText="Não Selecionado"
+                            className={styles.blockToggle}
+                          />
+                        )}
                         {isApplicable && (
                           <div className={styles.statusBadgeContainer}>
                             {isComplete ? (
@@ -820,13 +931,18 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                                   <HSEFileUpload
                                     label={`Anexar documento comprobatório (${
                                       questionMeta.attachment
-                                        ? questionMeta.attachment.toUpperCase()
+                                        ? ATTACHMENT_CATEGORY_LABELS[
+                                            questionMeta.attachment
+                                          ] ||
+                                          questionMeta.attachment.toUpperCase()
                                         : ""
                                     })`}
                                     required
                                     category={questionMeta.attachment || ""}
                                     subcategory={q.key}
-                                    accept={".pdf,.docx,.xlsx,.jpg,.png"}
+                                    accept={
+                                      ".pdf,.docx,.xlsx,.jpg,.png,.txt,.zip"
+                                    }
                                     maxFileSize={50}
                                     helpText="Anexe o documento solicitado para comprovação."
                                   />
@@ -1077,13 +1193,18 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                                       <HSEFileUpload
                                         label={`Anexar documento comprobatório (${
                                           questionMeta.attachment
-                                            ? questionMeta.attachment.toUpperCase()
+                                            ? ATTACHMENT_CATEGORY_LABELS[
+                                                questionMeta.attachment
+                                              ] ||
+                                              questionMeta.attachment.toUpperCase()
                                             : ""
                                         })`}
                                         required
                                         category={questionMeta.attachment || ""}
                                         subcategory={q.key}
-                                        accept={".pdf,.docx,.xlsx,.jpg,.png"}
+                                        accept={
+                                          ".pdf,.docx,.xlsx,.jpg,.png,.txt,.zip"
+                                        }
                                         maxFileSize={50}
                                         helpText="Anexe o documento solicitado para comprovação."
                                       />

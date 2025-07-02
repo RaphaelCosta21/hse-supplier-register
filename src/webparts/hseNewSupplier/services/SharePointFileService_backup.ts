@@ -26,7 +26,6 @@ export const ATTACHMENT_FOLDER_MAP: { [key: string]: string } = {
   treinamento: "TREINAMENTOS",
   treinamentoEPI: "TREINAMENTOS",
   caEPI: "EPI",
-  ppra: "PPRA",
   pcmso: "PCMSO",
   aso: "ASO",
   planoResiduos: "RESIDUOS",
@@ -38,7 +37,6 @@ export const ATTACHMENT_FOLDER_MAP: { [key: string]: string } = {
   nr05: "NR05",
   nr06: "NR06",
   nr07: "NR07",
-  nr09: "NR09",
   nr10: "NR10",
   nr11: "NR11",
   nr12: "NR12",
@@ -55,6 +53,43 @@ export const ATTACHMENT_FOLDER_MAP: { [key: string]: string } = {
   nr33: "NR33",
   nr34: "NR34",
   nr35: "NR35",
+
+  // NR10 - Anexos específicos
+  nr10ProjetoInstalacoes: "NR10_PROJETO_INSTALACOES",
+  nr10CertificacaoProfissionais: "NR10_CERTIFICACAO_PROFISSIONAIS",
+
+  // NR11 - Anexo específico
+  nr11CertificadoTreinamento: "NR11_CERTIFICADO_TREINAMENTO",
+
+  // NR12 - Anexos específicos
+  nr12PlanoInspecao: "NR12_PLANO_INSPECAO",
+  nr12EvidenciaDispositivo: "NR12_EVIDENCIA_DISPOSITIVO",
+
+  // NR13 - Anexo específico
+  nr13EvidenciaSistematica: "NR13_EVIDENCIA_SISTEMATICA",
+
+  // NR15 - Anexo específico
+  nr15LaudoInsalubridade: "NR15_LAUDO_INSALUBRIDADE",
+
+  // NR16 - Anexo específico
+  nr16LaudoPericulosidade: "NR16_LAUDO_PERICULOSIDADE",
+
+  // NR23 - Anexo específico
+  nr23LaudoManutencao: "NR23_LAUDO_MANUTENCAO",
+
+  // Licenças Ambientais - Anexo específico
+  licencaOperacao: "LICENCA_OPERACAO",
+
+  // Treinamentos Obrigatórios - Anexos específicos
+  certificadoProgramaTreinamento: "CERTIFICADO_PROGRAMA_TREINAMENTO",
+  evidenciaTreinamento: "EVIDENCIA_TREINAMENTO",
+
+  // Gestão de SMS - Anexos específicos
+  smsProcedimentoAcidentes: "SMS_PROCEDIMENTO_ACIDENTES",
+  smsCalendarioInspecoes: "SMS_CALENDARIO_INSPECOES",
+  smsProcedimentoResiduos: "SMS_PROCEDIMENTO_RESIDUOS",
+  smsMetasObjetivos: "SMS_METAS_OBJETIVOS",
+  smsProgramaAnual: "SMS_PROGRAMA_ANUAL",
 
   // Embarcações
   iopp: "EMBARCACOES",
@@ -160,7 +195,7 @@ export class SharePointFileService {
       }
 
       // Criar nome da pasta principal (remover pontos e barras do CNPJ)
-      const cleanCNPJ = cnpj.replace(/[.\/-]/g, "");
+      const cleanCNPJ = cnpj.replace(/[./-]/g, "");
       const mainFolderName = `${cleanCNPJ}-${this.sanitizeFolderName(
         nomeEmpresa
       )}`;

@@ -58,6 +58,9 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
   const isConformidadeLegalValid = React.useCallback(() => {
     const conformidade = state.formData.conformidadeLegal || {};
 
+    // NRs obrigatórias que sempre são aplicáveis (não têm toggle)
+    const MANDATORY_NR_BLOCKS = ["nr01", "nr04", "nr05", "nr06", "nr07"];
+
     // Lista de todos os possíveis blocos NR
     const possibleBlocks = [
       "nr01",
@@ -65,12 +68,12 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       "nr05",
       "nr06",
       "nr07",
-      "nr09",
       "nr10",
       "nr11",
       "nr12",
       "nr13",
       "nr15",
+      "nr16",
       "nr23",
       "licencasAmbientais",
       "legislacaoMaritima",
@@ -78,12 +81,19 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       "gestaoSMS",
     ];
 
-    // Identificar blocos aplicáveis (que foram marcados como aplicáveis pelo usuário)
+    // Identificar blocos aplicáveis:
+    // - NRs obrigatórias são sempre aplicáveis
+    // - NRs opcionais só se marcadas pelo usuário
     const applicableBlocks = possibleBlocks.filter((blockKey) => {
+      // NRs obrigatórias são sempre aplicáveis
+      if (MANDATORY_NR_BLOCKS.includes(blockKey)) {
+        return true;
+      }
+
+      // NRs opcionais: verificar se foram marcadas como aplicáveis pelo usuário
       const bloco = conformidade[blockKey as keyof typeof conformidade];
       if (!bloco || typeof bloco !== "object") return false;
 
-      // Usar a nova flag de aplicabilidade
       const blockObj = bloco as unknown as { aplicavel?: boolean };
       return blockObj.aplicavel === true;
     });
@@ -92,6 +102,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     if (applicableBlocks.length === 0) return false;
 
     // Estrutura de questões por bloco (incluindo índices para buscar attachment info)
+    // ATUALIZADA para corresponder à sequência corrigida após remoção das questões extras da NR01
     const blockQuestions: Record<
       string,
       Array<{ key: string; idx: number }>
@@ -99,72 +110,65 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       nr01: [
         { key: "questao1", idx: 1 },
         { key: "questao2", idx: 2 },
-        { key: "questao3", idx: 3 },
-        { key: "questao4", idx: 4 },
-        { key: "questao5", idx: 5 },
       ],
       nr04: [
-        { key: "questao1", idx: 6 },
-        { key: "questao2", idx: 7 },
+        { key: "questao1", idx: 3 },
+        { key: "questao2", idx: 4 },
       ],
       nr05: [
-        { key: "questao1", idx: 8 },
-        { key: "questao2", idx: 9 },
+        { key: "questao1", idx: 5 },
+        { key: "questao2", idx: 6 },
       ],
       nr06: [
-        { key: "questao1", idx: 10 },
-        { key: "questao2", idx: 11 },
+        { key: "questao1", idx: 7 },
+        { key: "questao2", idx: 8 },
       ],
       nr07: [
+        { key: "questao1", idx: 9 },
+        { key: "questao2", idx: 10 },
+        { key: "questao3", idx: 11 },
+      ],
+      nr10: [
         { key: "questao1", idx: 12 },
         { key: "questao2", idx: 13 },
         { key: "questao3", idx: 14 },
       ],
-      nr09: [
+      nr11: [
         { key: "questao1", idx: 15 },
         { key: "questao2", idx: 16 },
-        { key: "questao3", idx: 17 },
-      ],
-      nr10: [
-        { key: "questao1", idx: 18 },
-        { key: "questao2", idx: 19 },
-        { key: "questao3", idx: 20 },
-      ],
-      nr11: [
-        { key: "questao1", idx: 21 },
-        { key: "questao2", idx: 22 },
       ],
       nr12: [
-        { key: "questao1", idx: 23 },
-        { key: "questao2", idx: 24 },
+        { key: "questao1", idx: 17 },
+        { key: "questao2", idx: 18 },
       ],
-      nr13: [{ key: "questao1", idx: 25 }],
-      nr15: [{ key: "questao1", idx: 26 }],
+      nr13: [{ key: "questao1", idx: 19 }],
+      nr15: [{ key: "questao1", idx: 20 }],
+      nr16: [{ key: "questao1", idx: 21 }],
       nr23: [
-        { key: "questao1", idx: 27 },
-        { key: "questao2", idx: 28 },
-        { key: "questao3", idx: 29 },
+        { key: "questao1", idx: 22 },
+        { key: "questao2", idx: 23 },
+        { key: "questao3", idx: 24 },
       ],
-      licencasAmbientais: [{ key: "questao1", idx: 30 }],
+      licencasAmbientais: [{ key: "questao1", idx: 25 }],
       legislacaoMaritima: [
-        { key: "questao1", idx: 31 },
-        { key: "questao2", idx: 32 },
-        { key: "questao3", idx: 33 },
-        { key: "questao4", idx: 34 },
-        { key: "questao5", idx: 35 },
-        { key: "questao6", idx: 36 },
+        { key: "questao1", idx: 26 },
+        { key: "questao2", idx: 27 },
+        { key: "questao3", idx: 28 },
+        { key: "questao4", idx: 29 },
+        { key: "questao5", idx: 30 },
+        { key: "questao6", idx: 31 },
       ],
       treinamentos: [
-        { key: "questao1", idx: 37 },
-        { key: "questao2", idx: 38 },
-        { key: "questao3", idx: 39 },
+        { key: "questao1", idx: 32 },
+        { key: "questao2", idx: 33 },
+        { key: "questao3", idx: 34 },
       ],
       gestaoSMS: [
-        { key: "questao1", idx: 40 },
-        { key: "questao2", idx: 41 },
-        { key: "questao3", idx: 42 },
-        { key: "questao4", idx: 43 },
-        { key: "questao5", idx: 44 },
+        { key: "questao1", idx: 35 },
+        { key: "questao2", idx: 36 },
+        { key: "questao3", idx: 37 },
+        { key: "questao4", idx: 38 },
+        { key: "questao5", idx: 39 },
       ],
     }; // Função para verificar se um bloco individual está completo (MESMA LÓGICA do ConformidadeLegal)
     const isBlockComplete = (blockKey: string): boolean => {

@@ -91,13 +91,6 @@ export interface INR07 {
   comentarios?: string;
 }
 
-export interface INR09 {
-  questao20: IQuestaoConformidade;
-  questao21: IQuestaoConformidade;
-  questao22: IQuestaoConformidade;
-  comentarios?: string;
-}
-
 export interface INR10 {
   questao24: IQuestaoConformidade;
   questao25: IQuestaoConformidade;
@@ -172,7 +165,6 @@ export interface IConformidadeLegal {
   nr05: INR05;
   nr06: INR06;
   nr07: INR07;
-  nr09: INR09;
   nr10: INR10;
   nr11: INR11;
   nr12: INR12;

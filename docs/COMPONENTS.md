@@ -122,7 +122,6 @@ interface IHseNewSupplierProps {
 - NR-05: CIPA
 - NR-06: EPI
 - NR-07: PCMSO
-- NR-09: PPRA
 - NR-10: Segurança em Instalações Elétricas
 - E outras...
 

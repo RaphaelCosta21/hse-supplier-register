@@ -70,7 +70,8 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
         />
         <MessageBar messageBarType={MessageBarType.info}>
           Preencha todas as informações obrigatórias (*) sobre a empresa
-          contratada. O anexo do REM (Resumo Estatístico Mensal) é obrigatório.
+          contratada. O anexo do Resumo Estatístico Mensal de Acidentes é
+          obrigatório.
         </MessageBar>
         <div className={styles.formGrid}>
           {" "}
@@ -156,14 +157,14 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
           </div>{" "}
           <div className={styles.gridRow}>
             <TextField
-              label="Responsável Técnico"
+              label="Responsável Técnico ou Representante Legal"
               value={value.responsavelTecnico || ""}
               onChange={(_, v) => handleFieldChange("responsavelTecnico", v)}
               required
               className={`${styles.halfWidth} ${
                 showError("responsavelTecnico") ? styles.fieldError : ""
               }`}
-              placeholder="Nome completo do responsável técnico"
+              placeholder="Nome completo do responsável técnico ou representante legal"
             />
             <TextField
               label="Atividade Principal (CNAE)"
@@ -276,17 +277,17 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
             Anexo
           </Text>{" "}
           <HSEFileUpload
-            label="REM - Resumo Estatístico Mensal"
+            label="Resumo Estatístico Mensal de Acidentes"
             required={true}
             category="rem"
-            accept=".pdf,.xlsx,.xls,.docx,.doc"
+            accept=".pdf,.xlsx,.xls,.docx,.doc,.txt,.zip"
             maxFileSize={50}
-            helpText="Anexe o REM dos acidentes de trabalho do ano corrente e do ano anterior (NBR14280)."
+            helpText="Anexe o Resumo Estatístico Mensal de Acidentes de trabalho do ano corrente e do ano anterior (NBR14280)."
           />
         </div>
         <MessageBar messageBarType={MessageBarType.warning}>
           <Text variant="medium" style={{ fontWeight: 600 }}>
-            OBS.: a) Cabe a contratada anexar a este questionário o REM: Resumo
+            OBS.: a) Cabe a contratada anexar a este questionário o Resumo
             Estatístico Mensal dos acidentes de trabalho (típico e trajeto) do
             ano corrente e do ano anterior ao preenchimento deste questionário.
             As estatísticas de acidentes devem estar preparadas de acordo com a

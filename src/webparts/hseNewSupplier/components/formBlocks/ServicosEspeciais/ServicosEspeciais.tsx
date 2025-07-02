@@ -57,7 +57,7 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
                 category={certificate.category}
                 subcategory="servicosEspeciais"
                 required={certificate.isRequired}
-                accept=".pdf,.jpg,.png"
+                accept=".pdf,.jpg,.png,.txt,.zip"
                 maxFileSize={50}
                 helpText="Anexar certificado válido"
               />
@@ -97,7 +97,7 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
                 category={document.category}
                 subcategory="servicosEspeciais"
                 required={document.isRequired}
-                accept=".pdf,.docx,.xlsx"
+                accept=".pdf,.docx,.xlsx,.txt,.zip"
                 maxFileSize={50}
                 helpText="Anexar documento técnico"
               />

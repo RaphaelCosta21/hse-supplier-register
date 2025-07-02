@@ -248,7 +248,7 @@ export const formSelectors = {
     return Math.round((completed / 4) * 100);
   },
   hasRequiredAttachments: (state: IFormState): boolean => {
-    const requiredCategories = ["rem", "sesmt", "cipa", "ppra", "pcmso", "aso"];
+    const requiredCategories = ["rem", "sesmt", "cipa", "pcmso", "aso"];
     return requiredCategories.every(
       (category) => (state.attachments[category] || []).length > 0
     );
@@ -281,9 +281,80 @@ export const formSelectors = {
 
       // Validar Conformidade Legal
       const conformidade = state.formData.conformidadeLegal || {};
+
+      // NRs obrigatórias que sempre devem estar presentes
+      const MANDATORY_NR_BLOCKS = ["nr01", "nr04", "nr05", "nr06", "nr07"];
+
       const NR_BLOCKS = [
         {
           key: "nr01",
+          questions: [{ key: "questao1" }, { key: "questao2" }],
+        },
+        { key: "nr04", questions: [{ key: "questao1" }, { key: "questao2" }] },
+        {
+          key: "nr05",
+          questions: [{ key: "questao1" }, { key: "questao2" }],
+        },
+        {
+          key: "nr06",
+          questions: [{ key: "questao1" }, { key: "questao2" }],
+        },
+        {
+          key: "nr07",
+          questions: [
+            { key: "questao1" },
+            { key: "questao2" },
+            { key: "questao3" },
+          ],
+        },
+        {
+          key: "nr10",
+          questions: [
+            { key: "questao1" },
+            { key: "questao2" },
+            { key: "questao3" },
+          ],
+        },
+        {
+          key: "nr11",
+          questions: [{ key: "questao1" }, { key: "questao2" }],
+        },
+        {
+          key: "nr12",
+          questions: [{ key: "questao1" }, { key: "questao2" }],
+        },
+        { key: "nr13", questions: [{ key: "questao1" }] },
+        { key: "nr15", questions: [{ key: "questao1" }] },
+        {
+          key: "nr23",
+          questions: [
+            { key: "questao1" },
+            { key: "questao2" },
+            { key: "questao3" },
+          ],
+        },
+        { key: "licencasAmbientais", questions: [{ key: "questao1" }] },
+        {
+          key: "legislacaoMaritima",
+          questions: [
+            { key: "questao1" },
+            { key: "questao2" },
+            { key: "questao3" },
+            { key: "questao4" },
+            { key: "questao5" },
+            { key: "questao6" },
+          ],
+        },
+        {
+          key: "treinamentos",
+          questions: [
+            { key: "questao1" },
+            { key: "questao2" },
+            { key: "questao3" },
+          ],
+        },
+        {
+          key: "gestaoSMS",
           questions: [
             { key: "questao1" },
             { key: "questao2" },
@@ -292,93 +363,23 @@ export const formSelectors = {
             { key: "questao5" },
           ],
         },
-        { key: "nr04", questions: [{ key: "questao7" }, { key: "questao8" }] },
-        {
-          key: "nr05",
-          questions: [{ key: "questao10" }, { key: "questao11" }],
-        },
-        {
-          key: "nr06",
-          questions: [{ key: "questao13" }, { key: "questao14" }],
-        },
-        {
-          key: "nr07",
-          questions: [
-            { key: "questao16" },
-            { key: "questao17" },
-            { key: "questao18" },
-          ],
-        },
-        {
-          key: "nr09",
-          questions: [
-            { key: "questao20" },
-            { key: "questao21" },
-            { key: "questao22" },
-          ],
-        },
-        {
-          key: "nr10",
-          questions: [
-            { key: "questao24" },
-            { key: "questao25" },
-            { key: "questao26" },
-          ],
-        },
-        {
-          key: "nr11",
-          questions: [{ key: "questao28" }, { key: "questao29" }],
-        },
-        {
-          key: "nr12",
-          questions: [{ key: "questao31" }, { key: "questao32" }],
-        },
-        { key: "nr13", questions: [{ key: "questao34" }] },
-        { key: "nr15", questions: [{ key: "questao36" }] },
-        {
-          key: "nr23",
-          questions: [
-            { key: "questao38" },
-            { key: "questao39" },
-            { key: "questao40" },
-          ],
-        },
-        { key: "licencasAmbientais", questions: [{ key: "questao42" }] },
-        {
-          key: "legislacaoMaritima",
-          questions: [
-            { key: "questao44" },
-            { key: "questao45" },
-            { key: "questao46" },
-            { key: "questao47" },
-            { key: "questao48" },
-            { key: "questao49" },
-          ],
-        },
-        {
-          key: "treinamentos",
-          questions: [
-            { key: "questao51" },
-            { key: "questao52" },
-            { key: "questao53" },
-          ],
-        },
-        {
-          key: "gestaoSMS",
-          questions: [
-            { key: "questao55" },
-            { key: "questao56" },
-            { key: "questao57" },
-            { key: "questao58" },
-            { key: "questao59" },
-          ],
-        },
       ];
 
       const applicableBlocks: { [key: string]: boolean } = {};
       NR_BLOCKS.forEach((block) => {
         const bloco = conformidade[block.key as keyof typeof conformidade];
         if (bloco && typeof bloco === "object") {
+          const blockObj = bloco as unknown as { aplicavel?: boolean };
+
+          // NRs obrigatórias são sempre aplicáveis
+          if (MANDATORY_NR_BLOCKS.includes(block.key)) {
+            applicableBlocks[block.key] = true;
+          } else {
+            // NRs opcionais: verificar flag de aplicabilidade
+            applicableBlocks[block.key] = blockObj.aplicavel === true;
+          }
+        } else if (MANDATORY_NR_BLOCKS.includes(block.key)) {
+          // Garantir que NRs obrigatórias sejam sempre consideradas aplicáveis
           applicableBlocks[block.key] = true;
         }
       });
@@ -404,7 +405,14 @@ export const formSelectors = {
       const blocosAplicaveis = NR_BLOCKS.filter(
         (block) => applicableBlocks[block.key]
       );
+
+      // Validação: deve ter pelo menos as NRs obrigatórias aplicáveis
+      const mandatoryBlocksApplicable = MANDATORY_NR_BLOCKS.every(
+        (blockKey) => applicableBlocks[blockKey]
+      );
+
       const isConformidadeLegalValid =
+        mandatoryBlocksApplicable &&
         blocosAplicaveis.length > 0 &&
         blocosAplicaveis.every((block) =>
           isBlockComplete(block.key, block.questions)

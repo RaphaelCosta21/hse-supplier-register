@@ -183,7 +183,6 @@ const ATTACHMENT_FOLDER_MAP = {
   sesmt: "SESMT",
   cipa: "CIPA",
   pcmso: "PCMSO",
-  ppra: "PPRA",
   // ... outras NRs
 
   // Serviços Especiais

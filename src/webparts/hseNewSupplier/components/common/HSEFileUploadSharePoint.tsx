@@ -35,7 +35,7 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
   required = false,
   category,
   subcategory,
-  accept = ".pdf,.xlsx,.xls,.docx,.doc,.jpg,.png",
+  accept = ".pdf,.xlsx,.xls,.docx,.doc,.jpg,.png,.txt,.zip",
   maxFileSize = 100,
   helpText,
   existingFiles = [],
