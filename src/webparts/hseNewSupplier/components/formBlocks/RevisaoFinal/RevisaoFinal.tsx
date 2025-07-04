@@ -121,7 +121,7 @@ export const RevisaoFinal: React.FC = () => {
     // Finalize progress
     const finalMessage =
       operationType === "save"
-        ? "Progresso salvo com sucesso!"
+        ? "Rascunho salvo com sucesso!"
         : "Formulário enviado com sucesso!";
     setProgressLabel(finalMessage);
     setProgressPercent(100);
@@ -202,7 +202,7 @@ export const RevisaoFinal: React.FC = () => {
         id: number;
         texto: string;
         resposta: string;
-        anexo?: string;
+        anexo?: string; // Também deve incluir anexo para NRs
       }>;
     }>;
     outrosItensRespondidos: Array<{
@@ -212,6 +212,7 @@ export const RevisaoFinal: React.FC = () => {
         id: number;
         texto: string;
         resposta: string;
+        anexo?: string; // Agora também inclui anexo para outros itens
       }>;
     }>;
     anexos: string[];
@@ -237,38 +238,44 @@ export const RevisaoFinal: React.FC = () => {
         questoes: [
           { key: "questao1", idx: 1 },
           { key: "questao2", idx: 2 },
-          { key: "questao3", idx: 3 },
-          { key: "questao4", idx: 4 },
-          { key: "questao5", idx: 5 },
         ],
       },
       {
         key: "nr04",
         titulo: "NR 04 - SESMT",
         questoes: [
-          { key: "questao1", idx: 6 },
-          { key: "questao2", idx: 7 },
+          { key: "questao1", idx: 3 },
+          { key: "questao2", idx: 4 },
         ],
       },
       {
         key: "nr05",
         titulo: "NR 05 - CIPA",
         questoes: [
-          { key: "questao1", idx: 8 },
-          { key: "questao2", idx: 9 },
+          { key: "questao1", idx: 5 },
+          { key: "questao2", idx: 6 },
         ],
       },
       {
         key: "nr06",
         titulo: "NR 06 - EPI",
         questoes: [
-          { key: "questao1", idx: 10 },
-          { key: "questao2", idx: 11 },
+          { key: "questao1", idx: 7 },
+          { key: "questao2", idx: 8 },
         ],
       },
       {
         key: "nr07",
         titulo: "NR 07 - PCMSO",
+        questoes: [
+          { key: "questao1", idx: 9 },
+          { key: "questao2", idx: 10 },
+          { key: "questao3", idx: 11 },
+        ],
+      },
+      {
+        key: "nr10",
+        titulo: "NR 10 - Instalações e Serviços em Eletricidade",
         questoes: [
           { key: "questao1", idx: 12 },
           { key: "questao2", idx: 13 },
@@ -276,48 +283,44 @@ export const RevisaoFinal: React.FC = () => {
         ],
       },
       {
-        key: "nr10",
-        titulo: "NR 10 - Instalações e Serviços em Eletricidade",
-        questoes: [
-          { key: "questao1", idx: 15 },
-          { key: "questao2", idx: 16 },
-          { key: "questao3", idx: 17 },
-        ],
-      },
-      {
         key: "nr11",
         titulo:
           "NR 11 - Transporte, Movimentação, Armazenagem e Manuseio de Materiais",
         questoes: [
-          { key: "questao1", idx: 18 },
-          { key: "questao2", idx: 19 },
+          { key: "questao1", idx: 15 },
+          { key: "questao2", idx: 16 },
         ],
       },
       {
         key: "nr12",
         titulo: "NR 12 - Máquinas e Equipamentos",
         questoes: [
-          { key: "questao1", idx: 20 },
-          { key: "questao2", idx: 21 },
+          { key: "questao1", idx: 17 },
+          { key: "questao2", idx: 18 },
         ],
       },
       {
         key: "nr13",
         titulo: "NR 13 - Caldeiras e Vasos de Pressão",
-        questoes: [{ key: "questao1", idx: 22 }],
+        questoes: [{ key: "questao1", idx: 19 }],
       },
       {
         key: "nr15",
         titulo: "NR 15 - Atividades e Operações Insalubres",
-        questoes: [{ key: "questao1", idx: 26 }],
+        questoes: [{ key: "questao1", idx: 20 }],
+      },
+      {
+        key: "nr16",
+        titulo: "NR 16 - Atividades e Operações Periculosas",
+        questoes: [{ key: "questao1", idx: 21 }],
       },
       {
         key: "nr23",
         titulo: "NR 23 - Proteção Contra Incêndios",
         questoes: [
-          { key: "questao1", idx: 27 },
-          { key: "questao2", idx: 28 },
-          { key: "questao3", idx: 29 },
+          { key: "questao1", idx: 22 },
+          { key: "questao2", idx: 23 },
+          { key: "questao3", idx: 24 },
         ],
       },
     ]; // Mapeamento dos outros itens de conformidade (não-NRs)
@@ -325,44 +328,56 @@ export const RevisaoFinal: React.FC = () => {
       {
         key: "licencasAmbientais",
         titulo: "Licenças Ambientais",
-        questoes: [{ key: "questao1", idx: 30 }],
+        questoes: [{ key: "questao1", idx: 25 }],
       },
       {
         key: "legislacaoMaritima",
         titulo: "Legislação Marítima",
         questoes: [
-          { key: "questao1", idx: 31 },
-          { key: "questao2", idx: 32 },
-          { key: "questao3", idx: 33 },
-          { key: "questao4", idx: 34 },
-          { key: "questao5", idx: 35 },
-          { key: "questao6", idx: 36 },
+          { key: "questao1", idx: 26 },
+          { key: "questao2", idx: 27 },
+          { key: "questao3", idx: 28 },
+          { key: "questao4", idx: 29 },
+          { key: "questao5", idx: 30 },
+          { key: "questao6", idx: 31 },
         ],
       },
       {
         key: "treinamentos",
         titulo: "Treinamentos Obrigatórios",
         questoes: [
-          { key: "questao1", idx: 37 },
-          { key: "questao2", idx: 38 },
-          { key: "questao3", idx: 39 },
+          { key: "questao1", idx: 32 },
+          { key: "questao2", idx: 33 },
+          { key: "questao3", idx: 34 },
         ],
       },
       {
         key: "gestaoSMS",
         titulo: "Gestão de SMS (Saúde, Meio Ambiente e Segurança)",
         questoes: [
-          { key: "questao1", idx: 40 },
-          { key: "questao2", idx: 41 },
-          { key: "questao3", idx: 42 },
-          { key: "questao4", idx: 43 },
-          { key: "questao5", idx: 44 },
+          { key: "questao1", idx: 35 },
+          { key: "questao2", idx: 36 },
+          { key: "questao3", idx: 37 },
+          { key: "questao4", idx: 38 },
+          { key: "questao5", idx: 39 },
         ],
       },
     ];
     const nrsRespondidas = NR_BLOCKS.filter((block) => {
       const nrData = conformidade[block.key as keyof typeof conformidade];
-      return nrData && typeof nrData === "object";
+      if (!nrData || typeof nrData !== "object") return false;
+
+      // NRs obrigatórias que sempre devem aparecer (não têm toggle de aplicabilidade)
+      const MANDATORY_NR_BLOCKS = ["nr01", "nr04", "nr05", "nr06", "nr07"];
+
+      // Se é uma NR obrigatória, só mostrar se tiver dados
+      if (MANDATORY_NR_BLOCKS.includes(block.key)) {
+        return true;
+      }
+
+      // Para NRs opcionais, verificar se foi marcada como aplicável pelo usuário
+      const blockObj = nrData as unknown as { aplicavel?: boolean };
+      return blockObj.aplicavel === true;
     })
       .map((block) => {
         const nrData = conformidade[
@@ -412,7 +427,11 @@ export const RevisaoFinal: React.FC = () => {
     // Processar outros itens de conformidade (não-NRs)
     const outrosItensRespondidos = OUTROS_CONFORMIDADE.filter((block) => {
       const itemData = conformidade[block.key as keyof typeof conformidade];
-      return itemData && typeof itemData === "object";
+      if (!itemData || typeof itemData !== "object") return false;
+
+      // Para outros itens de conformidade, verificar se foi marcada como aplicável
+      const blockObj = itemData as unknown as { aplicavel?: boolean };
+      return blockObj.aplicavel === true;
     })
       .map((block) => {
         const itemData = conformidade[
@@ -430,10 +449,23 @@ export const RevisaoFinal: React.FC = () => {
             )[q.idx];
             const resposta = questionObj.resposta || "";
 
+            // Buscar anexo se existir e a resposta for SIM
+            let anexo = "";
+            if (questionMeta?.attachment && resposta === "SIM") {
+              const attachmentFiles =
+                attachments[questionMeta.attachment] || [];
+              if (attachmentFiles.length > 0) {
+                anexo = attachmentFiles
+                  .map((f) => f.fileName || f.originalName)
+                  .join(", ");
+              }
+            }
+
             return {
               id: q.idx,
               texto: questionMeta?.text || `Questão ${q.idx}`,
               resposta,
+              anexo, // Agora inclui o anexo
             };
           })
           .filter((q) => q.resposta && q.resposta !== ""); // Só questões respondidas
@@ -444,11 +476,12 @@ export const RevisaoFinal: React.FC = () => {
           questoes,
         };
       })
-      .filter((item) => item.questoes.length > 0); // Só itens com questões respondidas// Obter anexos de conformidade
+      .filter((item) => item.questoes.length > 0); // Só itens com questões respondidas    // Obter anexos de conformidade
     const anexosConformidade = [] as string[];
 
-    // Verificar todas as categorias de anexos de conformidade legal baseadas no ATTACHMENT_CATEGORIES
+    // Categorias completas de anexos de conformidade legal baseadas no ATTACHMENT_CATEGORIES
     const conformidadeCategories = [
+      // Evidências básicas (questões 63-73)
       { key: "sesmt", label: "SESMT" },
       { key: "cipa", label: "CIPA" },
       { key: "treinamento", label: "Treinamentos" },
@@ -458,6 +491,67 @@ export const RevisaoFinal: React.FC = () => {
       { key: "aso", label: "ASO" },
       { key: "planoResiduos", label: "Plano de Resíduos" },
       { key: "cat", label: "CAT" },
+
+      // NR10 - Novos anexos
+      { key: "nr10ProjetoInstalacoes", label: "NR10 - Projeto de Instalações" },
+      {
+        key: "nr10CertificacaoProfissionais",
+        label: "NR10 - Certificação de Profissionais",
+      },
+
+      // NR11 - Novo anexo
+      {
+        key: "nr11CertificadoTreinamento",
+        label: "NR11 - Certificado de Treinamento",
+      },
+
+      // NR12 - Novos anexos
+      { key: "nr12PlanoInspecao", label: "NR12 - Plano de Inspeção" },
+      {
+        key: "nr12EvidenciaDispositivo",
+        label: "NR12 - Evidência de Dispositivo",
+      },
+
+      // NR13 - Novo anexo
+      {
+        key: "nr13EvidenciaSistematica",
+        label: "NR13 - Evidência Sistemática",
+      },
+
+      // NR15 - Novo anexo
+      { key: "nr15LaudoInsalubridade", label: "NR15 - Laudo de Insalubridade" },
+
+      // NR16 - Novo anexo
+      {
+        key: "nr16LaudoPericulosidade",
+        label: "NR16 - Laudo de Periculosidade",
+      },
+
+      // NR23 - Novo anexo
+      { key: "nr23LaudoManutencao", label: "NR23 - Laudo de Manutenção" },
+
+      // Licenças Ambientais - Novo anexo
+      { key: "licencaOperacao", label: "Licença de Operação" },
+
+      // Treinamentos Obrigatórios - Novos anexos
+      {
+        key: "certificadoProgramaTreinamento",
+        label: "Certificado Programa de Treinamento",
+      },
+      { key: "evidenciaTreinamento", label: "Evidência de Treinamento" },
+
+      // Gestão de SMS - Novos anexos
+      {
+        key: "smsProcedimentoAcidentes",
+        label: "SMS - Procedimento para Acidentes",
+      },
+      { key: "smsCalendarioInspecoes", label: "SMS - Calendário de Inspeções" },
+      {
+        key: "smsProcedimentoResiduos",
+        label: "SMS - Procedimento para Resíduos",
+      },
+      { key: "smsMetasObjetivos", label: "SMS - Metas e Objetivos" },
+      { key: "smsProgramaAnual", label: "SMS - Programa Anual" },
     ];
 
     conformidadeCategories.forEach((category) => {
@@ -600,11 +694,54 @@ export const RevisaoFinal: React.FC = () => {
         const empresa = state.formData.dadosGerais.empresa;
 
         if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
-          savedAttachments = await sharePointFileService.saveFormAttachments(
-            cnpj,
-            empresa,
-            state.attachments
-          );
+          console.log("=== REVISÃO FINAL: VERIFICANDO ANEXOS ===");
+
+          // Separar anexos que precisam ser salvos vs anexos já salvos
+          const attachmentsToSave: {
+            [category: string]: (typeof state.attachments)[string];
+          } = {};
+          let hasNewAttachments = false;
+
+          Object.keys(state.attachments).forEach((category) => {
+            const files = state.attachments[category];
+            const newFiles = files.filter((file) => file.fileData);
+
+            if (newFiles.length > 0) {
+              attachmentsToSave[category] = newFiles;
+              hasNewAttachments = true;
+              console.log(
+                `Categoria '${category}': ${newFiles.length} novos anexos para submissão`
+              );
+            }
+          });
+
+          if (hasNewAttachments) {
+            console.log("Salvando novos anexos para submissão final...");
+            const newlySavedAttachments =
+              await sharePointFileService.saveFormAttachments(
+                cnpj,
+                empresa,
+                attachmentsToSave
+              );
+
+            // Mesclar anexos existentes com recém-salvos
+            savedAttachments = { ...state.attachments };
+            Object.keys(newlySavedAttachments).forEach((category) => {
+              if (savedAttachments[category]) {
+                const existingFiles = savedAttachments[category].filter(
+                  (f) => !f.fileData
+                );
+                savedAttachments[category] = [
+                  ...existingFiles,
+                  ...newlySavedAttachments[category],
+                ];
+              } else {
+                savedAttachments[category] = newlySavedAttachments[category];
+              }
+            });
+          } else {
+            console.log("Todos os anexos já estão prontos para submissão");
+          }
         }
 
         // Call submitFormData directly
@@ -672,7 +809,7 @@ export const RevisaoFinal: React.FC = () => {
   // Handler for save button with progress
   const handleSaveWithProgress = async (): Promise<void> => {
     setLoadingVisible(true);
-    setLoadingMessage("Salvando progresso...");
+    setLoadingMessage("Salvando rascunho...");
 
     try {
       await runWithProgressSimulation(async () => {
@@ -680,15 +817,30 @@ export const RevisaoFinal: React.FC = () => {
       }, "save");
 
       // Show success toast
-      setToastMessage("Progresso salvo com sucesso!");
+      setToastMessage(
+        "Rascunho salvo com sucesso! Redirecionando para a página inicial..."
+      );
       setToastType("success");
       setToastVisible(true);
+
+      // Aguardar um pouco para o usuário ver a mensagem e depois redirecionar
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Redirecionar para a página inicial
+      if (actions?.setApplicationPhase) {
+        actions.setApplicationPhase({
+          phase: "ENTRADA",
+          cnpj: "",
+          isOverwrite: false,
+          requiresApproval: false,
+        });
+      }
     } catch (error) {
       console.error("Erro ao salvar:", error);
       setProgressOpen(false);
 
       // Show error toast
-      setToastMessage("Erro ao salvar o progresso. Tente novamente.");
+      setToastMessage("Erro ao salvar o rascunho. Tente novamente.");
       setToastType("error");
       setToastVisible(true);
     } finally {
@@ -1014,7 +1166,7 @@ export const RevisaoFinal: React.FC = () => {
             {" "}
             <div className={styles.submitButtons}>
               <DefaultButton
-                text="Salvar Progresso"
+                text="Salvar Rascunho"
                 iconProps={{ iconName: "Save" }}
                 onClick={handleSaveWithProgress}
                 className={styles.saveButton}

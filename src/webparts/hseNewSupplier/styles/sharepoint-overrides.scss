@@ -66,6 +66,35 @@ button[aria-label*="My account"] {
   padding-top: 0 !important;
 }
 
+// Remover padding lateral das Canvas Zones do SharePoint
+.CanvasZone {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+// Remover padding de elementos Canvas específicos
+.CanvasZoneSectionContainer {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+// Remover margin e padding da ControlZone
+.ControlZone {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+// Remover padding lateral da CanvasSection
+.CanvasSection {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+// Ocultar CommentsWrapper
+.CommentsWrapper {
+  display: none !important;
+}
+
 // Estilos específicos para diferentes seletores do SharePoint Online
 div[data-sp-feature-tag="Site header"] {
   .ms-HorizontalNav {

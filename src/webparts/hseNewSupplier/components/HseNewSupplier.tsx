@@ -24,6 +24,7 @@ import { LoadingSpinner } from "./common/LoadingSpinner/LoadingSpinner";
 import { FloatingSaveButton } from "./common/FloatingSaveButton/FloatingSaveButton";
 import { formSelectors } from "./context/formReducer";
 import { BackToHomeButton } from "./common/BackToHomeButton/BackToHomeButton";
+import { Footer } from "./common/Footer/Footer";
 import { useSharePointHeaderOverrides } from "../hooks/useSharePointOverrides";
 
 // Componente interno que usa os hooks do contexto HSE
@@ -550,10 +551,29 @@ const HseNewSupplierContent: React.FC = () => {
     getErrorsForStep,
   ]);
 
-  // Funções utilitárias
+  // Funções utilitárias - Nova lógica de progresso baseada em completude real das etapas
   const getProgressPercentage = React.useCallback((): number => {
-    return Math.round((currentStep / FORM_STEPS.length) * 100);
-  }, [currentStep]);
+    let completedSteps = 0;
+    const totalSteps = 3; // Apenas as três primeiras etapas contam para o progresso (Dados Gerais, Conformidade Legal, Serviços Especializados)
+
+    // Verificar se Dados Gerais está completa (step 1)
+    if (isDadosGeraisValid()) {
+      completedSteps++;
+    }
+
+    // Verificar se Conformidade Legal está completa (step 2)
+    if (isConformidadeLegalValid()) {
+      completedSteps++;
+    }
+
+    // Verificar se Serviços Especializados está completa (step 3)
+    if (isServicosEspeciaisValid()) {
+      completedSteps++;
+    }
+
+    // Retorna porcentagem baseada nas etapas realmente concluídas
+    return Math.round((completedSteps / totalSteps) * 100);
+  }, [isDadosGeraisValid, isConformidadeLegalValid, isServicosEspeciaisValid]);
 
   const getCurrentStepInfo = React.useCallback(() => {
     return FORM_STEPS.find((step) => step.id === currentStep) || FORM_STEPS[0];
@@ -672,7 +692,9 @@ const HseNewSupplierContent: React.FC = () => {
             </div>
             <CustomProgressIndicator
               percentComplete={getProgressPercentage() / 100}
-              description={`${getProgressPercentage()}% concluído`}
+              description={`${getProgressPercentage()}% concluído (${Math.round(
+                (getProgressPercentage() / 100) * 3
+              )} de 3 etapas)`}
               className={styles.progressBar}
               label="Progresso do formulário"
               showLabel
@@ -755,13 +777,23 @@ const HseNewSupplierContent: React.FC = () => {
             }}
           />
 
+          {/* Mensagem sobre dados obrigatórios para salvar rascunho */}
+          <div className={styles.stepBlockedMessage}>
+            <Icon iconName="Save" className={styles.stepBlockedIcon} />
+            <span>
+              Para Salvar Rascunho, necessário preencher os itens obrigatórios
+              da aba de Dados Gerais.
+            </span>
+          </div>
+
           {/* Mensagem de aviso quando Revisão Final está desabilitada */}
           {!formSelectors.canProceedToStep(state, 4) && (
             <div className={styles.stepBlockedMessage}>
               <Icon iconName="Info" className={styles.stepBlockedIcon} />
               <span>
-                Para liberar para revisão final, necessário completar as etapas
-                anteriores.
+                Para liberar a revisão final e submissão do formulário,
+                necessário completar as etapas de Dados Gerais, Conformidade
+                Legal e Serviços Especializados.
               </span>
             </div>
           )}
@@ -852,6 +884,9 @@ const HseNewSupplierContent: React.FC = () => {
 
       {/* Botão flutuante de salvar para as três primeiras etapas */}
       <FloatingSaveButton />
+
+      {/* Rodapé do sistema */}
+      <Footer />
     </div>
   );
 };

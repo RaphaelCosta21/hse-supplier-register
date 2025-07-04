@@ -5,6 +5,7 @@ import "@pnp/sp/lists";
 import "@pnp/sp/items";
 import { IHSEFormData } from "../types/IHSEFormData";
 import { IAttachmentMetadata } from "../types/IAttachmentMetadata";
+import { IFormFieldChange, IRevisionEntry } from "../types/IApplicationPhase";
 
 export class SharePointService {
   private sp: SPFI;
@@ -84,8 +85,8 @@ export class SharePointService {
     const now = new Date();
     const normalizedAttachments = normalizeAttachments();
     const attachmentCount = countAttachments(); // Criar JSON de forma mais segura
-    const createFormDataJSON = (): object => {
-      const jsonData = {
+    const createFormDataJSON = (): Record<string, unknown> => {
+      const baseJsonData = {
         dadosGerais: formData.dadosGerais || {},
         conformidadeLegal: formData.conformidadeLegal || {},
         servicosEspeciais: formData.servicosEspeciais || {},
@@ -99,7 +100,8 @@ export class SharePointService {
         },
       };
 
-      return jsonData;
+      // Adicionar rastreamento de revisão
+      return this.addRevisionHistoryToJSON(baseJsonData, "salvo");
     };
 
     const jsonData = createFormDataJSON();
@@ -197,8 +199,8 @@ export class SharePointService {
     const attachmentCount = countAttachments();
 
     // Criar JSON de forma mais segura para envio
-    const createFormDataJSON = (): object => {
-      const jsonData = {
+    const createFormDataJSON = (): Record<string, unknown> => {
+      const baseJsonData = {
         dadosGerais: formData.dadosGerais || {},
         conformidadeLegal: formData.conformidadeLegal || {},
         servicosEspeciais: formData.servicosEspeciais || {},
@@ -212,7 +214,8 @@ export class SharePointService {
         },
       };
 
-      return jsonData;
+      // Adicionar rastreamento de revisão
+      return this.addRevisionHistoryToJSON(baseJsonData, "enviado");
     };
 
     const jsonData = createFormDataJSON();
@@ -265,6 +268,419 @@ export class SharePointService {
       }
     }
   }
+  /**
+   * Detecta mudanças entre formulários antigo e novo, focando apenas em alterações reais do usuário
+   */
+  private detectChanges(
+    oldFormData: IHSEFormData,
+    newFormData: IHSEFormData
+  ): IFormFieldChange[] {
+    const changes: IFormFieldChange[] = [];
+
+    try {
+      // 1. DADOS GERAIS - comparação direta dos campos principais
+      const dadosGeraisFields: (keyof typeof oldFormData.dadosGerais)[] = [
+        "empresa",
+        "cnpj",
+        "numeroContrato",
+        "responsavelTecnico",
+        "grauRisco",
+        "escopoServico",
+        "atividadePrincipalCNAE",
+        "totalEmpregados",
+        "empregadosParaServico",
+        "possuiSESMT",
+        "numeroComponentesSESMT",
+        "gerenteContratoMarine",
+      ];
+
+      dadosGeraisFields.forEach((field) => {
+        const oldValue = oldFormData.dadosGerais?.[field];
+        const newValue = newFormData.dadosGerais?.[field];
+
+        if (oldValue !== newValue) {
+          // Ignorar mudanças insignificantes
+          if ((oldValue === undefined || oldValue === null) && newValue === "")
+            return;
+          if ((newValue === undefined || newValue === null) && oldValue === "")
+            return;
+
+          changes.push({
+            campo: `dadosGerais.${String(field)}`,
+            tipo:
+              oldValue === undefined || oldValue === null
+                ? "adicionado"
+                : "alterado",
+            valorAnterior: oldValue,
+            valorNovo: newValue,
+          });
+        }
+      });
+
+      // 2. CONFORMIDADE LEGAL - Detectar TODAS as mudanças sem filtros de prioridade
+      const oldConformidade = oldFormData.conformidadeLegal || {};
+      const newConformidade = newFormData.conformidadeLegal || {};
+
+      // Obter todas as NRs (seções) presentes nos dados antigos e novos
+      const allNRs = new Set([
+        ...Object.keys(oldConformidade),
+        ...Object.keys(newConformidade),
+      ]);
+
+      // NRs obrigatórias que sempre têm aplicavel: true (não devem gerar mudanças de aplicabilidade)
+      const nrsObrigatorias = new Set(["nr01", "nr04", "nr05", "nr06", "nr07"]);
+
+      console.log("=== DETECTANDO MUDANÇAS NA CONFORMIDADE LEGAL ===");
+      console.log("NRs a verificar:", Array.from(allNRs));
+      console.log(
+        "NRs obrigatórias (ignorar aplicabilidade):",
+        Array.from(nrsObrigatorias)
+      );
+      console.log(
+        "REGISTRANDO TODAS AS ALTERAÇÕES (sem filtros de prioridade)"
+      );
+
+      allNRs.forEach((nrKey) => {
+        const oldNR = (oldConformidade as unknown as Record<string, unknown>)[
+          nrKey
+        ] as Record<string, unknown>;
+        const newNR = (newConformidade as unknown as Record<string, unknown>)[
+          nrKey
+        ] as Record<string, unknown>;
+
+        console.log(`Processando ${nrKey}`);
+
+        // Se a NR não existia antes e agora existe
+        if (!oldNR && newNR) {
+          // Registrar mudança de aplicabilidade APENAS para NRs não obrigatórias
+          if (newNR.aplicavel !== undefined && !nrsObrigatorias.has(nrKey)) {
+            changes.push({
+              campo: `conformidadeLegal.${nrKey}.aplicavel`,
+              tipo: "adicionado",
+              valorAnterior: undefined,
+              valorNovo: newNR.aplicavel as boolean,
+            });
+            console.log(
+              `✅ ${nrKey} aplicabilidade adicionada: ${newNR.aplicavel}`
+            );
+          }
+
+          // Verificar todas as questões respondidas
+          Object.keys(newNR).forEach((key) => {
+            if (
+              key.startsWith("questao") &&
+              (newNR[key] as Record<string, unknown>)?.resposta
+            ) {
+              const questao = newNR[key] as Record<string, unknown>;
+              changes.push({
+                campo: `conformidadeLegal.${nrKey}.${key}.resposta`,
+                tipo: "adicionado",
+                valorAnterior: undefined,
+                valorNovo: questao.resposta as string,
+              });
+              console.log(`✅ ${nrKey}.${key} respondida: ${questao.resposta}`);
+            }
+          });
+        }
+        // Se a NR existia antes e ainda existe, verificar mudanças
+        else if (oldNR && newNR) {
+          // Verificar mudança na aplicabilidade APENAS para NRs não obrigatórias
+          if (
+            oldNR.aplicavel !== newNR.aplicavel &&
+            !nrsObrigatorias.has(nrKey)
+          ) {
+            changes.push({
+              campo: `conformidadeLegal.${nrKey}.aplicavel`,
+              tipo: "alterado",
+              valorAnterior: oldNR.aplicavel as boolean,
+              valorNovo: newNR.aplicavel as boolean,
+            });
+            console.log(
+              `✅ ${nrKey} aplicabilidade alterada: ${oldNR.aplicavel} → ${newNR.aplicavel}`
+            );
+          }
+
+          // Verificar mudanças nas questões (TODAS as alterações)
+          const allQuestoes = new Set([
+            ...Object.keys(oldNR).filter((k) => k.startsWith("questao")),
+            ...Object.keys(newNR).filter((k) => k.startsWith("questao")),
+          ]);
+
+          allQuestoes.forEach((questaoKey) => {
+            const oldQuestao = oldNR[questaoKey] as Record<string, unknown>;
+            const newQuestao = newNR[questaoKey] as Record<string, unknown>;
+
+            // Questão adicionada
+            if (!oldQuestao?.resposta && newQuestao?.resposta) {
+              changes.push({
+                campo: `conformidadeLegal.${nrKey}.${questaoKey}.resposta`,
+                tipo: "adicionado",
+                valorAnterior: undefined,
+                valorNovo: newQuestao.resposta as string,
+              });
+              console.log(
+                `✅ ${nrKey}.${questaoKey} adicionada: ${newQuestao.resposta}`
+              );
+            }
+            // Questão alterada
+            else if (
+              oldQuestao?.resposta &&
+              newQuestao?.resposta &&
+              oldQuestao.resposta !== newQuestao.resposta
+            ) {
+              changes.push({
+                campo: `conformidadeLegal.${nrKey}.${questaoKey}.resposta`,
+                tipo: "alterado",
+                valorAnterior: oldQuestao.resposta as string,
+                valorNovo: newQuestao.resposta as string,
+              });
+              console.log(
+                `✅ ${nrKey}.${questaoKey} alterada: ${oldQuestao.resposta} → ${newQuestao.resposta}`
+              );
+            }
+            // Questão removida
+            else if (oldQuestao?.resposta && !newQuestao?.resposta) {
+              changes.push({
+                campo: `conformidadeLegal.${nrKey}.${questaoKey}.resposta`,
+                tipo: "removido",
+                valorAnterior: oldQuestao.resposta as string,
+                valorNovo: undefined,
+              });
+              console.log(
+                `✅ ${nrKey}.${questaoKey} removida: ${oldQuestao.resposta}`
+              );
+            }
+          });
+        }
+        // Se a NR existia antes mas não existe mais
+        else if (oldNR && !newNR) {
+          changes.push({
+            campo: `conformidadeLegal.${nrKey}`,
+            tipo: "removido",
+            valorAnterior: "NR preenchida",
+            valorNovo: undefined,
+          });
+          console.log(`✅ ${nrKey} removida completamente`);
+        }
+      });
+
+      // 3. SERVIÇOS ESPECIAIS - comparação direta
+      if (oldFormData.servicosEspeciais && newFormData.servicosEspeciais) {
+        // Verificar fornecedor de embarcações
+        if (
+          oldFormData.servicosEspeciais.fornecedorEmbarcacoes !==
+          newFormData.servicosEspeciais.fornecedorEmbarcacoes
+        ) {
+          changes.push({
+            campo: "servicosEspeciais.fornecedorEmbarcacoes",
+            tipo: "alterado",
+            valorAnterior: oldFormData.servicosEspeciais.fornecedorEmbarcacoes,
+            valorNovo: newFormData.servicosEspeciais.fornecedorEmbarcacoes,
+          });
+        }
+
+        // Verificar fornecedor de içamento
+        if (
+          oldFormData.servicosEspeciais.fornecedorIcamento !==
+          newFormData.servicosEspeciais.fornecedorIcamento
+        ) {
+          changes.push({
+            campo: "servicosEspeciais.fornecedorIcamento",
+            tipo: "alterado",
+            valorAnterior: oldFormData.servicosEspeciais.fornecedorIcamento,
+            valorNovo: newFormData.servicosEspeciais.fornecedorIcamento,
+          });
+        }
+
+        // Verificar se dados de embarcações foram alterados - comparar campos específicos
+        const oldEmbarcacoes = oldFormData.servicosEspeciais.embarcacoes;
+        const newEmbarcacoes = newFormData.servicosEspeciais.embarcacoes;
+
+        if (
+          oldEmbarcacoes &&
+          newEmbarcacoes &&
+          newFormData.servicosEspeciais.fornecedorEmbarcacoes
+        ) {
+          // Verificar mudanças específicas nos dados de embarcações
+          const embarcacaoFields = [
+            "tipoEmbarcacao",
+            "capacidadePassageiros",
+            "numeroRegistro",
+            "certificadosValidos",
+          ];
+          embarcacaoFields.forEach((field) => {
+            const oldVal = (
+              oldEmbarcacoes as unknown as Record<string, unknown>
+            )[field];
+            const newVal = (
+              newEmbarcacoes as unknown as Record<string, unknown>
+            )[field];
+            if (oldVal !== newVal) {
+              changes.push({
+                campo: `servicosEspeciais.embarcacoes.${field}`,
+                tipo: oldVal === undefined ? "adicionado" : "alterado",
+                valorAnterior: oldVal as string | boolean | number,
+                valorNovo: newVal as string | boolean | number,
+              });
+            }
+          });
+        }
+
+        // Verificar se dados de içamento foram alterados - comparar campos específicos
+        const oldIcamento = oldFormData.servicosEspeciais.icamento;
+        const newIcamento = newFormData.servicosEspeciais.icamento;
+
+        if (
+          oldIcamento &&
+          newIcamento &&
+          newFormData.servicosEspeciais.fornecedorIcamento
+        ) {
+          // Verificar mudanças específicas nos dados de içamento
+          const icamentoFields = [
+            "capacidadeMaxima",
+            "tipoEquipamento",
+            "certificadosValidos",
+            "operadoresQualificados",
+          ];
+          icamentoFields.forEach((field) => {
+            const oldVal = (oldIcamento as unknown as Record<string, unknown>)[
+              field
+            ];
+            const newVal = (newIcamento as unknown as Record<string, unknown>)[
+              field
+            ];
+            if (oldVal !== newVal) {
+              changes.push({
+                campo: `servicosEspeciais.icamento.${field}`,
+                tipo: oldVal === undefined ? "adicionado" : "alterado",
+                valorAnterior: oldVal as string | boolean | number,
+                valorNovo: newVal as string | boolean | number,
+              });
+            }
+          });
+        }
+      }
+
+      console.log("=== MUDANÇAS DETECTADAS ===");
+      console.log("Total de mudanças:", changes.length);
+      changes.forEach((change) => {
+        console.log(`${change.tipo.toUpperCase()}: ${change.campo}`, {
+          anterior: change.valorAnterior,
+          novo: change.valorNovo,
+        });
+      });
+    } catch (error) {
+      console.error("Erro ao detectar mudanças:", error);
+      // Em caso de erro, retornar uma mudança genérica
+      changes.push({
+        campo: "Formulário",
+        tipo: "alterado",
+        valorAnterior: "Estado anterior",
+        valorNovo: "Estado atualizado",
+      });
+    }
+
+    return changes;
+  }
+
+  /**
+   * Detecta mudanças nos anexos
+   */
+  private detectAttachmentChanges(
+    oldAttachments: { [category: string]: IAttachmentMetadata[] } | undefined,
+    newAttachments: { [category: string]: IAttachmentMetadata[] }
+  ): IFormFieldChange[] {
+    const changes: IFormFieldChange[] = [];
+
+    // Normalizar anexos (garantir que são objetos válidos)
+    const normalizeAttachments = (
+      attachments: unknown
+    ): { [category: string]: IAttachmentMetadata[] } => {
+      if (!attachments || typeof attachments !== "object") return {};
+
+      const normalized: { [category: string]: IAttachmentMetadata[] } = {};
+      Object.keys(attachments as Record<string, unknown>).forEach(
+        (category) => {
+          const files = (attachments as Record<string, unknown>)[category];
+          if (Array.isArray(files)) {
+            normalized[category] = files;
+          }
+        }
+      );
+      return normalized;
+    };
+
+    const oldNormalized = normalizeAttachments(oldAttachments);
+    const newNormalized = normalizeAttachments(newAttachments);
+
+    // Obter todas as categorias
+    const allCategories = new Set([
+      ...Object.keys(oldNormalized),
+      ...Object.keys(newNormalized),
+    ]);
+
+    allCategories.forEach((category) => {
+      const oldFiles = oldNormalized[category] || [];
+      const newFiles = newNormalized[category] || [];
+
+      // Criar mapas por nome de arquivo para comparação
+      const oldFileMap = new Map(oldFiles.map((f) => [f.fileName, f]));
+      const newFileMap = new Map(newFiles.map((f) => [f.fileName, f]));
+
+      // Arquivos removidos
+      oldFiles.forEach((oldFile) => {
+        if (!newFileMap.has(oldFile.fileName)) {
+          changes.push({
+            campo: `Anexo - ${category}`,
+            tipo: "removido",
+            valorAnterior: `${oldFile.fileName} (${oldFile.fileType})`,
+            valorNovo: undefined,
+          });
+        }
+      });
+
+      // Arquivos adicionados
+      newFiles.forEach((newFile) => {
+        if (!oldFileMap.has(newFile.fileName)) {
+          changes.push({
+            campo: `Anexo - ${category}`,
+            tipo: "adicionado",
+            valorAnterior: undefined,
+            valorNovo: `${newFile.fileName} (${newFile.fileType})`,
+          });
+        }
+      });
+
+      // Arquivos alterados (mesmo nome, dados diferentes)
+      newFiles.forEach((newFile) => {
+        const oldFile = oldFileMap.get(newFile.fileName);
+        if (
+          oldFile &&
+          (oldFile.fileType !== newFile.fileType ||
+            oldFile.fileSize !== newFile.fileSize)
+        ) {
+          changes.push({
+            campo: `Anexo - ${category}`,
+            tipo: "alterado",
+            valorAnterior: `${oldFile.fileName} (${oldFile.fileType})`,
+            valorNovo: `${newFile.fileName} (${newFile.fileType})`,
+          });
+        }
+      });
+    });
+
+    console.log("=== MUDANÇAS DE ANEXOS DETECTADAS ===");
+    console.log("Total de mudanças de anexos:", changes.length);
+    changes.forEach((change) => {
+      console.log(`${change.tipo.toUpperCase()}: ${change.campo}`, {
+        anterior: change.valorAnterior,
+        novo: change.valorNovo,
+      });
+    });
+
+    return changes;
+  }
+
   public async updateFormData(
     itemId: number,
     formData: Partial<IHSEFormData>
@@ -291,6 +707,281 @@ export class SharePointService {
       .items.getById(itemId)
       .update(updateData);
   }
+
+  /**
+   * Atualiza um formulário com rastreamento completo de mudanças
+   */
+  public async updateFormWithChanges(
+    itemId: number,
+    newFormData: IHSEFormData,
+    newAttachments: { [category: string]: IAttachmentMetadata[] }
+  ): Promise<void> {
+    try {
+      console.log("=== INICIANDO ATUALIZAÇÃO COM RASTREAMENTO DE MUDANÇAS ===");
+      console.log("Item ID:", itemId);
+
+      // 1. Obter dados atuais do formulário
+      const currentFormData = await this.getFormById(itemId);
+      if (!currentFormData) {
+        throw new Error(`Formulário com ID ${itemId} não encontrado`);
+      }
+
+      console.log("Dados atuais carregados:", {
+        dadosGerais: !!currentFormData.dadosGerais,
+        conformidadeLegal: !!currentFormData.conformidadeLegal,
+        servicosEspeciais: !!currentFormData.servicosEspeciais,
+        anexos: !!currentFormData.anexos,
+      });
+
+      // 2. Detectar mudanças no formulário
+      const formChanges = this.detectChanges(currentFormData, newFormData);
+
+      // 3. Detectar mudanças nos anexos
+      const currentAttachments =
+        (currentFormData.anexos as unknown as {
+          [category: string]: IAttachmentMetadata[];
+        }) || {};
+      const attachmentChanges = this.detectAttachmentChanges(
+        currentAttachments,
+        newAttachments
+      );
+
+      // 4. Combinar todas as mudanças
+      const allChanges = [...formChanges, ...attachmentChanges];
+
+      console.log("=== RESUMO FINAL DE MUDANÇAS ===");
+      console.log("Mudanças no formulário:", formChanges.length);
+      console.log("Mudanças nos anexos:", attachmentChanges.length);
+      console.log("Total de mudanças:", allChanges.length);
+
+      // 5. Preparar dados atualizados com histórico de revisão
+      const userContext = this.context?.pageContext?.user;
+      const now = new Date();
+
+      // Carregar histórico existente diretamente do SharePoint (dados brutos)
+      let historicoRevisoes: IRevisionEntry[] = [];
+      try {
+        const rawItem = await this.sp.web.lists
+          .getByTitle(this.listName)
+          .items.getById(itemId)
+          .select("DadosFormulario")();
+
+        if (rawItem.DadosFormulario) {
+          const rawData = JSON.parse(rawItem.DadosFormulario);
+          if (
+            rawData.metadata?.historicoRevisoes &&
+            Array.isArray(rawData.metadata.historicoRevisoes)
+          ) {
+            historicoRevisoes = rawData.metadata
+              .historicoRevisoes as IRevisionEntry[];
+            console.log(
+              "Histórico existente carregado:",
+              historicoRevisoes.length,
+              "revisões"
+            );
+          } else {
+            console.log("Nenhum histórico encontrado, iniciando novo");
+          }
+        }
+      } catch (error) {
+        console.log(
+          "Erro ao carregar histórico existente, iniciando novo:",
+          error
+        );
+        historicoRevisoes = [];
+      }
+
+      // 6. Criar nova entrada de revisão apenas se houver mudanças
+      if (allChanges.length > 0) {
+        const novaVersao = historicoRevisoes.length + 1;
+        const novaRevisao: IRevisionEntry = {
+          numeroRevisao: novaVersao,
+          data: now.toISOString(),
+          usuario: userContext?.displayName || "Usuário Externo",
+          email: userContext?.email || "usuario@externo.com",
+          tipoOperacao: "Rascunho Atualizado",
+          alteracoes: allChanges,
+          totalAlteracoes: allChanges.length,
+          resumo: `Rascunho atualizado (Rev. ${novaVersao}) - ${allChanges.length} mudança(s)`,
+        };
+
+        historicoRevisoes.push(novaRevisao);
+        console.log(`=== NOVA REVISÃO ADICIONADA ===`);
+        console.log(
+          `Revisão ${novaVersao} criada com ${allChanges.length} alterações`
+        );
+        console.log(`Total de revisões agora: ${historicoRevisoes.length}`);
+        console.log(
+          "Alterações desta revisão:",
+          allChanges.map((c) => `${c.campo}: ${c.tipo}`)
+        );
+      } else {
+        console.log("=== NENHUMA MUDANÇA DETECTADA ===");
+        console.log(`Mantendo ${historicoRevisoes.length} revisões existentes`);
+      }
+
+      // 7. Preparar dados finais para salvamento
+      const numeroRevisaoAtual = historicoRevisoes.length;
+      const updatedFormData = {
+        ...newFormData,
+        anexos: newAttachments,
+        metadata: {
+          dataSalvamento: now.toISOString(),
+          usuario: userContext?.displayName || "Usuário Externo",
+          email: userContext?.email || "usuario@externo.com",
+          temAnexos: Object.keys(newAttachments).length > 0,
+          totalAnexos: Object.values(newAttachments).reduce(
+            (total, files) => total + files.length,
+            0
+          ),
+          historicoRevisoes: historicoRevisoes,
+          numeroRevisao: numeroRevisaoAtual,
+          tipoOperacao:
+            allChanges.length > 0 ? "Rascunho Atualizado" : "Sem Alterações",
+        },
+      };
+
+      // 8. Calcular percentual de conclusão
+      const calculateCompletionPercentage = (): number => {
+        let completed = 0;
+        const totalSections = 3;
+
+        if (
+          newFormData.dadosGerais?.empresa &&
+          newFormData.dadosGerais?.cnpj &&
+          newFormData.dadosGerais?.numeroContrato
+        )
+          completed++;
+        if (
+          newFormData.conformidadeLegal &&
+          Object.keys(newFormData.conformidadeLegal).length > 0
+        )
+          completed++;
+        if (newFormData.servicosEspeciais) completed++;
+
+        return Math.round((completed / totalSections) * 100);
+      };
+
+      // 9. Atualizar no SharePoint
+      const updateData = {
+        Title: (
+          newFormData.dadosGerais?.empresa || "Formulário Atualizado"
+        ).toString(),
+        CNPJ: (newFormData.dadosGerais?.cnpj || "").toString(),
+        NumeroContrato: (
+          newFormData.dadosGerais?.numeroContrato || ""
+        ).toString(),
+        ResponsavelTecnico: (
+          newFormData.dadosGerais?.responsavelTecnico || ""
+        ).toString(),
+        GrauRisco: (newFormData.dadosGerais?.grauRisco || "1").toString(),
+        PercentualConclusao: calculateCompletionPercentage(),
+        DadosFormulario: JSON.stringify(updatedFormData),
+        UltimaModificacao: now.toISOString(),
+        AnexosCount: Object.values(newAttachments).reduce(
+          (total, files) => total + files.length,
+          0
+        ),
+      };
+
+      await this.sp.web.lists
+        .getByTitle(this.listName)
+        .items.getById(itemId)
+        .update(updateData);
+
+      console.log("=== ATUALIZAÇÃO CONCLUÍDA COM SUCESSO ===");
+      console.log("Número total de revisões salvas:", historicoRevisoes.length);
+      console.log("Revisão atual:", numeroRevisaoAtual);
+      console.log(
+        "Última operação:",
+        allChanges.length > 0 ? "Rascunho Atualizado" : "Sem Alterações"
+      );
+    } catch (error) {
+      console.error("Erro na atualização com rastreamento:", error);
+      throw new Error(`Falha ao atualizar formulário: ${error.message}`);
+    }
+  }
+  /**
+   * Cria uma entrada de histórico simplificada para salvamentos
+   */
+  private createSimpleRevisionEntry(
+    action: "criado" | "salvo" | "enviado",
+    changeCount: number = 1,
+    versionNumber: number = 1
+  ): IRevisionEntry {
+    const userContext = this.context?.pageContext?.user;
+    const now = new Date();
+
+    let tipoOperacao: string;
+    let resumo: string;
+    switch (action) {
+      case "criado":
+        tipoOperacao = "Rascunho Criado";
+        resumo = "Rascunho inicial criado";
+        break;
+      case "salvo":
+        tipoOperacao = "Rascunho Atualizado";
+        resumo = `Rascunho atualizado (Rev. ${versionNumber})`;
+        break;
+      case "enviado":
+        tipoOperacao = "Formulário Enviado";
+        resumo = "Formulário enviado para análise";
+        break;
+      default:
+        tipoOperacao = "Operação Desconhecida";
+        resumo = `Formulário ${action} com sucesso`;
+    }
+
+    return {
+      numeroRevisao: versionNumber,
+      data: now.toISOString(),
+      usuario: userContext?.displayName || "Usuário Externo",
+      email: userContext?.email || "usuario@externo.com",
+      tipoOperacao: tipoOperacao,
+      alteracoes: [
+        {
+          campo: "Formulário",
+          tipo: action === "criado" ? "adicionado" : "alterado",
+          valorAnterior: action === "criado" ? undefined : "Estado anterior",
+          valorNovo:
+            action === "criado" ? "Formulário criado" : `Formulário ${action}`,
+        },
+      ],
+      totalAlteracoes: changeCount,
+      resumo: resumo,
+    };
+  }
+
+  /**
+   * Adiciona rastreamento de mudanças aos métodos de salvamento existentes
+   */
+  private addRevisionHistoryToJSON(
+    jsonData: Record<string, unknown>,
+    action: "criado" | "salvo" | "enviado"
+  ): Record<string, unknown> {
+    const revisao = this.createSimpleRevisionEntry(action, 1, 1); // Para novo formulário sempre Rev. 1
+
+    const tipoOperacao =
+      action === "criado"
+        ? "Rascunho Criado"
+        : action === "salvo"
+        ? "Rascunho Atualizado"
+        : "Formulário Enviado";
+
+    console.log(`=== CRIANDO PRIMEIRO HISTÓRICO DE REVISÃO ===`);
+    console.log(`Ação: ${action}, Tipo Operação: ${tipoOperacao}`);
+
+    return {
+      ...jsonData,
+      metadata: {
+        ...((jsonData.metadata as Record<string, unknown>) || {}),
+        historicoRevisoes: [revisao],
+        numeroRevisao: 1,
+        tipoOperacao: tipoOperacao,
+      },
+    };
+  }
+
   /**
    * Busca um formulário específico por ID
    */
@@ -582,9 +1273,11 @@ export class SharePointService {
       empresa: string;
       status: string;
       dataModificacao: string;
+      dataModificacaoCompleta: string;
       userEmail: string;
       userName: string;
       isOwner: boolean;
+      numeroRevisoes: number;
     }>
   > {
     try {
@@ -600,21 +1293,97 @@ export class SharePointService {
           "StatusAvaliacao",
           "Modified",
           "EmailPreenchimento",
-          "NomePreenchimento"
+          "NomePreenchimento",
+          "DadosFormulario"
         )
         .orderBy("Modified", false)();
 
       console.log("Formulários encontrados:", items.length);
-      return items.map((item) => ({
-        id: item.Id,
-        cnpj: item.CNPJ || "",
-        empresa: item.Title || "",
-        status: item.StatusAvaliacao || "Rascunho",
-        dataModificacao: item.Modified,
-        userEmail: item.EmailPreenchimento || "",
-        userName: item.NomePreenchimento || "",
-        isOwner: true, // Sempre true pois filtramos pelo email do usuário
-      }));
+
+      return items.map((item) => {
+        // Extrair informações do histórico de revisões
+        let numeroRevisoes = 0;
+        let dataModificacaoCompleta = item.Modified;
+
+        console.log(`=== PROCESSANDO FORMULÁRIO ${item.Id} ===`);
+
+        try {
+          if (item.DadosFormulario) {
+            const parsedData = JSON.parse(item.DadosFormulario);
+            const metadata = parsedData.metadata;
+
+            console.log(
+              `Formulário ${item.Id} - Metadata encontrado:`,
+              !!metadata
+            );
+
+            if (
+              metadata &&
+              metadata.historicoRevisoes &&
+              Array.isArray(metadata.historicoRevisoes)
+            ) {
+              numeroRevisoes = metadata.historicoRevisoes.length;
+              console.log(
+                `Formulário ${item.Id} - Número de revisões: ${numeroRevisoes}`
+              );
+
+              // Usar a data da última revisão se disponível
+              if (numeroRevisoes > 0) {
+                const ultimaRevisao =
+                  metadata.historicoRevisoes[numeroRevisoes - 1];
+                if (ultimaRevisao && ultimaRevisao.data) {
+                  dataModificacaoCompleta = ultimaRevisao.data;
+                  console.log(
+                    `Formulário ${item.Id} - Data da última revisão: ${dataModificacaoCompleta}`
+                  );
+                }
+              }
+            } else {
+              console.log(
+                `Formulário ${item.Id} - Histórico de revisões não encontrado ou inválido`
+              );
+            }
+          } else {
+            console.log(`Formulário ${item.Id} - DadosFormulario ausente`);
+          }
+        } catch (parseError) {
+          console.warn(
+            `Erro ao extrair histórico do formulário ${item.Id}:`,
+            parseError
+          );
+          // Manter valores padrão em caso de erro
+        }
+
+        // Formatar data completa para exibição
+        const formatDataCompleta = (dateString: string): string => {
+          try {
+            const date = new Date(dateString);
+            return date.toLocaleString("pt-BR", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            });
+          } catch {
+            return dateString;
+          }
+        };
+
+        return {
+          id: item.Id,
+          cnpj: item.CNPJ || "",
+          empresa: item.Title || "",
+          status: item.StatusAvaliacao || "Rascunho",
+          dataModificacao: item.Modified,
+          dataModificacaoCompleta: formatDataCompleta(dataModificacaoCompleta),
+          userEmail: item.EmailPreenchimento || "",
+          userName: item.NomePreenchimento || "",
+          isOwner: true, // Sempre true pois filtramos pelo email do usuário
+          numeroRevisoes: numeroRevisoes,
+        };
+      });
     } catch (error) {
       console.error("Erro ao buscar formulários do usuário:", error);
       throw new Error(`Erro ao carregar seus formulários: ${error.message}`);

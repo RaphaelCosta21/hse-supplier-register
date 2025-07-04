@@ -8,6 +8,86 @@ export interface IValidationResult {
   incompleteConformidadeSections: string[];
 }
 
+// Função para validar APENAS Dados Gerais antes de salvar rascunho
+export const validateDadosGeraisForSave = (
+  formData: unknown,
+  attachments: unknown
+): IValidationResult => {
+  const missingFields: string[] = [];
+  const missingAttachments: string[] = [];
+  const incompleteConformidadeSections: string[] = [];
+
+  // Verificar se formData tem a estrutura esperada
+  const data = formData as {
+    dadosGerais?: { [key: string]: unknown };
+  };
+
+  // Validar campos obrigatórios dos Dados Gerais
+  if (
+    !data.dadosGerais?.empresa ||
+    (typeof data.dadosGerais.empresa === "string" &&
+      !data.dadosGerais.empresa.trim())
+  ) {
+    missingFields.push("Nome da Empresa");
+  }
+  if (
+    !data.dadosGerais?.cnpj ||
+    (typeof data.dadosGerais.cnpj === "string" && !data.dadosGerais.cnpj.trim())
+  ) {
+    missingFields.push("CNPJ");
+  }
+  if (
+    !data.dadosGerais?.numeroContrato ||
+    (typeof data.dadosGerais.numeroContrato === "string" &&
+      !data.dadosGerais.numeroContrato.trim())
+  ) {
+    missingFields.push("Número do Contrato");
+  }
+  if (!data.dadosGerais?.dataInicioContrato) {
+    missingFields.push("Data de Início do Contrato");
+  }
+  if (!data.dadosGerais?.dataTerminoContrato) {
+    missingFields.push("Data de Término do Contrato");
+  }
+  if (
+    !data.dadosGerais?.responsavelTecnico ||
+    (typeof data.dadosGerais.responsavelTecnico === "string" &&
+      !data.dadosGerais.responsavelTecnico.trim())
+  ) {
+    missingFields.push("Responsável Técnico");
+  }
+  if (
+    !data.dadosGerais?.atividadePrincipalCNAE ||
+    (typeof data.dadosGerais.atividadePrincipalCNAE === "string" &&
+      !data.dadosGerais.atividadePrincipalCNAE.trim())
+  ) {
+    missingFields.push("Atividade Principal (CNAE)");
+  }
+  if (!data.dadosGerais?.grauRisco) {
+    missingFields.push("Grau de Risco (NR-4)");
+  }
+  if (
+    !data.dadosGerais?.gerenteContratoMarine ||
+    (typeof data.dadosGerais.gerenteContratoMarine === "string" &&
+      !data.dadosGerais.gerenteContratoMarine.trim())
+  ) {
+    missingFields.push("Gerente do Contrato Marine");
+  }
+
+  // Validar anexo REM obrigatório
+  const remAttachments = (attachments as Record<string, unknown[]>)?.rem || [];
+  if (remAttachments.length === 0) {
+    missingAttachments.push("REM - Resumo Estatístico Mensal");
+  }
+
+  return {
+    isValid: missingFields.length === 0 && missingAttachments.length === 0,
+    missingFields,
+    missingAttachments,
+    incompleteConformidadeSections,
+  };
+};
+
 // Função para validar formulário completo antes de salvar
 export const validateFormForSave = (
   formData: unknown,

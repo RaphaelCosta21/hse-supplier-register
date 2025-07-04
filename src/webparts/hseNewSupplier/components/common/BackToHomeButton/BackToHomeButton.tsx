@@ -49,7 +49,7 @@ export const BackToHomeButton: React.FC<IBackToHomeButtonProps> = ({
     <>
       {" "}
       <DefaultButton
-        text="Voltar ao Início"
+        text="Voltar para Página Inicial"
         iconProps={{ iconName: "Home" }}
         onClick={handleBackToHome}
         className={styles.backToHomeButton}
@@ -60,8 +60,8 @@ export const BackToHomeButton: React.FC<IBackToHomeButtonProps> = ({
         onDismiss={handleCancelBackToHome}
         dialogContentProps={{
           type: DialogType.normal,
-          title: "Confirmar Volta ao Início",
-          subText: "Tem certeza que deseja voltar ao início?",
+          title: "Confirmar Volta para Página Inicial",
+          subText: "Tem certeza que deseja voltar para a página inicial?",
         }}
         modalProps={{
           isBlocking: true,
@@ -85,7 +85,7 @@ export const BackToHomeButton: React.FC<IBackToHomeButtonProps> = ({
         <DialogFooter>
           <PrimaryButton
             onClick={handleConfirmBackToHome}
-            text="Sim, Voltar ao Início"
+            text="Sim, Voltar para Página Inicial"
             iconProps={{ iconName: "Home" }}
           />
           <DefaultButton onClick={handleCancelBackToHome} text="Cancelar" />

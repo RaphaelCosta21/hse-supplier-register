@@ -1,17 +1,12 @@
 import * as React from "react";
-import {
-  ActionButton,
-  MessageBar,
-  MessageBarType,
-  Stack,
-} from "@fluentui/react";
+import { ActionButton } from "@fluentui/react";
 import { useHSEForm } from "../../context/HSEFormContext";
 import styles from "./FloatingSaveButton.module.scss";
 import { ProgressModal } from "../ProgressModal";
 import { useScreenLock } from "../../../hooks/useScreenLock";
 import { Toast } from "../Toast/Toast";
 import {
-  validateFormForSave,
+  validateDadosGeraisForSave,
   generateValidationMessage,
   mapMissingFieldsToFormFields,
 } from "../../../utils/formValidation";
@@ -20,7 +15,6 @@ import { LoadingOverlay } from "../LoadingOverlay/LoadingOverlay";
 
 export const FloatingSaveButton: React.FC = (): JSX.Element => {
   const { actions, state, dispatch } = useHSEForm();
-  const [showValidationError, setShowValidationError] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [progressOpen, setProgressOpen] = React.useState(false);
   const [progressPercent, setProgressPercent] = React.useState(0);
@@ -32,6 +26,11 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
   >("success");
   const [loadingVisible, setLoadingVisible] = React.useState(false);
   const [loadingMessage, setLoadingMessage] = React.useState("");
+
+  // Estado para controlar expansão
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [expandTimeout, setExpandTimeout] =
+    React.useState<NodeJS.Timeout | null>(null);
 
   // Hook para travar a tela durante o processamento
   useScreenLock(progressOpen);
@@ -266,6 +265,98 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     isConformidadeLegalValid() &&
     isServicosEspeciaisValid();
 
+  // Cálculo de progresso e informações contextuais
+  const progressInfo = React.useMemo(() => {
+    let completedSteps = 0;
+    let currentStepName = "";
+    let nextStepName = "";
+    const missingFields: string[] = [];
+
+    // Verificar Dados Gerais
+    const dadosGeraisOK = isDadosGeraisValid();
+    if (dadosGeraisOK) {
+      completedSteps++;
+    } else {
+      currentStepName = "Dados Gerais";
+      const { dadosGerais } = state.formData;
+      const attachments = state.attachments || {};
+
+      // Identificar campos faltantes
+      if (!dadosGerais?.empresa) missingFields.push("Empresa");
+      if (!dadosGerais?.numeroContrato)
+        missingFields.push("Número do Contrato");
+      if (!dadosGerais?.responsavelTecnico)
+        missingFields.push("Responsável Técnico");
+      if (!dadosGerais?.gerenteContratoMarine)
+        missingFields.push("Gerente do Contrato");
+      if (!attachments.rem || attachments.rem.length === 0)
+        missingFields.push("Anexo REM");
+    }
+
+    // Verificar Conformidade Legal
+    const conformidadeOK = isConformidadeLegalValid();
+    if (conformidadeOK) {
+      completedSteps++;
+    } else if (dadosGeraisOK) {
+      currentStepName = "Conformidade Legal";
+      missingFields.push("Questões NR pendentes");
+    }
+
+    // Verificar Serviços Especializados
+    const servicosOK = isServicosEspeciaisValid();
+    if (servicosOK) {
+      completedSteps++;
+    } else if (dadosGeraisOK && conformidadeOK) {
+      currentStepName = "Serviços Especializados";
+      missingFields.push("Certificados pendentes");
+    }
+
+    // Determinar próxima etapa
+    if (!dadosGeraisOK) {
+      nextStepName = "Dados Gerais";
+    } else if (!conformidadeOK) {
+      nextStepName = "Conformidade Legal";
+    } else if (!servicosOK) {
+      nextStepName = "Serviços Especializados";
+    } else {
+      nextStepName = "Revisão Final";
+    }
+
+    const percentage = Math.round((completedSteps / 3) * 100);
+
+    return {
+      percentage,
+      completedSteps,
+      currentStepName,
+      nextStepName,
+      missingFields,
+      isComplete: completedSteps === 3,
+    };
+  }, [
+    isDadosGeraisValid,
+    isConformidadeLegalValid,
+    isServicosEspeciaisValid,
+    state.formData,
+    state.attachments,
+  ]);
+
+  // Handlers para expansão
+  const handleExpand = React.useCallback(() => {
+    if (expandTimeout) {
+      clearTimeout(expandTimeout);
+      setExpandTimeout(null);
+    }
+    setIsExpanded(true);
+  }, [expandTimeout]);
+
+  const handleCollapse = React.useCallback(() => {
+    const timeout = setTimeout(() => {
+      setIsExpanded(false);
+      setExpandTimeout(null);
+    }, 300);
+    setExpandTimeout(timeout);
+  }, []);
+
   // Handler para "Revisar e Submeter"
   const handleReviewAndSubmit = (): void => {
     if (dispatch) {
@@ -348,7 +439,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     // Finalizar progresso
     const finalMessage =
       operationType === "save"
-        ? "Progresso salvo com sucesso!"
+        ? "Rascunho salvo com sucesso! Você pode continuar de onde parou."
         : "Formulário enviado com sucesso!";
     setProgressLabel(finalMessage);
     setProgressPercent(100);
@@ -360,19 +451,21 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
   // Handler para salvar com progresso visual
   const handleSaveWithProgress = async (): Promise<void> => {
     setLoadingVisible(true);
-    setLoadingMessage("Salvando progresso...");
-    // Validação detalhada dos Dados Gerais antes de salvar
-    const validationResult = validateFormForSave(
+    setLoadingMessage("Salvando rascunho...");
+    // Validação detalhada APENAS dos Dados Gerais antes de salvar rascunho
+    const validationResult = validateDadosGeraisForSave(
       state.formData,
       state.attachments
     );
     if (!validationResult.isValid) {
       // Gera mensagem de erro detalhada
       const errorMsg = generateValidationMessage(validationResult);
-      setToastMessage(""); // Esconde toast de sucesso/erro anterior
-      setShowValidationError(true);
-      setToastVisible(false);
-      setTimeout(() => setShowValidationError(false), 6000);
+      setToastMessage(`Não é possível salvar o formulário:\n${errorMsg}`);
+      setToastType("error");
+      setToastVisible(true);
+      setLoadingVisible(false);
+      setProgressOpen(false);
+      setIsSaving(false);
       // Mapeia campos faltantes para erros de campo
       if (dispatch) {
         const fieldErrors = mapMissingFieldsToFormFields(
@@ -380,12 +473,6 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
         );
         dispatch({ type: "SET_FIELD_ERRORS", payload: fieldErrors });
       }
-      setProgressOpen(false);
-      setIsSaving(false);
-      setToastType("error");
-      setToastMessage(errorMsg);
-      setToastVisible(true);
-      setLoadingVisible(false);
       return;
     }
     setIsSaving(true);
@@ -395,7 +482,9 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       }, "save");
 
       // Mostrar toast de sucesso
-      setToastMessage("Progresso salvo com sucesso!");
+      setToastMessage(
+        "Rascunho salvo com sucesso! Você pode fechar a página e continuar de onde parou. Você verá o rascunho na Página Inicial no bloco 'Meus Formulários'."
+      );
       setToastType("success");
       setToastVisible(true);
     } catch (error) {
@@ -403,7 +492,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       setProgressOpen(false);
 
       // Mostrar toast de erro
-      setToastMessage("Erro ao salvar o progresso. Tente novamente.");
+      setToastMessage("Erro ao salvar o rascunho. Tente novamente.");
       setToastType("error");
       setToastVisible(true);
     } finally {
@@ -419,50 +508,138 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
 
   return (
     <>
-      {/* Mensagem de erro de validação flutuante */}
-      {showValidationError && (
-        <div className={styles.floatingError}>
-          <MessageBar
-            messageBarType={MessageBarType.error}
-            onDismiss={() => setShowValidationError(false)}
-          >
-            <Stack tokens={{ childrenGap: 4 }}>
-              <strong>Não é possível salvar o formulário:</strong>
-              <span>{toastMessage}</span>
-            </Stack>
-          </MessageBar>
-        </div>
+      {/* Overlay de loading: só aparece se NÃO estiver mostrando o ProgressModal */}
+      {loadingVisible && !progressOpen && (
+        <LoadingOverlay visible={loadingVisible} message={loadingMessage} />
       )}
-      {/* Overlay de loading igual Revisão Final */}
-      <LoadingOverlay visible={loadingVisible} message={loadingMessage} />
+
+      {/* Toast global, sempre fora do botão flutuante */}
+      <Toast
+        message={toastMessage}
+        type={toastType}
+        visible={toastVisible}
+        onDismiss={() => setToastVisible(false)}
+        duration={4000}
+      />
+
       {/* Botão flutuante de salvar ou revisar/submeter */}
       <div
         className={`${styles.floatingSaveButton} ${
           isSaving || progressOpen ? styles.processing : ""
+        } ${isExpanded ? styles.expanded : ""} ${
+          allStepsCompleted
+            ? styles.completed
+            : !isDadosGeraisValid()
+            ? styles.disabled
+            : ""
         }`}
+        onMouseEnter={handleExpand}
+        onMouseLeave={handleCollapse}
       >
+        {/* Conteúdo da expansão */}
+        <div className={styles.expansionContent}>
+          <div className={styles.progressInfo}>
+            <span className={styles.progressIcon}>📊</span>
+            <span>{progressInfo.percentage}% concluído</span>
+          </div>
+
+          {progressInfo.currentStepName && (
+            <div className={styles.stepInfo}>
+              <span className={styles.stepIcon}>📋</span>
+              <span>Etapa: {progressInfo.currentStepName}</span>
+            </div>
+          )}
+
+          {progressInfo.missingFields.length > 0 && (
+            <div className={styles.missingInfo}>
+              <span className={styles.missingIcon}>⚠️</span>
+              <span>
+                Faltam: {progressInfo.missingFields.slice(0, 2).join(", ")}
+              </span>
+            </div>
+          )}
+
+          {progressInfo.nextStepName && (
+            <div className={styles.nextInfo}>
+              <span className={styles.nextIcon}>🎯</span>
+              <span>Próximo: {progressInfo.nextStepName}</span>
+            </div>
+          )}
+        </div>
+
         {allStepsCompleted ? (
-          <ActionButton
-            iconProps={{ iconName: "CheckMark" }}
-            text="Revisar e Submeter"
-            onClick={handleReviewAndSubmit}
-            disabled={
-              isSaving || state.isSubmitting || progressOpen || loadingVisible
-            }
-            className={styles.submitButtonGreen}
-            title="Revisar e submeter o formulário"
-          />
+          <div
+            style={{
+              position: "relative",
+              display: "inline-block",
+              width: "100%",
+            }}
+          >
+            <ActionButton
+              iconProps={{ iconName: "CheckMark" }}
+              text="Revisar e Submeter"
+              onClick={handleReviewAndSubmit}
+              disabled={
+                isSaving || state.isSubmitting || progressOpen || loadingVisible
+              }
+              className={styles.submitButtonGreen}
+              title="Revisar e submeter o formulário"
+              styles={{ root: { width: "100%" } }}
+            />
+            {/* Círculo de progresso dinâmico */}
+            <div
+              className={styles.progressCircle}
+              style={
+                {
+                  "--progress-angle": `${
+                    (progressInfo.percentage / 100) * 360
+                  }deg`,
+                } as React.CSSProperties
+              }
+            >
+              <div className={styles.progressRing} />
+              <div className={styles.progressText}>
+                {progressInfo.percentage}%
+              </div>
+            </div>
+          </div>
         ) : (
-          <ActionButton
-            iconProps={{ iconName: "Save" }}
-            text={isSaving ? "Salvando..." : "Salvar Progresso"}
-            onClick={handleSaveWithProgress}
-            disabled={
-              isSaving || state.isSubmitting || progressOpen || loadingVisible
-            }
-            className={styles.saveButton}
-            title="Salvar o progresso do formulário (validação apenas dos Dados Gerais)"
-          />
+          <div
+            style={{
+              position: "relative",
+              display: "inline-block",
+              width: "100%",
+            }}
+          >
+            <ActionButton
+              onRenderIcon={() => (
+                <span style={{ fontSize: "18px", marginRight: "8px" }}>💾</span>
+              )}
+              text={isSaving ? "Salvando..." : "Salvar Rascunho"}
+              onClick={handleSaveWithProgress}
+              disabled={
+                isSaving || state.isSubmitting || progressOpen || loadingVisible
+              }
+              className={styles.saveButton}
+              styles={{ root: { width: "100%" } }}
+            />
+            {/* Círculo de progresso dinâmico */}
+            <div
+              className={styles.progressCircle}
+              style={
+                {
+                  "--progress-angle": `${
+                    (progressInfo.percentage / 100) * 360
+                  }deg`,
+                } as React.CSSProperties
+              }
+            >
+              <div className={styles.progressRing} />
+              <div className={styles.progressText}>
+                {progressInfo.percentage}%
+              </div>
+            </div>
+          </div>
         )}
         <ProgressModal
           open={progressOpen}
@@ -475,13 +652,6 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
             0
           )}
           showTimeWarning={true}
-        />
-        <Toast
-          message={toastMessage}
-          type={toastType}
-          visible={toastVisible}
-          onDismiss={() => setToastVisible(false)}
-          duration={4000}
         />
       </div>
     </>

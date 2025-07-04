@@ -1,3 +1,21 @@
+export interface IFormFieldChange {
+  campo: string;
+  tipo: "adicionado" | "alterado" | "removido";
+  valorAnterior?: string | number | boolean | Date | undefined;
+  valorNovo?: string | number | boolean | Date | undefined;
+}
+
+export interface IRevisionEntry {
+  numeroRevisao: number;
+  data: string;
+  usuario: string;
+  email: string;
+  tipoOperacao: string;
+  alteracoes: IFormFieldChange[];
+  totalAlteracoes: number;
+  resumo: string;
+}
+
 export interface IApplicationPhase {
   phase: "ENTRADA" | "FORMULARIO";
   cnpj?: string;
@@ -32,9 +50,11 @@ export interface IUserFormSummary {
   empresa: string;
   status: string;
   dataModificacao: string;
+  dataModificacaoCompleta: string; // Data formatada completa para exibição
   userEmail: string;
   userName: string;
   isOwner: boolean;
+  numeroRevisoes: number; // Número total de revisões do formulário
 }
 
 export interface IOverwriteConfirmation {

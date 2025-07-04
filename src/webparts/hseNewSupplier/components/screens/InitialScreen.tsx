@@ -19,6 +19,7 @@ import {
 } from "../../types/IApplicationPhase";
 import { validators } from "../../utils/validators";
 import { formatters } from "../../utils/formatters";
+import { Footer } from "../common/Footer/Footer";
 import styles from "../HseNewSupplier.module.scss";
 
 // Assets da Oceaneering
@@ -378,6 +379,88 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
           </Stack>
         </SimpleCard>
 
+        {/* Informações adicionais */}
+        <SimpleCard
+          style={{
+            backgroundColor: "#f8f9fa",
+            border: `1px solid ${oceaneeringColors.accent}`,
+          }}
+        >
+          <Stack tokens={{ childrenGap: 12 }}>
+            <Stack
+              horizontal
+              verticalAlign="center"
+              tokens={{ childrenGap: 12 }}
+            >
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  backgroundColor: oceaneeringColors.accent,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon
+                  iconName="Info"
+                  style={{
+                    fontSize: 18,
+                    color: oceaneeringColors.secondaryBlue,
+                  }}
+                />
+              </div>
+              <Text
+                variant="large"
+                style={{
+                  fontWeight: 600,
+                  color: oceaneeringColors.primaryBlue,
+                }}
+              >
+                Informações Importantes
+              </Text>
+            </Stack>
+
+            <Stack tokens={{ childrenGap: 8 }}>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Você só pode visualizar e editar formulários que você mesmo
+                criou
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Você pode salvar o progresso do formulário a qualquer momento
+                após preencher os campos obrigatórios da seção &quot;Dados
+                Gerais&quot;. O rascunho ficará disponível em &quot;Meus
+                Formulários&quot;
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Formulários aprovados não podem mais ser editados
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Mantenha suas informações sempre atualizadas
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Em caso de dúvidas, entre em contato com o suporte técnico
+              </Text>
+            </Stack>
+          </Stack>
+        </SimpleCard>
+
         {/* Busca por CNPJ */}
         <SimpleCard>
           <Stack tokens={{ childrenGap: 16 }}>
@@ -658,15 +741,63 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                           >
                             CNPJ: {formatters.cnpj(form.cnpj)}
                           </Text>
-                          <Text
-                            variant="small"
-                            style={{ color: oceaneeringColors.textSecondary }}
+                          <Stack
+                            horizontal
+                            tokens={{ childrenGap: 12 }}
+                            style={{ flexWrap: "wrap" }}
                           >
-                            Última modificação:{" "}
-                            {new Date(form.dataModificacao).toLocaleDateString(
-                              "pt-BR"
-                            )}
-                          </Text>
+                            <Text
+                              variant="small"
+                              style={{ color: oceaneeringColors.textSecondary }}
+                            >
+                              Última modificação:{" "}
+                              {new Date(
+                                form.dataModificacaoCompleta ||
+                                  form.dataModificacao
+                              ).toLocaleDateString("pt-BR")}{" "}
+                              às{" "}
+                              {new Date(
+                                form.dataModificacaoCompleta ||
+                                  form.dataModificacao
+                              ).toLocaleTimeString("pt-BR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </Text>
+                            <div
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "2px 8px",
+                                backgroundColor:
+                                  oceaneeringColors.lightBlue + "20",
+                                borderRadius: "12px",
+                                border: `1px solid ${oceaneeringColors.lightBlue}`,
+                              }}
+                              title={`Este formulário foi salvo/modificado ${
+                                form.numeroRevisoes || 1
+                              } vez(es)`}
+                            >
+                              <Icon
+                                iconName="History"
+                                style={{
+                                  fontSize: "12px",
+                                  color: oceaneeringColors.primaryBlue,
+                                }}
+                              />
+                              <Text
+                                variant="small"
+                                style={{
+                                  color: oceaneeringColors.primaryBlue,
+                                  fontWeight: 600,
+                                  fontSize: "11px",
+                                }}
+                              >
+                                Rev. {form.numeroRevisoes || 1}
+                              </Text>
+                            </div>
+                          </Stack>
                         </Stack>
 
                         <Stack
@@ -704,80 +835,10 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
             )}
           </Stack>
         </SimpleCard>
-
-        {/* Informações adicionais */}
-        <SimpleCard
-          style={{
-            backgroundColor: "#f8f9fa",
-            border: `1px solid ${oceaneeringColors.accent}`,
-          }}
-        >
-          <Stack tokens={{ childrenGap: 12 }}>
-            <Stack
-              horizontal
-              verticalAlign="center"
-              tokens={{ childrenGap: 12 }}
-            >
-              <div
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  backgroundColor: oceaneeringColors.accent,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon
-                  iconName="Info"
-                  style={{
-                    fontSize: 18,
-                    color: oceaneeringColors.secondaryBlue,
-                  }}
-                />
-              </div>
-              <Text
-                variant="large"
-                style={{
-                  fontWeight: 600,
-                  color: oceaneeringColors.primaryBlue,
-                }}
-              >
-                Informações Importantes
-              </Text>
-            </Stack>
-
-            <Stack tokens={{ childrenGap: 8 }}>
-              <Text
-                variant="medium"
-                style={{ color: oceaneeringColors.textSecondary }}
-              >
-                • Você só pode visualizar e editar formulários que você mesmo
-                criou
-              </Text>
-              <Text
-                variant="medium"
-                style={{ color: oceaneeringColors.textSecondary }}
-              >
-                • Formulários aprovados não podem mais ser editados
-              </Text>
-              <Text
-                variant="medium"
-                style={{ color: oceaneeringColors.textSecondary }}
-              >
-                • Mantenha suas informações sempre atualizadas
-              </Text>
-              <Text
-                variant="medium"
-                style={{ color: oceaneeringColors.textSecondary }}
-              >
-                • Em caso de dúvidas, entre em contato com o suporte técnico
-              </Text>
-            </Stack>
-          </Stack>
-        </SimpleCard>
       </Stack>
+
+      {/* Rodapé do sistema */}
+      <Footer />
     </div>
   );
 };

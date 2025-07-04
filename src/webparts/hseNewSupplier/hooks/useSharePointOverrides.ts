@@ -52,6 +52,25 @@ export const useSharePointHeaderOverrides = (): void => {
         padding-top: 0 !important;
       }
 
+      /* Remover padding lateral das Canvas Zones */
+      .CanvasZone,
+      .CanvasZoneSectionContainer,
+      .CanvasSection {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+
+      /* Remover margin e padding da ControlZone */
+      .ControlZone {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* Ocultar CommentsWrapper */
+      .CommentsWrapper {
+        display: none !important;
+      }
+
       /* Seletores mais específicos para elementos recentes */
       .spPageChromeAppHeaderWrapper .ms-SearchBox,
       .spPageChromeAppHeaderWrapper [data-automation-id="searchBox"] {

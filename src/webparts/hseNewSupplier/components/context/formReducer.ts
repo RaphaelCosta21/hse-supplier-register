@@ -129,15 +129,12 @@ export const formReducer = (
         });
       }
 
-      // Corrija aqui: mantenha os campos obrigatórios do IHSEFormData
+      // Corrija aqui: preserve todos os campos do payload, incluindo id
       return {
         ...state,
         formData: {
-          ...state.formData, // mantém id, statusFormulario, etc.
-          dadosGerais: action.payload.dadosGerais,
-          conformidadeLegal: action.payload.conformidadeLegal,
-          servicosEspeciais: action.payload.servicosEspeciais,
-          anexos: action.payload.anexos,
+          ...state.formData, // mantém campos existentes como fallback
+          ...action.payload, // sobrescreve com os dados recebidos, incluindo id
         },
         attachments: convertedAttachments,
         isDirty: false,

@@ -251,6 +251,12 @@ export class SharePointFileService {
 
         // Salvar cada arquivo na subpasta
         for (const fileMetadata of files) {
+          console.log(
+            `=== PROCESSANDO ARQUIVO: ${fileMetadata.originalName} ===`
+          );
+          console.log("fileData presente:", !!fileMetadata.fileData);
+          console.log("fileData tipo:", typeof fileMetadata.fileData);
+
           if (fileMetadata.fileData && fileMetadata.fileData instanceof File) {
             console.log(
               `📁 Salvando arquivo: ${fileMetadata.originalName} na pasta: ${targetFolderPath}`
@@ -279,7 +285,11 @@ export class SharePointFileService {
 
             processedFiles++;
           } else {
-            console.warn("Arquivo não encontrado no metadata:", fileMetadata);
+            console.log(
+              `⚠️  Arquivo ${fileMetadata.originalName} ignorado - sem fileData (provavelmente já salvo no SharePoint)`
+            );
+            // Para arquivos sem fileData, manter os metadados existentes
+            savedAttachments[category].push(fileMetadata);
             processedFiles++;
           }
         }

@@ -73,6 +73,25 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
           contratada. O anexo do Resumo Estatístico Mensal de Acidentes é
           obrigatório.
         </MessageBar>
+        {/* Nova nota destacada sobre salvamento de rascunho */}
+        <MessageBar
+          messageBarType={MessageBarType.warning}
+          styles={{
+            root: {
+              backgroundColor: "#fff4e6",
+              borderLeft: "4px solid #ff8c00",
+              marginTop: "12px",
+            },
+            content: {
+              fontWeight: "500",
+            },
+          }}
+        >
+          <strong>💾 Salvamento de Rascunho:</strong> Você poderá salvar um
+          rascunho do formulário após o preenchimento dos campos obrigatórios
+          dessa página. O Rascunho irá aparecer no bloco de &quot;Meus
+          Formulários&quot; na página inicial.
+        </MessageBar>
         <div className={styles.formGrid}>
           {" "}
           <div className={styles.gridRow}>
