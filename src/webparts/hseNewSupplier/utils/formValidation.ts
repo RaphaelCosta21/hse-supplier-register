@@ -63,7 +63,7 @@ export const validateDadosGeraisForSave = (
   ) {
     missingFields.push("Atividade Principal (CNAE)");
   }
-  if (!data.dadosGerais?.grauRisco) {
+  if (!data.dadosGerais?.grauRisco || data.dadosGerais.grauRisco === "") {
     missingFields.push("Grau de Risco (NR-4)");
   }
   if (
@@ -144,7 +144,7 @@ export const validateFormForSave = (
   ) {
     missingFields.push("Atividade Principal (CNAE)");
   }
-  if (!data.dadosGerais?.grauRisco) {
+  if (!data.dadosGerais?.grauRisco || data.dadosGerais.grauRisco === "") {
     missingFields.push("Grau de Risco (NR-4)");
   }
   if (
@@ -369,82 +369,91 @@ export const validateFormForSave = (
     const servicosEspeciais = data.servicosEspeciais as {
       fornecedorEmbarcacoes?: boolean;
       fornecedorIcamento?: boolean;
+      naoFornecedorServicos?: boolean;
     };
 
-    // Se marcou Fornecedor de Embarcações, validar todos os certificados obrigatórios
-    if (servicosEspeciais.fornecedorEmbarcacoes === true) {
-      const embarcacoesRequiredAttachments = [
-        {
-          category: "iopp",
-          name: "IOPP - Certificado de Prevenção de Poluição por Óleo",
-        },
-        { category: "registroArmador", name: "Registro de Armador" },
-        {
-          category: "propriedadeMaritima",
-          name: "Título de Propriedade Marítima",
-        },
-        { category: "arqueacao", name: "Certificado de Arqueação" },
-        {
-          category: "segurancaNavegacao",
-          name: "Certificado de Segurança da Navegação",
-        },
-        {
-          category: "classificacaoCasco",
-          name: "Certificado de Classificação do Casco",
-        },
-        {
-          category: "classificacaoMaquinas",
-          name: "Certificado de Classificação das Máquinas",
-        },
-        { category: "bordaLivre", name: "Certificado de Borda Livre" },
-        { category: "seguroDepem", name: "Seguro DEPEM" },
-        { category: "autorizacaoAntaq", name: "Autorização ANTAQ" },
-        {
-          category: "tripulacaoSeguranca",
-          name: "Certificado de Tripulação de Segurança",
-        },
-        {
-          category: "agulhaMagnetica",
-          name: "Certificado de Agulha Magnética",
-        },
-        { category: "balsaInflavel", name: "Certificado de Balsa Inflável" },
-        { category: "licencaRadio", name: "Licença de Rádio" },
-      ];
+    // Se marcou que não fornece serviços, está válido - não precisa validar anexos
+    if (servicosEspeciais.naoFornecedorServicos === true) {
+      // Não fazer validações de anexos se não fornece serviços
+    } else {
+      // Se marcou Fornecedor de Embarcações, validar todos os certificados obrigatórios
+      if (servicosEspeciais.fornecedorEmbarcacoes === true) {
+        const embarcacoesRequiredAttachments = [
+          {
+            category: "iopp",
+            name: "IOPP - Certificado de Prevenção de Poluição por Óleo",
+          },
+          { category: "registroArmador", name: "Registro de Armador" },
+          {
+            category: "propriedadeMaritima",
+            name: "Título de Propriedade Marítima",
+          },
+          { category: "arqueacao", name: "Certificado de Arqueação" },
+          {
+            category: "segurancaNavegacao",
+            name: "Certificado de Segurança da Navegação",
+          },
+          {
+            category: "classificacaoCasco",
+            name: "Certificado de Classificação do Casco",
+          },
+          {
+            category: "classificacaoMaquinas",
+            name: "Certificado de Classificação das Máquinas",
+          },
+          { category: "bordaLivre", name: "Certificado de Borda Livre" },
+          { category: "seguroDepem", name: "Seguro DEPEM" },
+          { category: "autorizacaoAntaq", name: "Autorização ANTAQ" },
+          {
+            category: "tripulacaoSeguranca",
+            name: "Certificado de Tripulação de Segurança",
+          },
+          {
+            category: "agulhaMagnetica",
+            name: "Certificado de Agulha Magnética",
+          },
+          { category: "balsaInflavel", name: "Certificado de Balsa Inflável" },
+          { category: "licencaRadio", name: "Licença de Rádio" },
+        ];
 
-      embarcacoesRequiredAttachments.forEach((req) => {
-        const categoryFiles =
-          (attachments as Record<string, unknown[]>)[req.category] || [];
-        if (categoryFiles.length === 0) {
-          missingAttachments.push(req.name);
-        }
-      });
-    }
+        embarcacoesRequiredAttachments.forEach((req) => {
+          const categoryFiles =
+            (attachments as Record<string, unknown[]>)[req.category] || [];
+          if (categoryFiles.length === 0) {
+            missingAttachments.push(req.name);
+          }
+        });
+      }
 
-    // Se marcou Fornecedor de Içamento, validar todos os documentos obrigatórios
-    if (servicosEspeciais.fornecedorIcamento === true) {
-      const icamentoRequiredAttachments = [
-        { category: "testeCarga", name: "Teste de Carga" },
-        { category: "registroCREA", name: "CREA do Engenheiro Responsável" },
-        { category: "art", name: "ART - Anotação de Responsabilidade Técnica" },
-        { category: "planoManutencao", name: "Plano de Manutenção" },
-        {
-          category: "monitoramentoFumaca",
-          name: "Certificado de Fumaça Preta",
-        },
-        {
-          category: "certificacaoEquipamentos",
-          name: "Certificação de Equipamentos",
-        },
-      ];
+      // Se marcou Fornecedor de Içamento, validar todos os documentos obrigatórios
+      if (servicosEspeciais.fornecedorIcamento === true) {
+        const icamentoRequiredAttachments = [
+          { category: "testeCarga", name: "Teste de Carga" },
+          { category: "registroCREA", name: "CREA do Engenheiro Responsável" },
+          {
+            category: "art",
+            name: "ART - Anotação de Responsabilidade Técnica",
+          },
+          { category: "planoManutencao", name: "Plano de Manutenção" },
+          {
+            category: "monitoramentoFumaca",
+            name: "Certificado de Fumaça Preta",
+          },
+          {
+            category: "certificacaoEquipamentos",
+            name: "Certificação de Equipamentos",
+          },
+        ];
 
-      icamentoRequiredAttachments.forEach((req) => {
-        const categoryFiles =
-          (attachments as Record<string, unknown[]>)[req.category] || [];
-        if (categoryFiles.length === 0) {
-          missingAttachments.push(req.name);
-        }
-      });
-    }
+        icamentoRequiredAttachments.forEach((req) => {
+          const categoryFiles =
+            (attachments as Record<string, unknown[]>)[req.category] || [];
+          if (categoryFiles.length === 0) {
+            missingAttachments.push(req.name);
+          }
+        });
+      }
+    } // Fechar o bloco else
   }
 
   const isValid =

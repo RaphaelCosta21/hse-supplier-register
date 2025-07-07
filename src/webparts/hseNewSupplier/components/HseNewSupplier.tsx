@@ -203,6 +203,8 @@ const HseNewSupplierContent: React.FC = () => {
     const { dadosGerais } = state.formData;
     const attachments = state.attachments || {};
     if (!dadosGerais) return false;
+
+    // Validar campos básicos
     const camposOk = [
       dadosGerais.empresa,
       dadosGerais.cnpj,
@@ -211,12 +213,15 @@ const HseNewSupplierContent: React.FC = () => {
       dadosGerais.dataTerminoContrato,
       dadosGerais.responsavelTecnico,
       dadosGerais.atividadePrincipalCNAE,
-      dadosGerais.grauRisco,
       dadosGerais.gerenteContratoMarine,
     ].every((v) => v !== undefined && v !== null && v !== "");
+
+    // Validar grau de risco separadamente (não pode ser string vazia)
+    const grauRiscoOk = dadosGerais.grauRisco !== "";
+
     // Anexo REM obrigatório
     const remOk = attachments.rem && attachments.rem.length > 0;
-    return camposOk && remOk;
+    return camposOk && grauRiscoOk && remOk;
   }, [state.formData, state.attachments]);
 
   // Função para validar Conformidade Legal (versão simplificada - usa a mesma lógica dos checks individuais)
@@ -391,12 +396,18 @@ const HseNewSupplierContent: React.FC = () => {
     const { servicosEspeciais } = state.formData;
     const attachments = state.attachments || {};
     if (!servicosEspeciais) return true;
-    // Se nenhum serviço selecionado, está válido
+
+    // Se marcou que não fornece nenhum serviço, está válido
+    if (servicosEspeciais.naoFornecedorServicos) return true;
+
+    // Se não marcou nenhum serviço E não marcou "não fornece", é inválido
     if (
       !servicosEspeciais.fornecedorEmbarcacoes &&
-      !servicosEspeciais.fornecedorIcamento
+      !servicosEspeciais.fornecedorIcamento &&
+      !servicosEspeciais.naoFornecedorServicos
     )
-      return true;
+      return false;
+
     // Se embarcações, precisa de todos os certificados obrigatórios
     if (servicosEspeciais.fornecedorEmbarcacoes) {
       const required = [

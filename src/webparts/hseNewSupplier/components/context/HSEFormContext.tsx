@@ -5,6 +5,7 @@ import {
   initialFormState,
   IFormState,
   FormAction,
+  formSelectors,
 } from "./formReducer";
 import { SharePointService } from "../../services/SharePointService";
 import { SharePointFileService } from "../../services/SharePointFileService";
@@ -576,15 +577,17 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
   // Navegação de etapas
   const goToNextStep = React.useCallback(() => {
     const { currentStep } = state;
-    if (currentStep < 5) {
-      dispatch({ type: "SET_CURRENT_STEP", payload: currentStep + 1 });
+    const nextStep = currentStep + 1;
+    if (nextStep <= 5 && formSelectors.canProceedToStep(state, nextStep)) {
+      dispatch({ type: "SET_CURRENT_STEP", payload: nextStep });
     }
-  }, [state.currentStep]);
+  }, [state.currentStep, state]);
 
   const goToPreviousStep = React.useCallback(() => {
     const { currentStep } = state;
-    if (currentStep > 1) {
-      dispatch({ type: "SET_CURRENT_STEP", payload: currentStep - 1 });
+    const previousStep = currentStep - 1;
+    if (previousStep >= 1) {
+      dispatch({ type: "SET_CURRENT_STEP", payload: previousStep });
     }
   }, [state.currentStep]);
   // Reset do formulário

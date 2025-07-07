@@ -60,101 +60,103 @@ export interface IQuestaoConformidade {
 export interface INR01 {
   questao1: IQuestaoConformidade;
   questao2: IQuestaoConformidade;
-  questao3: IQuestaoConformidade;
-  questao4: IQuestaoConformidade;
-  questao5: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR04 {
-  questao7: IQuestaoConformidade;
-  questao8: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR05 {
-  questao10: IQuestaoConformidade;
-  questao11: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR06 {
-  questao13: IQuestaoConformidade;
-  questao14: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR07 {
-  questao16: IQuestaoConformidade;
-  questao17: IQuestaoConformidade;
-  questao18: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
+  questao3: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR10 {
-  questao24: IQuestaoConformidade;
-  questao25: IQuestaoConformidade;
-  questao26: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
+  questao3: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR11 {
-  questao28: IQuestaoConformidade;
-  questao29: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR12 {
-  questao31: IQuestaoConformidade;
-  questao32: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR13 {
-  questao34: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR15 {
-  questao36: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  comentarios?: string;
+}
+
+export interface INR16 {
+  questao1: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface INR23 {
-  questao38: IQuestaoConformidade;
-  questao39: IQuestaoConformidade;
-  questao40: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
+  questao3: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface ILicencasAmbientais {
-  questao42: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface ILegislacaoMaritima {
-  questao44: IQuestaoConformidade; // MODU CODE
-  questao45: IQuestaoConformidade; // NORMAN
-  questao46: IQuestaoConformidade; // MARPOL
-  questao47: IQuestaoConformidade; // STCW
-  questao48: IQuestaoConformidade; // ISM CODE
-  questao49: IQuestaoConformidade; // SOLAS
+  questao1: IQuestaoConformidade; // MODU CODE
+  questao2: IQuestaoConformidade; // NORMAN
+  questao3: IQuestaoConformidade; // MARPOL
+  questao4: IQuestaoConformidade; // STCW
+  questao5: IQuestaoConformidade; // ISM CODE
+  questao6: IQuestaoConformidade; // SOLAS
   comentarios?: string;
 }
 
 export interface ITreinamentos {
-  questao51: IQuestaoConformidade;
-  questao52: IQuestaoConformidade;
-  questao53: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
+  questao3: IQuestaoConformidade;
   comentarios?: string;
 }
 
 export interface IGestaoSMS {
-  questao55: IQuestaoConformidade;
-  questao56: IQuestaoConformidade;
-  questao57: IQuestaoConformidade;
-  questao58: IQuestaoConformidade;
-  questao59: IQuestaoConformidade;
+  questao1: IQuestaoConformidade;
+  questao2: IQuestaoConformidade;
+  questao3: IQuestaoConformidade;
+  questao4: IQuestaoConformidade;
+  questao5: IQuestaoConformidade;
   comentarios?: string;
 }
 
@@ -170,6 +172,7 @@ export interface IConformidadeLegal {
   nr12: INR12;
   nr13: INR13;
   nr15: INR15;
+  nr16: INR16;
   nr23: INR23;
   licencasAmbientais: ILicencasAmbientais;
   legislacaoMaritima: ILegislacaoMaritima;
@@ -184,6 +187,8 @@ export interface IServicosEspeciais {
 
   fornecedorIcamento: boolean;
   icamento?: IIcamento;
+
+  naoFornecedorServicos: boolean; // Novo campo: empresa não fornece nenhum serviço especializado
 }
 
 // Interface para certificados de embarcações (questões 74-87)
@@ -220,9 +225,55 @@ export interface IAnexosFormulario {
     rem?: IAttachmentMetadata;
   };
   conformidade: {
+    // NR04
     sesmt?: IAttachmentMetadata;
+
+    // NR05
     cipa?: IAttachmentMetadata;
-    epiCA?: IAttachmentMetadata;
+
+    // NR06
+    caEPI?: IAttachmentMetadata;
+
+    // NR07
+    pcmso?: IAttachmentMetadata;
+    aso?: IAttachmentMetadata;
+
+    // NR10
+    nr10ProjetoInstalacoes?: IAttachmentMetadata;
+    nr10CertificacaoProfissionais?: IAttachmentMetadata;
+
+    // NR11
+    nr11CertificadoTreinamento?: IAttachmentMetadata;
+
+    // NR12
+    nr12PlanoInspecao?: IAttachmentMetadata;
+    nr12EvidenciaDispositivo?: IAttachmentMetadata;
+
+    // NR13
+    nr13EvidenciaSistematica?: IAttachmentMetadata;
+
+    // NR15
+    nr15LaudoInsalubridade?: IAttachmentMetadata;
+
+    // NR16
+    nr16LaudoPericulosidade?: IAttachmentMetadata;
+
+    // NR23
+    nr23LaudoManutencao?: IAttachmentMetadata;
+
+    // Licenças Ambientais
+    licencaOperacao?: IAttachmentMetadata;
+
+    // Treinamentos Obrigatórios
+    certificadoProgramaTreinamento?: IAttachmentMetadata;
+    evidenciaTreinamento?: IAttachmentMetadata;
+
+    // Gestão de SMS
+    smsProcedimentoAcidentes?: IAttachmentMetadata;
+    smsCalendarioInspecoes?: IAttachmentMetadata;
+    smsProcedimentoResiduos?: IAttachmentMetadata;
+    smsMetasObjetivos?: IAttachmentMetadata;
+    smsProgramaAnual?: IAttachmentMetadata;
   };
   embarcacoes?: {
     iopp?: IAttachmentMetadata;

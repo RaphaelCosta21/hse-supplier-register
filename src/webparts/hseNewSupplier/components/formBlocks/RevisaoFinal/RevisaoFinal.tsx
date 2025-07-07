@@ -24,6 +24,7 @@ export const RevisaoFinal: React.FC = () => {
     useHSEForm();
 
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
+  const [showSaveDialog, setShowSaveDialog] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConformidadePanel, setShowConformidadePanel] =
     React.useState(false);
@@ -807,6 +808,11 @@ export const RevisaoFinal: React.FC = () => {
     }
   };
   // Handler for save button with progress
+  // Handler para mostrar confirmação antes de salvar
+  const handleSaveClick = (): void => {
+    setShowSaveDialog(true);
+  };
+
   const handleSaveWithProgress = async (): Promise<void> => {
     setLoadingVisible(true);
     setLoadingMessage("Salvando rascunho...");
@@ -1168,7 +1174,7 @@ export const RevisaoFinal: React.FC = () => {
               <DefaultButton
                 text="Salvar Rascunho"
                 iconProps={{ iconName: "Save" }}
-                onClick={handleSaveWithProgress}
+                onClick={handleSaveClick}
                 className={styles.saveButton}
                 disabled={isSubmitting || progressOpen || loadingVisible}
               />{" "}
@@ -1211,6 +1217,37 @@ export const RevisaoFinal: React.FC = () => {
             />
           </DialogFooter>
         </Dialog>{" "}
+        {/* Dialog de confirmação para salvar rascunho */}
+        <Dialog
+          hidden={!showSaveDialog}
+          onDismiss={() => setShowSaveDialog(false)}
+          dialogContentProps={{
+            type: DialogType.largeHeader,
+            title: "Confirmar Salvamento",
+            subText:
+              "Tem certeza que deseja salvar o rascunho do formulário HSE?",
+          }}
+          modalProps={{
+            isBlocking: true,
+            styles: { main: { maxWidth: 450 } },
+          }}
+        >
+          <DialogFooter>
+            <PrimaryButton
+              onClick={async () => {
+                setShowSaveDialog(false);
+                await handleSaveWithProgress();
+              }}
+              text="Confirmar"
+              disabled={isSubmitting || progressOpen || loadingVisible}
+            />
+            <DefaultButton
+              onClick={() => setShowSaveDialog(false)}
+              text="Cancelar"
+              disabled={isSubmitting || progressOpen || loadingVisible}
+            />
+          </DialogFooter>
+        </Dialog>
         {/* Panel de detalhes da conformidade geral */}
         <Panel
           isOpen={showConformidadePanel}

@@ -108,7 +108,7 @@
   // Estado expandido
   &.expanded {
     &::before {
-      height: 190px; // Aumentado para ter mais espaço para o conteúdo
+      height: 220px; // Aumentado para ter mais espaço para o conteúdo adicional
       opacity: 1;
       transform: scaleY(1);
     }
@@ -594,6 +594,48 @@
       right: 20px !important;
       top: 50% !important;
       transform: translateY(-50%) !important;
+      z-index: 10 !important;
+    }
+  }
+}
+
+// Animação de pulse para a seta indicativa
+:global {
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Estilos específicos para a seta indicativa
+.floatingSaveButton {
+  // Garantir que a seta seja visível quando o botão não está expandido
+  .saveButton,
+  .submitButtonGreen {
+    // Overflow visível para permitir que a seta apareça fora do botão
+    overflow: visible;
+
+    // Garantir que elementos com position absolute dentro do botão sejam posicionados corretamente
+    position: relative;
+  }
+}
+
+// Estilos específicos para a seta indicativa (aplicados globalmente)
+:global(.floatingSaveButton) {
+  // Garantir que a seta seja visível e posicionada corretamente
+  :global(.ms-Button) {
+    overflow: visible !important;
+    position: relative !important;
+
+    // Elementos com position absolute dentro do botão
+    span[style*="position: absolute"] {
       z-index: 10 !important;
     }
   }

@@ -1,5 +1,12 @@
 import * as React from "react";
-import { ActionButton } from "@fluentui/react";
+import {
+  ActionButton,
+  Dialog,
+  DialogFooter,
+  DialogType,
+  PrimaryButton,
+  DefaultButton,
+} from "@fluentui/react";
 import { useHSEForm } from "../../context/HSEFormContext";
 import styles from "./FloatingSaveButton.module.scss";
 import { ProgressModal } from "../ProgressModal";
@@ -27,6 +34,9 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
   const [loadingVisible, setLoadingVisible] = React.useState(false);
   const [loadingMessage, setLoadingMessage] = React.useState("");
 
+  // Estado para controlar o dialog de confirmação
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
+
   // Estado para controlar expansão
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [expandTimeout, setExpandTimeout] =
@@ -40,6 +50,8 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     const { dadosGerais } = state.formData;
     const attachments = state.attachments || {};
     if (!dadosGerais) return false;
+
+    // Validar campos básicos
     const camposOk = [
       dadosGerais.empresa,
       dadosGerais.cnpj,
@@ -48,11 +60,14 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       dadosGerais.dataTerminoContrato,
       dadosGerais.responsavelTecnico,
       dadosGerais.atividadePrincipalCNAE,
-      dadosGerais.grauRisco,
       dadosGerais.gerenteContratoMarine,
     ].every((v) => v !== undefined && v !== null && v !== "");
+
+    // Validar grau de risco separadamente (não pode ser string vazia)
+    const grauRiscoOk = dadosGerais.grauRisco !== "";
+
     const remOk = attachments.rem && attachments.rem.length > 0;
-    return camposOk && remOk;
+    return camposOk && grauRiscoOk && remOk;
   }, [state.formData, state.attachments]);
   const isConformidadeLegalValid = React.useCallback(() => {
     const conformidade = state.formData.conformidadeLegal || {};
@@ -217,11 +232,17 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     const { servicosEspeciais } = state.formData;
     const attachments = state.attachments || {};
     if (!servicosEspeciais) return true;
+
+    // Se marcou que não fornece nenhum serviço, está válido
+    if (servicosEspeciais.naoFornecedorServicos) return true;
+
+    // Se não marcou nenhum serviço E não marcou "não fornece", é inválido
     if (
       !servicosEspeciais.fornecedorEmbarcacoes &&
-      !servicosEspeciais.fornecedorIcamento
+      !servicosEspeciais.fornecedorIcamento &&
+      !servicosEspeciais.naoFornecedorServicos
     )
-      return true;
+      return false;
 
     if (servicosEspeciais.fornecedorEmbarcacoes) {
       const required = [
@@ -283,10 +304,18 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
 
       // Identificar campos faltantes
       if (!dadosGerais?.empresa) missingFields.push("Empresa");
+      if (!dadosGerais?.cnpj) missingFields.push("CNPJ");
       if (!dadosGerais?.numeroContrato)
         missingFields.push("Número do Contrato");
+      if (!dadosGerais?.dataInicioContrato)
+        missingFields.push("Data de Início do Contrato");
+      if (!dadosGerais?.dataTerminoContrato)
+        missingFields.push("Data de Término do Contrato");
       if (!dadosGerais?.responsavelTecnico)
         missingFields.push("Responsável Técnico");
+      if (!dadosGerais?.atividadePrincipalCNAE)
+        missingFields.push("Atividade Principal (CNAE)");
+      if (!dadosGerais?.grauRisco) missingFields.push("Grau de Risco");
       if (!dadosGerais?.gerenteContratoMarine)
         missingFields.push("Gerente do Contrato");
       if (!attachments.rem || attachments.rem.length === 0)
@@ -448,24 +477,21 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     await new Promise((resolve) => setTimeout(resolve, 800));
     setProgressOpen(false);
   };
-  // Handler para salvar com progresso visual
-  const handleSaveWithProgress = async (): Promise<void> => {
-    setLoadingVisible(true);
-    setLoadingMessage("Salvando rascunho...");
-    // Validação detalhada APENAS dos Dados Gerais antes de salvar rascunho
+  // Handler para validar campos e mostrar confirmação se válido
+  const handleSaveClick = async (): Promise<void> => {
+    // Primeiro, validar os campos obrigatórios
     const validationResult = validateDadosGeraisForSave(
       state.formData,
       state.attachments
     );
+
     if (!validationResult.isValid) {
-      // Gera mensagem de erro detalhada
+      // Se não for válido, mostrar erro (sem confirmação)
       const errorMsg = generateValidationMessage(validationResult);
       setToastMessage(`Não é possível salvar o formulário:\n${errorMsg}`);
       setToastType("error");
       setToastVisible(true);
-      setLoadingVisible(false);
-      setProgressOpen(false);
-      setIsSaving(false);
+
       // Mapeia campos faltantes para erros de campo
       if (dispatch) {
         const fieldErrors = mapMissingFieldsToFormFields(
@@ -475,7 +501,17 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       }
       return;
     }
+
+    // Se for válido, mostrar confirmação
+    setShowConfirmDialog(true);
+  };
+
+  // Handler para salvar com progresso visual (chamado após confirmação)
+  const handleSaveWithProgress = async (): Promise<void> => {
+    setLoadingVisible(true);
+    setLoadingMessage("Salvando rascunho...");
     setIsSaving(true);
+
     try {
       await runWithProgressSimulation(async () => {
         await actions.saveFormData();
@@ -483,10 +519,27 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
 
       // Mostrar toast de sucesso
       setToastMessage(
-        "Rascunho salvo com sucesso! Você pode fechar a página e continuar de onde parou. Você verá o rascunho na Página Inicial no bloco 'Meus Formulários'."
+        "Rascunho salvo com sucesso! Redirecionando para a página inicial..."
       );
       setToastType("success");
       setToastVisible(true);
+
+      // Delay de 2.5 segundos para dar tempo do toast ser visto
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+
+      // Redirecionar para a página inicial usando o mesmo método da RevisaoFinal
+      if (actions?.setApplicationPhase) {
+        actions.setApplicationPhase({
+          phase: "ENTRADA",
+          cnpj: "",
+          isOverwrite: false,
+          requiresApproval: false,
+        });
+      } else {
+        // Fallback: redirecionar recarregando a página
+        window.location.href =
+          window.location.origin + window.location.pathname;
+      }
     } catch (error) {
       console.error("Erro ao salvar:", error);
       setProgressOpen(false);
@@ -555,6 +608,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
               <span className={styles.missingIcon}>⚠️</span>
               <span>
                 Faltam: {progressInfo.missingFields.slice(0, 2).join(", ")}
+                {progressInfo.missingFields.length > 2 && ", entre outros..."}
               </span>
             </div>
           )}
@@ -562,7 +616,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
           {progressInfo.nextStepName && (
             <div className={styles.nextInfo}>
               <span className={styles.nextIcon}>🎯</span>
-              <span>Próximo: {progressInfo.nextStepName}</span>
+              <span>Próxima Etapa: {progressInfo.nextStepName}</span>
             </div>
           )}
         </div>
@@ -576,7 +630,37 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
             }}
           >
             <ActionButton
-              iconProps={{ iconName: "CheckMark" }}
+              onRenderIcon={() => (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    position: "relative",
+                  }}
+                >
+                  {!isExpanded && (
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        color: "#ffffff",
+                        position: "absolute",
+                        left: "-18px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        animation: "pulse 2s infinite",
+                        opacity: 0.9,
+                        zIndex: 10,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      ▲
+                    </span>
+                  )}
+                  <span style={{ fontSize: "18px", marginRight: "8px" }}>
+                    ✅
+                  </span>
+                </div>
+              )}
               text="Revisar e Submeter"
               onClick={handleReviewAndSubmit}
               disabled={
@@ -613,10 +697,38 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
           >
             <ActionButton
               onRenderIcon={() => (
-                <span style={{ fontSize: "18px", marginRight: "8px" }}>💾</span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    position: "relative",
+                  }}
+                >
+                  {!isExpanded && (
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        color: "#ffffff",
+                        position: "absolute",
+                        left: "-18px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        animation: "pulse 2s infinite",
+                        opacity: 0.9,
+                        zIndex: 10,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      ▲
+                    </span>
+                  )}
+                  <span style={{ fontSize: "18px", marginRight: "8px" }}>
+                    💾
+                  </span>
+                </div>
               )}
               text={isSaving ? "Salvando..." : "Salvar Rascunho"}
-              onClick={handleSaveWithProgress}
+              onClick={handleSaveClick}
               disabled={
                 isSaving || state.isSubmitting || progressOpen || loadingVisible
               }
@@ -653,6 +765,39 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
           )}
           showTimeWarning={true}
         />
+
+        {/* LoadingOverlay adicional */}
+        <LoadingOverlay visible={loadingVisible} message={loadingMessage} />
+
+        {/* Dialog de confirmação para salvar rascunho */}
+        <Dialog
+          hidden={!showConfirmDialog}
+          onDismiss={() => setShowConfirmDialog(false)}
+          dialogContentProps={{
+            type: DialogType.largeHeader,
+            title: "Confirmar Salvamento",
+            subText:
+              "Tem certeza que deseja salvar o rascunho do formulário HSE?",
+          }}
+          modalProps={{
+            isBlocking: true,
+            styles: { main: { maxWidth: 450 } },
+          }}
+        >
+          <DialogFooter>
+            <PrimaryButton
+              onClick={async () => {
+                setShowConfirmDialog(false);
+                await handleSaveWithProgress();
+              }}
+              text="Confirmar"
+            />
+            <DefaultButton
+              onClick={() => setShowConfirmDialog(false)}
+              text="Cancelar"
+            />
+          </DialogFooter>
+        </Dialog>
       </div>
     </>
   );

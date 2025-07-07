@@ -95,7 +95,7 @@
   :global(.ms-Dropdown-title),
   :global(.ms-DatePicker input) {
     border-color: #d13438 !important;
-    box-shadow: 0 0 0 1px #d13438 !important;
+    // Removido box-shadow para evitar borda dupla mais espessa
   }
 }
 
