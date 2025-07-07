@@ -280,6 +280,154 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     }
     return true;
   }, [state.formData, state.attachments]);
+
+  // Função para identificar NRs específicas que estão faltando
+  const getMissingNRs = React.useCallback((): string[] => {
+    const missingNRs: string[] = [];
+    const conformidade = state.formData.conformidadeLegal || {};
+
+    // NRs obrigatórias que sempre devem estar completas
+    const MANDATORY_NR_BLOCKS = ["nr01", "nr04", "nr05", "nr06", "nr07"];
+
+    // Mapeamento de blocos para nomes legíveis
+    const NR_NAMES: { [key: string]: string } = {
+      nr01: "NR 01",
+      nr04: "NR 04",
+      nr05: "NR 05",
+      nr06: "NR 06",
+      nr07: "NR 07",
+      nr10: "NR 10",
+      nr11: "NR 11",
+      nr12: "NR 12",
+      nr13: "NR 13",
+      nr15: "NR 15",
+      nr16: "NR 16",
+      nr23: "NR 23",
+      licencasAmbientais: "Licenças Ambientais",
+      legislacaoMaritima: "Legislação Marítima",
+      treinamentos: "Treinamentos Obrigatórios",
+      gestaoSMS: "Gestão de SMS",
+    };
+
+    // Estrutura de questões por bloco para verificação de completude
+    const blockQuestions: Record<
+      string,
+      Array<{ key: string; idx: number }>
+    > = {
+      nr01: [
+        { key: "questao1", idx: 1 },
+        { key: "questao2", idx: 2 },
+      ],
+      nr04: [
+        { key: "questao1", idx: 3 },
+        { key: "questao2", idx: 4 },
+      ],
+      nr05: [
+        { key: "questao1", idx: 5 },
+        { key: "questao2", idx: 6 },
+      ],
+      nr06: [
+        { key: "questao1", idx: 7 },
+        { key: "questao2", idx: 8 },
+      ],
+      nr07: [
+        { key: "questao1", idx: 9 },
+        { key: "questao2", idx: 10 },
+        { key: "questao3", idx: 11 },
+      ],
+      nr10: [
+        { key: "questao1", idx: 12 },
+        { key: "questao2", idx: 13 },
+        { key: "questao3", idx: 14 },
+      ],
+      nr11: [
+        { key: "questao1", idx: 15 },
+        { key: "questao2", idx: 16 },
+      ],
+      nr12: [
+        { key: "questao1", idx: 17 },
+        { key: "questao2", idx: 18 },
+      ],
+      nr13: [{ key: "questao1", idx: 19 }],
+      nr15: [{ key: "questao1", idx: 20 }],
+      nr16: [{ key: "questao1", idx: 21 }],
+      nr23: [
+        { key: "questao1", idx: 22 },
+        { key: "questao2", idx: 23 },
+        { key: "questao3", idx: 24 },
+      ],
+      licencasAmbientais: [{ key: "questao1", idx: 25 }],
+      legislacaoMaritima: [
+        { key: "questao1", idx: 26 },
+        { key: "questao2", idx: 27 },
+        { key: "questao3", idx: 28 },
+        { key: "questao4", idx: 29 },
+        { key: "questao5", idx: 30 },
+        { key: "questao6", idx: 31 },
+      ],
+      treinamentos: [
+        { key: "questao1", idx: 32 },
+        { key: "questao2", idx: 33 },
+        { key: "questao3", idx: 34 },
+      ],
+      gestaoSMS: [
+        { key: "questao1", idx: 35 },
+        { key: "questao2", idx: 36 },
+        { key: "questao3", idx: 37 },
+        { key: "questao4", idx: 38 },
+        { key: "questao5", idx: 39 },
+      ],
+    };
+
+    // Função para verificar se um bloco está completo
+    const isBlockComplete = (blockKey: string): boolean => {
+      const bloco = conformidade[blockKey as keyof typeof conformidade];
+      if (!bloco || typeof bloco !== "object") return false;
+
+      const questions = blockQuestions[blockKey] || [];
+      const blockObj = bloco as unknown as {
+        [key: string]: { resposta?: string } | unknown;
+      };
+
+      return questions.every((q) => {
+        const questionObj = blockObj[q.key] as
+          | { resposta?: string }
+          | undefined;
+        return (
+          questionObj && questionObj.resposta && questionObj.resposta !== ""
+        );
+      });
+    };
+
+    // 1. Verificar NRs obrigatórias (sempre devem estar completas)
+    MANDATORY_NR_BLOCKS.forEach((blockKey) => {
+      if (!isBlockComplete(blockKey)) {
+        missingNRs.push(NR_NAMES[blockKey] || blockKey);
+      }
+    });
+
+    // 2. Verificar NRs opcionais (só se foram marcadas como aplicáveis)
+    Object.keys(conformidade).forEach((blockKey) => {
+      // Pular NRs obrigatórias (já verificadas acima)
+      if (MANDATORY_NR_BLOCKS.includes(blockKey)) return;
+
+      const bloco = conformidade[blockKey as keyof typeof conformidade];
+      if (!bloco || typeof bloco !== "object") return;
+
+      const blockObj = bloco as unknown as {
+        aplicavel?: boolean;
+        [key: string]: unknown;
+      };
+
+      // Se o bloco está marcado como aplicável mas não está completo
+      if (blockObj.aplicavel === true && !isBlockComplete(blockKey)) {
+        missingNRs.push(NR_NAMES[blockKey] || blockKey);
+      }
+    });
+
+    return missingNRs;
+  }, [state.formData.conformidadeLegal]);
+
   // Verificar se todas as etapas estão completas
   const allStepsCompleted =
     isDadosGeraisValid() &&
@@ -328,7 +476,21 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       completedSteps++;
     } else if (dadosGeraisOK) {
       currentStepName = "Conformidade Legal";
-      missingFields.push("Questões NR pendentes");
+
+      // Identificar NRs obrigatórias que estão faltando
+      const missingNRs = getMissingNRs();
+      if (missingNRs.length > 0) {
+        // Mostrar até 3 NRs obrigatórias
+        const nrsToShow = missingNRs.slice(0, 3);
+        const nrText = nrsToShow.join(", ");
+        if (missingNRs.length > 3) {
+          missingFields.push(`${nrText}, entre outros...`);
+        } else {
+          missingFields.push(nrText);
+        }
+      } else {
+        missingFields.push("Questões NR pendentes");
+      }
     }
 
     // Verificar Serviços Especializados
@@ -340,15 +502,20 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       missingFields.push("Certificados pendentes");
     }
 
-    // Determinar próxima etapa
-    if (!dadosGeraisOK) {
-      nextStepName = "Dados Gerais";
-    } else if (!conformidadeOK) {
+    // Determinar próxima etapa baseada na etapa atual
+    const currentStep = state.currentStep || 1;
+    if (currentStep === 1) {
+      // Se estamos na etapa 1 (Dados Gerais), próxima é Conformidade Legal
       nextStepName = "Conformidade Legal";
-    } else if (!servicosOK) {
+    } else if (currentStep === 2) {
+      // Se estamos na etapa 2 (Conformidade Legal), próxima é Serviços Especializados
       nextStepName = "Serviços Especializados";
-    } else {
+    } else if (currentStep === 3) {
+      // Se estamos na etapa 3 (Serviços Especializados), próxima é Revisão Final
       nextStepName = "Revisão Final";
+    } else {
+      // Se estamos na etapa 4 (Revisão Final), não há próxima etapa
+      nextStepName = "";
     }
 
     const percentage = Math.round((completedSteps / 3) * 100);
@@ -497,12 +664,17 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
         const fieldErrors = mapMissingFieldsToFormFields(
           validationResult.missingFields
         );
+        // Limpar todos os erros anteriores e definir apenas os novos
+        dispatch({ type: "CLEAR_FIELD_ERRORS" });
         dispatch({ type: "SET_FIELD_ERRORS", payload: fieldErrors });
       }
       return;
     }
 
-    // Se for válido, mostrar confirmação
+    // Se for válido, limpar todos os erros e mostrar confirmação
+    if (dispatch) {
+      dispatch({ type: "CLEAR_FIELD_ERRORS" });
+    }
     setShowConfirmDialog(true);
   };
 
@@ -777,13 +949,21 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
             type: DialogType.largeHeader,
             title: "Confirmar Salvamento",
             subText:
-              "Tem certeza que deseja salvar o rascunho do formulário HSE?",
+              "Tem certeza que deseja salvar o rascunho do formulário HSE? Após salvar, você poderá fechar a página e continuar de onde parou a qualquer hora.",
           }}
           modalProps={{
             isBlocking: true,
             styles: { main: { maxWidth: 450 } },
           }}
         >
+          {/* Mensagem de alerta destacada */}
+          <div className={styles.alertMessage}>
+            <div className={styles.alertIcon}>⚠️</div>
+            <div className={styles.alertText}>
+              <strong>IMPORTANTE:</strong> Oceaneering irá avaliar apenas os
+              formulários finalizados e submetidos.
+            </div>
+          </div>
           <DialogFooter>
             <PrimaryButton
               onClick={async () => {

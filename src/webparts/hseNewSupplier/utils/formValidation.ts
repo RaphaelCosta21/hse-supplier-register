@@ -28,7 +28,7 @@ export const validateDadosGeraisForSave = (
     (typeof data.dadosGerais.empresa === "string" &&
       !data.dadosGerais.empresa.trim())
   ) {
-    missingFields.push("Nome da Empresa");
+    missingFields.push("Empresa");
   }
   if (
     !data.dadosGerais?.cnpj ||
@@ -64,14 +64,14 @@ export const validateDadosGeraisForSave = (
     missingFields.push("Atividade Principal (CNAE)");
   }
   if (!data.dadosGerais?.grauRisco || data.dadosGerais.grauRisco === "") {
-    missingFields.push("Grau de Risco (NR-4)");
+    missingFields.push("Grau de Risco");
   }
   if (
     !data.dadosGerais?.gerenteContratoMarine ||
     (typeof data.dadosGerais.gerenteContratoMarine === "string" &&
       !data.dadosGerais.gerenteContratoMarine.trim())
   ) {
-    missingFields.push("Gerente do Contrato Marine");
+    missingFields.push("Gerente do Contrato");
   }
 
   // Validar anexo REM obrigatório
@@ -109,7 +109,7 @@ export const validateFormForSave = (
     (typeof data.dadosGerais.empresa === "string" &&
       !data.dadosGerais.empresa.trim())
   ) {
-    missingFields.push("Nome da Empresa");
+    missingFields.push("Empresa");
   }
   if (
     !data.dadosGerais?.cnpj ||
@@ -145,14 +145,14 @@ export const validateFormForSave = (
     missingFields.push("Atividade Principal (CNAE)");
   }
   if (!data.dadosGerais?.grauRisco || data.dadosGerais.grauRisco === "") {
-    missingFields.push("Grau de Risco (NR-4)");
+    missingFields.push("Grau de Risco");
   }
   if (
     !data.dadosGerais?.gerenteContratoMarine ||
     (typeof data.dadosGerais.gerenteContratoMarine === "string" &&
       !data.dadosGerais.gerenteContratoMarine.trim())
   ) {
-    missingFields.push("Gerente do Contrato Marine");
+    missingFields.push("Gerente do Contrato");
   }
 
   // Validar anexo REM obrigatório
@@ -522,6 +522,7 @@ export const mapMissingFieldsToFormFields = (
 ): { [fieldName: string]: string } => {
   const fieldMapping: { [key: string]: string } = {
     "Nome da Empresa": "empresa",
+    Empresa: "empresa", // Alternativa para o mesmo campo
     CNPJ: "cnpj",
     "Número do Contrato": "numeroContrato",
     "Data de Início do Contrato": "dataInicioContrato",
@@ -529,7 +530,9 @@ export const mapMissingFieldsToFormFields = (
     "Responsável Técnico": "responsavelTecnico",
     "Atividade Principal (CNAE)": "atividadePrincipalCNAE",
     "Grau de Risco (NR-4)": "grauRisco",
+    "Grau de Risco": "grauRisco", // Alternativa para o mesmo campo
     "Gerente do Contrato Marine": "gerenteContratoMarine",
+    "Gerente do Contrato": "gerenteContratoMarine", // Alternativa para o mesmo campo
   };
 
   const fieldErrors: { [fieldName: string]: string } = {};

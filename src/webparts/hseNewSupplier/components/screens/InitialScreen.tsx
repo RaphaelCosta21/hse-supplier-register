@@ -703,6 +703,15 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
               </Text>
             </Stack>
 
+            {/* Mensagem de alerta sobre avaliação */}
+            <div className={styles.alertMessageInitial}>
+              <Icon iconName="Warning" className={styles.alertIcon} />
+              <div className={styles.alertText}>
+                <strong>IMPORTANTE:</strong> Oceaneering irá avaliar apenas os
+                formulários finalizados e submetidos.
+              </div>
+            </div>
+
             {loadingUserForms ? (
               <Stack
                 horizontal

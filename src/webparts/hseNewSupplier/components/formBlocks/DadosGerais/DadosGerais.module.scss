@@ -91,11 +91,33 @@
 .fieldError {
   // Força borda vermelha no input do Fluent UI TextField
   :global(.ms-TextField-field),
+  :global(.ms-TextField-fieldGroup),
   :global(input),
   :global(.ms-Dropdown-title),
-  :global(.ms-DatePicker input) {
+  :global(.ms-DatePicker input),
+  :global(.ms-DatePicker-wrapper) {
     border-color: #d13438 !important;
     // Removido box-shadow para evitar borda dupla mais espessa
+  }
+
+  // Seletores mais específicos para TextField
+  :global(.ms-TextField) {
+    :global(.ms-TextField-field) {
+      border-color: #d13438 !important;
+    }
+    :global(.ms-TextField-fieldGroup) {
+      border-color: #d13438 !important;
+    }
+  }
+
+  // Seletores mais específicos para DatePicker
+  :global(.ms-DatePicker) {
+    :global(.ms-TextField-field) {
+      border-color: #d13438 !important;
+    }
+    :global(.ms-TextField-fieldGroup) {
+      border-color: #d13438 !important;
+    }
   }
 }
 

@@ -224,6 +224,27 @@ const HseNewSupplierContent: React.FC = () => {
     return camposOk && grauRiscoOk && remOk;
   }, [state.formData, state.attachments]);
 
+  // Função para gerar mensagem dinâmica sobre salvamento de rascunho
+  const getSaveTooltipMessage = React.useCallback(() => {
+    const dadosGeraisCompletos = isDadosGeraisValid();
+
+    if (dadosGeraisCompletos) {
+      return {
+        icon: "CheckMark",
+        message:
+          "✅ Dados Gerais completos! Caso queira, você poderá salvar o rascunho do formulário para continuar depois.",
+        isPositive: true,
+      };
+    } else {
+      return {
+        icon: "Save",
+        message:
+          "Para Salvar Rascunho, necessário preencher os itens obrigatórios da aba de Dados Gerais.",
+        isPositive: false,
+      };
+    }
+  }, [isDadosGeraisValid]);
+
   // Função para validar Conformidade Legal (versão simplificada - usa a mesma lógica dos checks individuais)
   const isConformidadeLegalValid = React.useCallback(() => {
     const conformidade = state.formData.conformidadeLegal || {};
@@ -789,13 +810,24 @@ const HseNewSupplierContent: React.FC = () => {
           />
 
           {/* Mensagem sobre dados obrigatórios para salvar rascunho */}
-          <div className={styles.stepBlockedMessage}>
-            <Icon iconName="Save" className={styles.stepBlockedIcon} />
-            <span>
-              Para Salvar Rascunho, necessário preencher os itens obrigatórios
-              da aba de Dados Gerais.
-            </span>
-          </div>
+          {(() => {
+            const saveTooltip = getSaveTooltipMessage();
+            return (
+              <div
+                className={`${styles.stepBlockedMessage} ${
+                  saveTooltip.isPositive
+                    ? styles.stepBlockedMessage + "--positive"
+                    : ""
+                }`}
+              >
+                <Icon
+                  iconName={saveTooltip.icon}
+                  className={styles.stepBlockedIcon}
+                />
+                <span>{saveTooltip.message}</span>
+              </div>
+            );
+          })()}
 
           {/* Mensagem de aviso quando Revisão Final está desabilitada */}
           {!formSelectors.canProceedToStep(state, 4) && (

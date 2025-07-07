@@ -40,7 +40,35 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
     // Verificar erros do contexto (validação do botão salvar)
     const contextErrors = state.errors && state.errors[field];
     return !!(propErrors || contextErrors);
-  }; // Função para limpar erro específico quando campo é alterado
+  }; // Função auxiliar para verificar se um campo específico está válido
+  const isFieldValidNow = (
+    fieldName: string,
+    fieldValue: string | number | boolean | Date | undefined
+  ): boolean => {
+    switch (fieldName) {
+      case "empresa":
+      case "numeroContrato":
+      case "responsavelTecnico":
+      case "atividadePrincipalCNAE":
+      case "gerenteContratoMarine":
+        return !!(
+          fieldValue &&
+          typeof fieldValue === "string" &&
+          fieldValue.trim() !== ""
+        );
+      case "dataInicioContrato":
+      case "dataTerminoContrato":
+        return fieldValue !== null && fieldValue !== undefined;
+      case "grauRisco":
+        return (
+          fieldValue !== null && fieldValue !== undefined && fieldValue !== ""
+        );
+      default:
+        return true;
+    }
+  };
+
+  // Função para limpar erro específico quando campo é alterado
   const handleFieldChange = (
     fieldName: string,
     fieldValue: string | number | boolean | Date | undefined
@@ -48,14 +76,18 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
     // Chamar a função onChange original
     onChange(fieldName as keyof typeof value, fieldValue);
 
-    // Limpar erro específico deste campo se existir
+    // Limpar erro específico deste campo se existir E se o campo agora está válido
     if (state.errors && state.errors[fieldName] && dispatch) {
-      const newErrors = { ...state.errors };
-      delete newErrors[fieldName];
-      dispatch({
-        type: "SET_FIELD_ERRORS",
-        payload: newErrors,
-      });
+      const isFieldValid = isFieldValidNow(fieldName, fieldValue);
+
+      if (isFieldValid) {
+        const newErrors = { ...state.errors };
+        delete newErrors[fieldName];
+        dispatch({
+          type: "SET_FIELD_ERRORS",
+          payload: newErrors,
+        });
+      }
     }
   };
   return (
@@ -64,14 +96,14 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
         {" "}
         <SectionTitle
           title="A - Informações e Dados Gerais da Contratada"
-          subtitle="Preencha todas as informações básicas sobre a empresa contratada"
+          subtitle="Preencha todas as informações básicas sobre a empresa contratada para seguir para a próxima etapa (Conformidade Legal)."
           icon="ContactInfo"
           variant="primary"
         />
         <MessageBar messageBarType={MessageBarType.info}>
           Preencha todas as informações obrigatórias (*) sobre a empresa
-          contratada. O anexo do Resumo Estatístico Mensal de Acidentes é
-          obrigatório.
+          contratada para seguir para a próxima etapa (Conformidade Legal). O
+          anexo do Resumo Estatístico Mensal de Acidentes é obrigatório.
         </MessageBar>
         {/* Nova nota destacada sobre salvamento de rascunho */}
         <MessageBar
