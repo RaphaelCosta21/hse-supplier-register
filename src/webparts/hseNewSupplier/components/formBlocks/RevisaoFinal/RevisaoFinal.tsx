@@ -17,6 +17,7 @@ import { NR_QUESTIONS_MAP } from "../../../utils/formConstants";
 import { ProgressModal } from "../../common/ProgressModal";
 import { Toast } from "../../common/Toast/Toast";
 import { LoadingOverlay } from "../../common/LoadingOverlay/LoadingOverlay";
+import { SectionTitle } from "../../common/SectionTitle";
 import styles from "./RevisaoFinal.module.scss";
 
 export const RevisaoFinal: React.FC = () => {
@@ -867,20 +868,12 @@ export const RevisaoFinal: React.FC = () => {
   return (
     <div className={styles.revisaoFinal}>
       <Stack tokens={{ childrenGap: 24 }}>
-        {" "}
-        {/* Header */}
-        <div className={styles.modernHeader}>
-          <div className={styles.headerContent}>
-            <div className={styles.titleSection}>
-              <Text variant="xxLarge" className={styles.mainTitle}>
-                Revisão Final
-              </Text>
-              <Text variant="medium" className={styles.subtitle}>
-                Verifique todas as informações antes de enviar o formulário
-              </Text>
-            </div>
-          </div>
-        </div>
+        <SectionTitle
+          title="D - Revisão Final"
+          subtitle="Verifique todas as informações antes de enviar o formulário"
+          icon="ReviewSolid"
+          variant="primary"
+        />
         {/* Bloco 1: Dados Gerais */}
         <div className={styles.reviewBlock}>
           <div className={styles.blockHeader}>

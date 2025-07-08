@@ -95,6 +95,23 @@ button[aria-label*="My account"] {
   display: none !important;
 }
 
+// Ocultar todos os elementos relacionados a comentários
+[data-sp-feature-tag="Comments"],
+[data-sp-feature-instance-id*="Comments"],
+[id*="CommentsWrapper"],
+[class*="CommentsWrapper"],
+[class*="comments"],
+[class*="Comments"],
+.Page-commentsWrapper,
+[data-viewport-id*="Comments"] {
+  display: none !important;
+}
+
+// Ocultar elementos filhos dos comentários
+[data-sp-feature-tag="Comments"] * {
+  display: none !important;
+}
+
 // Estilos específicos para diferentes seletores do SharePoint Online
 div[data-sp-feature-tag="Site header"] {
   .ms-HorizontalNav {

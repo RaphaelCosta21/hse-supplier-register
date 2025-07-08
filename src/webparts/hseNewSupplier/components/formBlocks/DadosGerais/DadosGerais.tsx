@@ -280,12 +280,27 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
           </div>
           <div className={styles.gridRow}>
             <div className={styles.toggleSection}>
-              <Toggle
-                label="Possui SESMT registrado?"
-                checked={value.possuiSESMT || false}
-                onChange={(_, checked) => onChange("possuiSESMT", checked)}
-                inlineLabel
-              />
+              <div>
+                <Toggle
+                  label="Possui SESMT registrado?"
+                  checked={value.possuiSESMT || false}
+                  onChange={(_, checked) => onChange("possuiSESMT", checked)}
+                  inlineLabel
+                />
+                <Text
+                  variant="small"
+                  style={{
+                    color: "#666",
+                    fontStyle: "italic",
+                    marginTop: "4px",
+                    lineHeight: "1.3",
+                    maxWidth: "400px",
+                  }}
+                >
+                  SESMT (Serviços Especializados em Engenharia de Segurança e
+                  Medicina do Trabalho), segundo NR-4 no estabelecimento
+                </Text>
+              </div>
               {value.possuiSESMT && (
                 <SpinButton
                   label="Número de Componentes SESMT"

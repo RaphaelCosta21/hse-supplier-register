@@ -828,7 +828,13 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
                       ▲
                     </span>
                   )}
-                  <span style={{ fontSize: "18px", marginRight: "8px" }}>
+                  <span
+                    style={{
+                      fontSize: "18px",
+                      marginRight: "4px",
+                      marginLeft: "10px",
+                    }}
+                  >
                     ✅
                   </span>
                 </div>
@@ -894,7 +900,13 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
                       ▲
                     </span>
                   )}
-                  <span style={{ fontSize: "18px", marginRight: "8px" }}>
+                  <span
+                    style={{
+                      fontSize: "18px",
+                      marginRight: "4px",
+                      marginLeft: "10px",
+                    }}
+                  >
                     💾
                   </span>
                 </div>

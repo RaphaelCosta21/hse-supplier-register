@@ -24,8 +24,9 @@
     position: absolute;
     bottom: 30px; // Posicionado na metade do botão (60px/2 = 30px)
     left: 0;
-    right: 0;
-    width: 100%;
+    right: auto; // Mudança para permitir largura fixa
+    width: 280px; // Largura fixa
+    max-width: 280px; // Garantir que não exceda 280px
     height: 0;
     background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
     border-radius: 30px 30px 0px 0px; // Bordas superiores arredondadas
@@ -45,8 +46,9 @@
     position: absolute;
     bottom: 55px; // Alinhado com o ::before - começa na metade do botão
     left: 0;
-    right: 0;
-    width: 100%;
+    right: auto; // Mudança para permitir largura fixa
+    width: 280px; // Largura fixa
+    max-width: 280px; // Garantir que não exceda 280px
     padding: 25px 24px 15px 24px; // Mais padding no topo para subir o texto
     color: white;
     font-size: 13px;
@@ -55,6 +57,10 @@
     transition: all 0.3s ease 0.1s;
     pointer-events: none;
     z-index: 1;
+    box-sizing: border-box; // Incluir padding na largura
+    word-wrap: break-word; // Quebrar palavras longas
+    overflow-wrap: break-word; // Quebrar palavras longas
+    hyphens: auto; // Hifenização automática
 
     .progressInfo {
       display: flex;
@@ -111,6 +117,7 @@
       height: 220px; // Aumentado para ter mais espaço para o conteúdo adicional
       opacity: 1;
       transform: scaleY(1);
+      width: 280px; // Largura fixa para o painel expandido
     }
 
     .expansionContent {
@@ -177,7 +184,7 @@
     border: 2px solid rgba(255, 255, 255, 0.2);
     font-weight: 600;
     font-size: 16px;
-    min-width: 280px;
+    min-width: 284px;
     min-height: 60px;
     transition: all 0.2s ease;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12),
@@ -329,7 +336,7 @@
   border: 2px solid rgba(255, 255, 255, 0.2);
   font-weight: 600;
   font-size: 16px;
-  min-width: 280px;
+  min-width: 284px;
   min-height: 60px;
   transition: all 0.2s ease;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12),

@@ -7,36 +7,6 @@
   max-width: 1200px;
 }
 
-// Header moderno
-.modernHeader {
-  margin-bottom: 32px;
-}
-
-.headerContent {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.titleSection {
-  flex: 1;
-}
-
-.mainTitle {
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 8px;
-  display: block;
-}
-
-.subtitle {
-  color: #666;
-  font-weight: 400;
-  display: block;
-  margin-top: 4px;
-}
-
 .warningAlert {
   margin-top: 16px;
   border-radius: 6px;
