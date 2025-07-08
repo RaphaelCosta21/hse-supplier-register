@@ -6,7 +6,7 @@ export const ProgressIndicator: React.FC<IProgressIndicatorProps> = ({
   label,
   description,
   percentComplete = 0,
-  color = "#2196f3",
+  color = "#00d4aa", // Cor padrão ajustada para o novo design
   showLabel = true,
   size = "medium",
   className,
@@ -20,10 +20,10 @@ export const ProgressIndicator: React.FC<IProgressIndicatorProps> = ({
           className={styles.bar}
           style={{
             width: `${Math.round(percentComplete * 100)}%`,
-            background: color,
             height: barHeight,
+            // Removendo a prop color daqui para usar o gradiente do CSS
           }}
-        />{" "}
+        />
       </div>
       {description && <div className={styles.description}>{description}</div>}
     </div>

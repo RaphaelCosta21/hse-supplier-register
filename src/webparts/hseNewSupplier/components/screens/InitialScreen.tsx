@@ -11,8 +11,6 @@ import {
   Spinner,
   SpinnerSize,
   Icon,
-  TooltipHost,
-  DirectionalHint,
 } from "@fluentui/react";
 import { useHSEForm } from "../context/HSEFormContext";
 import {
@@ -21,27 +19,64 @@ import {
 } from "../../types/IApplicationPhase";
 import { validators } from "../../utils/validators";
 import { formatters } from "../../utils/formatters";
+import { Footer } from "../common/Footer/Footer";
+import styles from "../HseNewSupplier.module.scss";
 
-// Componente Card simples para substituir o Card do Fluent UI
+// Assets da Oceaneering
+import logoWhite from "../../assets/logo-white.png";
+import oceaneeringBadge from "../../assets/oceaneering-badge.png";
+
+// Cores da Oceaneering baseadas na imagem fornecida
+const oceaneeringColors = {
+  primaryBlue: "#003b5c", // PMS 302 C
+  secondaryBlue: "#00263e", // PMS 2965 C
+  accent: "#ffc72c", // PMS 123 C
+  lightBlue: "#0078d4",
+  white: "#ffffff",
+  lightGray: "#f3f2f1",
+  textSecondary: "#605e5c",
+};
+
+// Componente Card simples com design da Oceaneering
 const SimpleCard: React.FC<{
   children: React.ReactNode;
   tokens?: { childrenMargin?: number };
   style?: React.CSSProperties;
-}> = ({ children, style = {} }) => (
-  <div
-    style={{
-      padding: "16px",
-      backgroundColor: "#ffffff",
-      border: "1px solid #edebe9",
-      borderRadius: "4px",
-      boxShadow:
-        "0 1.6px 3.6px 0 rgba(0,0,0,0.132), 0 0.3px 0.9px 0 rgba(0,0,0,0.108)",
+  variant?: "default" | "primary" | "accent";
+}> = ({ children, style = {}, variant = "default" }) => {
+  const getCardStyle = (): React.CSSProperties => {
+    const baseStyle: React.CSSProperties = {
+      padding: "24px",
+      borderRadius: "8px",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+      border: "none",
       ...style,
-    }}
-  >
-    {children}
-  </div>
-);
+    };
+
+    switch (variant) {
+      case "primary":
+        return {
+          ...baseStyle,
+          background: `linear-gradient(135deg, ${oceaneeringColors.primaryBlue} 0%, ${oceaneeringColors.secondaryBlue} 100%)`,
+          color: oceaneeringColors.white,
+        };
+      case "accent":
+        return {
+          ...baseStyle,
+          backgroundColor: oceaneeringColors.accent,
+          color: oceaneeringColors.secondaryBlue,
+        };
+      default:
+        return {
+          ...baseStyle,
+          backgroundColor: oceaneeringColors.white,
+          border: `1px solid ${oceaneeringColors.lightGray}`,
+        };
+    }
+  };
+
+  return <div style={getCardStyle()}>{children}</div>;
+};
 
 export interface IInitialScreenProps {
   onCNPJVerified: (result: ICNPJVerificationResult) => void;
@@ -80,6 +115,7 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
 
     loadUserForms().catch(console.error);
   }, [actions]);
+
   // Função para formatar CNPJ com máscara automática incremental
   const formatCNPJ = (value: string): string => {
     const numbers = value.replace(/\D/g, "").slice(0, 14);
@@ -139,6 +175,7 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
       message: "CNPJ deve conter exatamente 14 dígitos",
     };
   };
+
   // Handler para mudança no campo CNPJ com validação em tempo real
   const handleCNPJChange = (
     event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -148,55 +185,49 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
       const formatted = formatCNPJ(newValue);
       setCnpj(formatted);
 
-      // Validar CNPJ em tempo real
+      // Validar em tempo real
       const validation = validateCNPJ(formatted);
       setCnpjValidation(validation);
 
-      // Limpar erro e resultado de busca
+      // Limpar erros ao digitar
       setCnpjError("");
       setSearchResult(null);
     }
   };
-  // Buscar formulário por CNPJ com segurança
-  const handleSearchCNPJ = async (): Promise<void> => {
-    const validation = validateCNPJ(cnpj);
 
-    if (!validation.isValid) {
-      setCnpjError(validation.message || "CNPJ inválido");
+  // Handler para buscar CNPJ
+  const handleSearchCNPJ = async (): Promise<void> => {
+    if (!cnpj || !cnpjValidation.isValid) {
+      setCnpjError("Digite um CNPJ válido");
       return;
     }
 
     setSearchingCNPJ(true);
     setCnpjError("");
-
     try {
-      console.log("Iniciando busca segura por CNPJ:", cnpj);
+      console.log("Iniciando busca por CNPJ:", cnpj);
       const result = await actions.searchCNPJWithSecurity(cnpj);
       console.log("Resultado da busca:", result);
 
       setSearchResult(result);
       onCNPJVerified(result);
     } catch (error) {
-      console.error("Erro na busca por CNPJ:", error);
-      setCnpjError(
-        error instanceof Error ? error.message : "Erro ao buscar CNPJ"
-      );
+      console.error("Erro ao buscar CNPJ:", error);
+      setCnpjError("Erro ao buscar CNPJ. Tente novamente.");
     } finally {
       setSearchingCNPJ(false);
     }
   };
+  // Handler para continuar com formulário existente
+  const handleContinueExisting = async (): Promise<void> => {
+    if (!searchResult?.itemId) {
+      console.error("ID do formulário não encontrado");
+      return;
+    }
 
-  // Handler para iniciar novo formulário
-  const handleStartNewForm = (): void => {
-    console.log("Iniciando novo formulário para CNPJ:", cnpj);
-    actions.startNewForm(cnpj);
-  };
-
-  // Handler para carregar formulário existente
-  const handleLoadExistingForm = async (itemId: number): Promise<void> => {
     try {
-      console.log("Carregando formulário existente, ID:", itemId);
-      await actions.loadExistingForm(itemId);
+      console.log("Carregando formulário existente:", searchResult.itemId);
+      await actions.loadExistingForm(searchResult.itemId);
     } catch (error) {
       console.error("Erro ao carregar formulário existente:", error);
     }
@@ -215,9 +246,9 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
   // Render status badge
   const renderStatusBadge = (status: string): JSX.Element => {
     const statusConfig: Record<string, { color: string; icon: string }> = {
-      Rascunho: { color: "#605e5c", icon: "Edit" },
+      Rascunho: { color: oceaneeringColors.textSecondary, icon: "Edit" },
       "Em Andamento": { color: "#ff8c00", icon: "Clock" },
-      Enviado: { color: "#0078d4", icon: "Send" },
+      Enviado: { color: oceaneeringColors.lightBlue, icon: "Send" },
       Aprovado: { color: "#107c10", icon: "CheckMark" },
       Rejeitado: { color: "#d13438", icon: "Cancel" },
     };
@@ -229,7 +260,7 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
         <Icon
           iconName={config.icon}
           style={{ color: config.color, fontSize: 12 }}
-        />
+        />{" "}
         <Text variant="small" style={{ color: config.color, fontWeight: 600 }}>
           {status}
         </Text>
@@ -238,286 +269,586 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
   };
 
   return (
-    <Stack tokens={{ childrenGap: 24 }}>
-      {/* Header com informações do usuário */}
-      <SimpleCard>
-        <Stack tokens={{ childrenGap: 12 }}>
-          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 12 }}>
-            <Icon
-              iconName="Contact"
-              style={{ fontSize: 24, color: "#0078d4" }}
+    <div
+      style={{
+        background: `linear-gradient(135deg, ${oceaneeringColors.lightGray} 0%, ${oceaneeringColors.white} 100%)`,
+        minHeight: "100vh",
+        padding: "0",
+      }}
+    >
+      {/* Header com Logo da Oceaneering */}
+      <SimpleCard
+        variant="primary"
+        style={{ marginBottom: "24px", borderRadius: "0 0 16px 16px" }}
+      >
+        <Stack
+          horizontal
+          horizontalAlign="space-between"
+          verticalAlign="center"
+        >
+          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 16 }}>
+            {" "}
+            <img
+              src={logoWhite}
+              alt="Oceaneering Logo"
+              style={{ height: "48px", width: "auto" }}
             />
             <Stack>
-              <Text variant="large" style={{ fontWeight: 600 }}>
-                Bem-vindo, {currentUser.displayName}
-              </Text>
-              <Text variant="medium" style={{ color: "#605e5c" }}>
-                {currentUser.email}
-              </Text>
-            </Stack>
-          </Stack>
-
-          <Text variant="medium">
-            Sistema de Auto-avaliação HSE para Contratadas da Oceaneering
-          </Text>
-        </Stack>
-      </SimpleCard>{" "}
-      {/* Busca por CNPJ */}
-      <SimpleCard>
-        <Stack tokens={{ childrenGap: 16 }}>
-          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
-            <Icon
-              iconName="Search"
-              style={{ fontSize: 20, color: "#0078d4" }}
-            />{" "}
-            <Text variant="large" style={{ fontWeight: 600 }}>
-              Iniciar Formulário
-            </Text>
-          </Stack>{" "}
-          <Stack horizontal tokens={{ childrenGap: 12 }} verticalAlign="start">
-            <Stack style={{ flexGrow: 1 }}>
-              <TextField
-                label="CNPJ da Empresa"
-                value={cnpj}
-                onChange={handleCNPJChange}
-                required
-                maxLength={18}
-                placeholder="00.000.000/0000-00"
-                errorMessage={cnpjError}
-                autoComplete="off"
-              />
-              <div
+              <Text
+                variant="xLarge"
                 style={{
-                  height: 24,
-                  minHeight: 24,
-                  display: "flex",
-                  alignItems: "flex-start",
+                  fontWeight: 700,
+                  color: oceaneeringColors.white,
+                  marginBottom: "4px",
                 }}
               >
-                {cnpjValidation.message && (
-                  <Text
-                    variant="small"
-                    style={{
-                      color: cnpjValidation.isValid ? "#107c10" : "#d13438",
-                      fontWeight: 500,
-                      marginTop: 4,
-                    }}
-                  >
-                    {cnpjValidation.message}
-                  </Text>
-                )}
-              </div>
-            </Stack>
-            <Stack
-              style={{ paddingTop: 28, minHeight: 80 }}
-              verticalAlign="start"
-            >
-              <PrimaryButton
-                text="Iniciar"
-                iconProps={{ iconName: "Play" }}
-                onClick={handleSearchCNPJ}
-                disabled={
-                  !cnpj ||
-                  !cnpjValidation.isValid ||
-                  searchingCNPJ ||
-                  state.isLoading
-                }
-              />
+                Sistema HSE
+              </Text>
+              <Text
+                variant="medium"
+                style={{
+                  color: oceaneeringColors.accent,
+                  fontWeight: 500,
+                }}
+              >
+                Auto-avaliação para Contratadas
+              </Text>
             </Stack>
           </Stack>{" "}
-          {searchingCNPJ && (
+          <img
+            src={oceaneeringBadge}
+            alt="Oceaneering Badge"
+            style={{ height: "64px", width: "auto" }}
+          />
+        </Stack>
+      </SimpleCard>
+
+      <Stack
+        tokens={{ childrenGap: 24 }}
+        style={{ padding: "0 24px 24px 24px" }}
+      >
+        {/* Header com informações do usuário */}
+        <SimpleCard>
+          <Stack tokens={{ childrenGap: 12 }}>
             <Stack
               horizontal
               verticalAlign="center"
-              tokens={{ childrenGap: 8 }}
+              tokens={{ childrenGap: 12 }}
             >
-              <Spinner size={SpinnerSize.small} />
-              <Text variant="medium">Iniciando formulário...</Text>
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "50%",
+                  background: `linear-gradient(135deg, ${oceaneeringColors.primaryBlue} 0%, ${oceaneeringColors.lightBlue} 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon
+                  iconName="Contact"
+                  style={{ fontSize: 24, color: oceaneeringColors.white }}
+                />
+              </div>
+              <Stack>
+                <Text
+                  variant="large"
+                  style={{
+                    fontWeight: 600,
+                    color: oceaneeringColors.primaryBlue,
+                  }}
+                >
+                  Bem-vindo, {currentUser.displayName}
+                </Text>
+                <Text
+                  variant="medium"
+                  style={{ color: oceaneeringColors.textSecondary }}
+                >
+                  {currentUser.email}
+                </Text>
+              </Stack>
             </Stack>
-          )}
-          {/* Resultado da busca */}
-          {searchResult && (
-            <Stack tokens={{ childrenGap: 12 }}>
-              <Separator />
-              {searchResult.exists ? (
-                <Stack tokens={{ childrenGap: 12 }}>
-                  <MessageBar
-                    messageBarType={
-                      searchResult.isOwner
-                        ? MessageBarType.info
-                        : MessageBarType.warning
-                    }
-                  >
-                    {searchResult.isOwner
-                      ? "Formulário encontrado! Você é o proprietário deste formulário."
-                      : `Formulário encontrado, mas pertence a: ${
-                          searchResult.userName || "Outro usuário"
-                        }`}
-                  </MessageBar>{" "}
-                  <SimpleCard>
-                    <Stack tokens={{ childrenGap: 8 }}>
-                      <Text variant="medium" style={{ fontWeight: 600 }}>
-                        Informações do Formulário
-                      </Text>
-                      <Stack horizontal tokens={{ childrenGap: 16 }}>
-                        <Text variant="small">
-                          <strong>CNPJ:</strong> {searchResult.cnpj}
+
+            <Text
+              variant="medium"
+              style={{ color: oceaneeringColors.textSecondary }}
+            >
+              Sistema de Auto-avaliação HSE para Contratadas da Oceaneering
+            </Text>
+          </Stack>
+        </SimpleCard>
+
+        {/* Informações adicionais */}
+        <SimpleCard
+          style={{
+            backgroundColor: "#f8f9fa",
+            border: `1px solid ${oceaneeringColors.accent}`,
+          }}
+        >
+          <Stack tokens={{ childrenGap: 12 }}>
+            <Stack
+              horizontal
+              verticalAlign="center"
+              tokens={{ childrenGap: 12 }}
+            >
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  backgroundColor: oceaneeringColors.accent,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon
+                  iconName="Info"
+                  style={{
+                    fontSize: 18,
+                    color: oceaneeringColors.secondaryBlue,
+                  }}
+                />
+              </div>
+              <Text
+                variant="large"
+                style={{
+                  fontWeight: 600,
+                  color: oceaneeringColors.primaryBlue,
+                }}
+              >
+                Informações Importantes
+              </Text>
+            </Stack>
+
+            <Stack tokens={{ childrenGap: 8 }}>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Você só pode visualizar e editar formulários que você mesmo
+                criou
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Você pode salvar o progresso do formulário a qualquer momento
+                após preencher os campos obrigatórios da seção &quot;Dados
+                Gerais&quot;. O rascunho ficará disponível em &quot;Meus
+                Formulários&quot;
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Formulários aprovados não podem mais ser editados
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Mantenha suas informações sempre atualizadas
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Em caso de dúvidas, entre em contato com o suporte técnico
+              </Text>
+            </Stack>
+          </Stack>
+        </SimpleCard>
+
+        {/* Busca por CNPJ */}
+        <SimpleCard>
+          <Stack tokens={{ childrenGap: 16 }}>
+            <Stack
+              horizontal
+              verticalAlign="center"
+              tokens={{ childrenGap: 12 }}
+            >
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  background: `linear-gradient(135deg, ${oceaneeringColors.accent} 0%, #ffb000 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon
+                  iconName="Search"
+                  style={{
+                    fontSize: 18,
+                    color: oceaneeringColors.secondaryBlue,
+                  }}
+                />
+              </div>{" "}
+              <Text
+                variant="large"
+                style={{
+                  fontWeight: 600,
+                  color: oceaneeringColors.primaryBlue,
+                }}
+              >
+                Iniciar Formulário
+              </Text>{" "}
+              <div className={styles.stepBlockedMessage}>
+                <Icon iconName="Info" className={styles.stepBlockedIcon} />
+                Apenas para novos cadastros
+              </div>
+            </Stack>
+
+            <Stack
+              horizontal
+              tokens={{ childrenGap: 12 }}
+              verticalAlign="start"
+            >
+              <Stack style={{ flexGrow: 1 }}>
+                <TextField
+                  label="CNPJ da Empresa"
+                  value={cnpj}
+                  onChange={handleCNPJChange}
+                  required
+                  maxLength={18}
+                  placeholder="00.000.000/0000-00"
+                  errorMessage={cnpjError}
+                  autoComplete="off"
+                  styles={{
+                    fieldGroup: {
+                      borderColor: oceaneeringColors.lightBlue,
+                      ":hover": {
+                        borderColor: oceaneeringColors.primaryBlue,
+                      },
+                      ":focus-within": {
+                        borderColor: oceaneeringColors.primaryBlue,
+                      },
+                    },
+                  }}
+                />
+                <div
+                  style={{
+                    height: 24,
+                    minHeight: 24,
+                    display: "flex",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  {cnpjValidation.message && (
+                    <Text
+                      variant="small"
+                      style={{
+                        color: cnpjValidation.isValid ? "#107c10" : "#d13438",
+                        fontWeight: 500,
+                        marginTop: 4,
+                      }}
+                    >
+                      {cnpjValidation.message}
+                    </Text>
+                  )}
+                </div>
+              </Stack>
+              <Stack
+                style={{ paddingTop: 28, minHeight: 80 }}
+                verticalAlign="start"
+              >
+                <PrimaryButton
+                  text="Iniciar"
+                  iconProps={{ iconName: "Play" }}
+                  onClick={handleSearchCNPJ}
+                  disabled={
+                    !cnpj ||
+                    !cnpjValidation.isValid ||
+                    searchingCNPJ ||
+                    state.isLoading
+                  }
+                  styles={{
+                    root: {
+                      backgroundColor: oceaneeringColors.primaryBlue,
+                      borderColor: oceaneeringColors.primaryBlue,
+                      ":hover": {
+                        backgroundColor: oceaneeringColors.secondaryBlue,
+                        borderColor: oceaneeringColors.secondaryBlue,
+                      },
+                    },
+                  }}
+                />
+              </Stack>
+            </Stack>
+
+            {searchingCNPJ && (
+              <Stack
+                horizontal
+                verticalAlign="center"
+                tokens={{ childrenGap: 8 }}
+              >
+                <Spinner size={SpinnerSize.small} />
+                <Text variant="medium">Iniciando formulário...</Text>
+              </Stack>
+            )}
+
+            {/* Resultado da busca */}
+            {searchResult && (
+              <Stack tokens={{ childrenGap: 12 }}>
+                <Separator />
+                {searchResult.exists ? (
+                  <Stack tokens={{ childrenGap: 12 }}>
+                    <MessageBar
+                      messageBarType={
+                        searchResult.isOwner
+                          ? MessageBarType.info
+                          : MessageBarType.warning
+                      }
+                    >
+                      {searchResult.isOwner
+                        ? `Formulário encontrado para o CNPJ ${searchResult.cnpj}. Você pode continuar de onde parou.`
+                        : `Este CNPJ já possui um formulário criado por outro usuário.`}
+                    </MessageBar>
+
+                    {searchResult.isOwner && searchResult.itemId && (
+                      <Stack tokens={{ childrenGap: 8 }}>
+                        <Text variant="medium" style={{ fontWeight: 600 }}>
+                          CNPJ: {formatters.cnpj(searchResult.cnpj)}
                         </Text>
-                        <Text variant="small">
-                          <strong>Status:</strong>{" "}
-                          {renderStatusBadge(searchResult.status || "Rascunho")}
+                        <Text
+                          variant="small"
+                          style={{ color: oceaneeringColors.textSecondary }}
+                        >
+                          Status: {searchResult.status || "Em andamento"}
                         </Text>
-                      </Stack>
-                      {!searchResult.isOwner && (
-                        <Text variant="small" style={{ color: "#605e5c" }}>
-                          Proprietário: {searchResult.userName} (
-                          {searchResult.userEmail})
+                        <Text
+                          variant="small"
+                          style={{ color: oceaneeringColors.textSecondary }}
+                        >
+                          Usuário: {searchResult.userName || "Não informado"}
                         </Text>
-                      )}
-                    </Stack>
-                  </SimpleCard>
-                  <Stack horizontal tokens={{ childrenGap: 12 }}>
-                    {searchResult.allowEdit && searchResult.isOwner ? (
-                      <PrimaryButton
-                        text="Editar Formulário"
-                        iconProps={{ iconName: "Edit" }}
-                        onClick={() =>
-                          handleLoadExistingForm(searchResult.itemId!)
-                        }
-                      />
-                    ) : (
-                      <TooltipHost
-                        content={
-                          !searchResult.isOwner
-                            ? "Você não tem permissão para editar este formulário"
-                            : "Este formulário não pode mais ser editado"
-                        }
-                        directionalHint={DirectionalHint.topCenter}
-                      >
-                        <DefaultButton
-                          text="Editar Formulário"
-                          iconProps={{ iconName: "Edit" }}
-                          disabled
+                        <PrimaryButton
+                          text="Continuar Formulário"
+                          iconProps={{ iconName: "Forward" }}
+                          onClick={handleContinueExisting}
+                          styles={{
+                            root: {
+                              backgroundColor: oceaneeringColors.accent,
+                              borderColor: oceaneeringColors.accent,
+                              color: oceaneeringColors.secondaryBlue,
+                              ":hover": {
+                                backgroundColor: "#ffb000",
+                                borderColor: "#ffb000",
+                              },
+                            },
+                          }}
                         />
-                      </TooltipHost>
+                      </Stack>
                     )}
                   </Stack>
-                </Stack>
-              ) : (
-                <Stack tokens={{ childrenGap: 12 }}>
-                  <MessageBar messageBarType={MessageBarType.info}>
-                    Nenhum formulário encontrado para este CNPJ.
-                  </MessageBar>
-
-                  <Stack horizontal tokens={{ childrenGap: 12 }}>
+                ) : (
+                  <Stack tokens={{ childrenGap: 12 }}>
+                    <MessageBar messageBarType={MessageBarType.success}>
+                      CNPJ disponível! Você pode iniciar um novo formulário.
+                    </MessageBar>
                     <PrimaryButton
-                      text="Iniciar Novo Formulário"
+                      text="Criar Novo Formulário"
                       iconProps={{ iconName: "Add" }}
-                      onClick={handleStartNewForm}
+                      onClick={() => actions.startNewForm(cnpj)}
+                      styles={{
+                        root: {
+                          backgroundColor: "#107c10",
+                          borderColor: "#107c10",
+                        },
+                      }}
                     />
                   </Stack>
-                </Stack>
-              )}{" "}
-            </Stack>
-          )}
-        </Stack>
-      </SimpleCard>
-      {/* Meus Formulários */}
-      <SimpleCard>
-        <Stack tokens={{ childrenGap: 16 }}>
-          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
-            <Icon
-              iconName="BulletedList"
-              style={{ fontSize: 20, color: "#0078d4" }}
-            />
-            <Text variant="large" style={{ fontWeight: 600 }}>
-              Meus Formulários
-            </Text>
+                )}
+              </Stack>
+            )}
           </Stack>
+        </SimpleCard>
 
-          {loadingUserForms ? (
+        {/* Meus Formulários */}
+        <SimpleCard>
+          <Stack tokens={{ childrenGap: 16 }}>
             <Stack
               horizontal
               verticalAlign="center"
-              tokens={{ childrenGap: 8 }}
+              tokens={{ childrenGap: 12 }}
             >
-              <Spinner size={SpinnerSize.small} />
-              <Text variant="medium">Carregando seus formulários...</Text>
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  background: `linear-gradient(135deg, ${oceaneeringColors.lightBlue} 0%, ${oceaneeringColors.primaryBlue} 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon
+                  iconName="DocumentSet"
+                  style={{ fontSize: 18, color: oceaneeringColors.white }}
+                />
+              </div>
+              <Text
+                variant="large"
+                style={{
+                  fontWeight: 600,
+                  color: oceaneeringColors.primaryBlue,
+                }}
+              >
+                Meus Formulários
+              </Text>
             </Stack>
-          ) : userForms.length > 0 ? (
-            <Stack tokens={{ childrenGap: 12 }}>
-              {userForms.map((form) => (
-                <SimpleCard key={form.id}>
-                  <Stack tokens={{ childrenGap: 8 }}>
-                    <Stack
-                      horizontal
-                      horizontalAlign="space-between"
-                      verticalAlign="start"
-                    >
-                      <Stack tokens={{ childrenGap: 4 }}>
-                        <Text variant="medium" style={{ fontWeight: 600 }}>
-                          {form.empresa || `CNPJ: ${form.cnpj}`}
-                        </Text>{" "}
-                        <Text variant="small" style={{ color: "#605e5c" }}>
-                          CNPJ: {formatters.cnpj(form.cnpj)}
-                        </Text>
-                        <Text variant="small" style={{ color: "#605e5c" }}>
-                          Última modificação:{" "}
-                          {new Date(form.dataModificacao).toLocaleDateString(
-                            "pt-BR"
-                          )}
-                        </Text>
-                      </Stack>
 
-                      <Stack horizontalAlign="end" tokens={{ childrenGap: 8 }}>
-                        {renderStatusBadge(form.status)}
-                        <DefaultButton
-                          text="Editar"
-                          iconProps={{ iconName: "Edit" }}
-                          onClick={() => handleEditUserForm(form)}
-                        />
+            {/* Mensagem de alerta sobre avaliação */}
+            <div className={styles.alertMessageInitial}>
+              <Icon iconName="Warning" className={styles.alertIcon} />
+              <div className={styles.alertText}>
+                <strong>IMPORTANTE:</strong> Oceaneering irá avaliar apenas os
+                formulários finalizados e submetidos.
+              </div>
+            </div>
+
+            {loadingUserForms ? (
+              <Stack
+                horizontal
+                verticalAlign="center"
+                tokens={{ childrenGap: 8 }}
+              >
+                <Spinner size={SpinnerSize.small} />
+                <Text variant="medium">Carregando formulários...</Text>
+              </Stack>
+            ) : userForms.length > 0 ? (
+              <Stack tokens={{ childrenGap: 12 }}>
+                {userForms.map((form) => (
+                  <SimpleCard
+                    key={form.id}
+                    style={{ backgroundColor: "#fafafa" }}
+                  >
+                    <Stack tokens={{ childrenGap: 8 }}>
+                      <Stack
+                        horizontal
+                        horizontalAlign="space-between"
+                        verticalAlign="start"
+                      >
+                        <Stack tokens={{ childrenGap: 4 }}>
+                          <Text
+                            variant="medium"
+                            style={{
+                              fontWeight: 600,
+                              color: oceaneeringColors.primaryBlue,
+                            }}
+                          >
+                            {form.empresa || `CNPJ: ${form.cnpj}`}
+                          </Text>
+                          <Text
+                            variant="small"
+                            style={{ color: oceaneeringColors.textSecondary }}
+                          >
+                            CNPJ: {formatters.cnpj(form.cnpj)}
+                          </Text>
+                          <Stack
+                            horizontal
+                            tokens={{ childrenGap: 12 }}
+                            style={{ flexWrap: "wrap" }}
+                          >
+                            <Text
+                              variant="small"
+                              style={{ color: oceaneeringColors.textSecondary }}
+                            >
+                              Última modificação:{" "}
+                              {new Date(
+                                form.dataModificacaoCompleta ||
+                                  form.dataModificacao
+                              ).toLocaleDateString("pt-BR")}{" "}
+                              às{" "}
+                              {new Date(
+                                form.dataModificacaoCompleta ||
+                                  form.dataModificacao
+                              ).toLocaleTimeString("pt-BR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </Text>
+                            <div
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "2px 8px",
+                                backgroundColor:
+                                  oceaneeringColors.lightBlue + "20",
+                                borderRadius: "12px",
+                                border: `1px solid ${oceaneeringColors.lightBlue}`,
+                              }}
+                              title={`Este formulário foi salvo/modificado ${
+                                form.numeroRevisoes || 1
+                              } vez(es)`}
+                            >
+                              <Icon
+                                iconName="History"
+                                style={{
+                                  fontSize: "12px",
+                                  color: oceaneeringColors.primaryBlue,
+                                }}
+                              />
+                              <Text
+                                variant="small"
+                                style={{
+                                  color: oceaneeringColors.primaryBlue,
+                                  fontWeight: 600,
+                                  fontSize: "11px",
+                                }}
+                              >
+                                Rev. {form.numeroRevisoes || 1}
+                              </Text>
+                            </div>
+                          </Stack>
+                        </Stack>
+
+                        <Stack
+                          horizontalAlign="end"
+                          tokens={{ childrenGap: 8 }}
+                        >
+                          {renderStatusBadge(form.status)}
+                          <DefaultButton
+                            text="Editar"
+                            iconProps={{ iconName: "Edit" }}
+                            onClick={() => handleEditUserForm(form)}
+                            styles={{
+                              root: {
+                                borderColor: oceaneeringColors.primaryBlue,
+                                color: oceaneeringColors.primaryBlue,
+                                ":hover": {
+                                  backgroundColor:
+                                    oceaneeringColors.primaryBlue,
+                                  color: oceaneeringColors.white,
+                                },
+                              },
+                            }}
+                          />
+                        </Stack>
                       </Stack>
                     </Stack>
-                  </Stack>
-                </SimpleCard>
-              ))}
-            </Stack>
-          ) : (
-            <MessageBar messageBarType={MessageBarType.info}>
-              Você ainda não possui formulários cadastrados. Use a busca por
-              CNPJ acima para iniciar um novo formulário.
-            </MessageBar>
-          )}
-        </Stack>
-      </SimpleCard>
-      {/* Informações adicionais */}
-      <SimpleCard>
-        <Stack tokens={{ childrenGap: 12 }}>
-          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
-            <Icon iconName="Info" style={{ fontSize: 20, color: "#0078d4" }} />
-            <Text variant="large" style={{ fontWeight: 600 }}>
-              Informações Importantes
-            </Text>
+                  </SimpleCard>
+                ))}
+              </Stack>
+            ) : (
+              <MessageBar messageBarType={MessageBarType.info}>
+                Você ainda não possui formulários cadastrados. Use a busca por
+                CNPJ acima para iniciar um novo formulário.
+              </MessageBar>
+            )}
           </Stack>
+        </SimpleCard>
+      </Stack>
 
-          <Stack tokens={{ childrenGap: 8 }}>
-            <Text variant="medium">
-              • Você só pode visualizar e editar formulários que você mesmo
-              criou
-            </Text>
-            <Text variant="medium">
-              • Formulários aprovados não podem mais ser editados
-            </Text>
-            <Text variant="medium">
-              • Mantenha suas informações sempre atualizadas
-            </Text>
-            <Text variant="medium">
-              • Em caso de dúvidas, entre em contato com o suporte técnico
-            </Text>
-          </Stack>
-        </Stack>
-      </SimpleCard>
-    </Stack>
+      {/* Rodapé do sistema */}
+      <Footer />
+    </div>
   );
 };
 

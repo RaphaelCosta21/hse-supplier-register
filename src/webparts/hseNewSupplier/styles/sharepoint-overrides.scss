@@ -1,0 +1,154 @@
+// Estilos para ocultar elementos do cabeçalho do SharePoint
+// ATENÇÃO: Estes estilos podem quebrar com atualizações do SharePoint
+
+// Ocultar a barra de pesquisa
+[data-automation-id="searchBox"],
+.ms-SearchBox-container,
+.ms-SearchBox {
+  display: none !important;
+}
+
+// Ocultar o menu de configurações (engrenagem)
+[data-automation-id="SettingsButton"],
+button[aria-label*="Configurações"],
+button[aria-label*="Settings"] {
+  display: none !important;
+}
+
+// Ocultar o botão de ajuda
+[data-automation-id="HelpButton"],
+button[aria-label*="Ajuda"],
+button[aria-label*="Help"] {
+  display: none !important;
+}
+
+// Opcional: Ocultar o menu do usuário (foto de perfil)
+// Descomente as linhas abaixo se quiser ocultar também
+/*
+[data-automation-id="meButton"],
+.ms-Persona-coin,
+button[aria-label*="Minha conta"],
+button[aria-label*="My account"] {
+  display: none !important;
+}
+*/
+
+// Reduzir altura do cabeçalho superior
+.ms-compositeHeader,
+#SuiteNavWrapper,
+.od-TopBar {
+  min-height: 48px !important;
+  height: 48px !important;
+}
+
+// Ocultar breadcrumb se desejado
+// Descomente se quiser remover o breadcrumb também
+/*
+.ms-Breadcrumb,
+[data-automation-id="breadcrumb"] {
+  display: none !important;
+}
+*/
+
+// Ocultar botões de ação da página (Editar, etc)
+// Descomente se quiser ocultar também
+/*
+.ms-CommandBar,
+[data-automation-id="pageCommandBar"] {
+  display: none !important;
+}
+*/
+
+// Força o conteúdo principal a ocupar mais espaço
+#workbenchPageContent,
+.CanvasComponent {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+// Remover padding lateral das Canvas Zones do SharePoint
+.CanvasZone {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+// Remover padding de elementos Canvas específicos
+.CanvasZoneSectionContainer {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+// Remover margin e padding da ControlZone
+.ControlZone {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+// Remover padding lateral da CanvasSection
+.CanvasSection {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+// Ocultar CommentsWrapper
+.CommentsWrapper {
+  display: none !important;
+}
+
+// Ocultar todos os elementos relacionados a comentários
+[data-sp-feature-tag="Comments"],
+[data-sp-feature-instance-id*="Comments"],
+[id*="CommentsWrapper"],
+[class*="CommentsWrapper"],
+[class*="comments"],
+[class*="Comments"],
+.Page-commentsWrapper,
+[data-viewport-id*="Comments"] {
+  display: none !important;
+}
+
+// Ocultar elementos filhos dos comentários
+[data-sp-feature-tag="Comments"] * {
+  display: none !important;
+}
+
+// Estilos específicos para diferentes seletores do SharePoint Online
+div[data-sp-feature-tag="Site header"] {
+  .ms-HorizontalNav {
+    .ms-HorizontalNav-itemContainer {
+      // Ocultar itens específicos do menu
+      &:has([aria-label*="Pesquisar"]),
+      &:has([aria-label*="Search"]) {
+        display: none !important;
+      }
+    }
+  }
+}
+
+// Seletores mais específicos para SharePoint moderno
+.root-41 .ms-FocusZone .ms-Button--commandBar,
+.root-41 .ms-CommandBar .ms-Button {
+  &[aria-label*="Pesquisar"],
+  &[aria-label*="Search"],
+  &[aria-label*="Configurações"],
+  &[aria-label*="Settings"] {
+    display: none !important;
+  }
+}
+
+// Para versões mais recentes do SharePoint
+.spPageChromeAppHeaderWrapper {
+  .ms-SearchBox,
+  [data-automation-id="searchBox"] {
+    display: none !important;
+  }
+}
+
+// Alternativa usando visibilidade em vez de display none
+// (às vezes funciona melhor em alguns elementos)
+.ms-SearchBox-container,
+[data-automation-id="SettingsButton"] {
+  visibility: hidden !important;
+  width: 0 !important;
+  overflow: hidden !important;
+}

@@ -20,16 +20,20 @@ import { IConformidadeLegalProps } from "./IConformidadeLegalProps";
 import {
   RESPOSTA_OPTIONS,
   NR_QUESTIONS_MAP,
+  ATTACHMENT_CATEGORY_LABELS,
 } from "../../../utils/formConstants";
 import styles from "./ConformidadeLegal.module.scss";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
 import { SectionTitle } from "../../common/SectionTitle";
+import { useHSEForm } from "../../context/HSEFormContext";
 
 export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
   value,
   onChange,
   errors,
 }) => {
+  const { state } = useHSEForm();
+
   // Estados para controlar blocos aplicáveis e expandidos
   const [applicableBlocks, setApplicableBlocks] = React.useState<{
     [key: string]: boolean;
@@ -43,36 +47,82 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
     blockTitle: string;
   }>({ isOpen: false, blockKey: "", blockTitle: "" });
 
+  // NRs obrigatórias que sempre estarão selecionadas
+  const MANDATORY_NR_BLOCKS = ["nr01", "nr04", "nr05", "nr06", "nr07"];
   // useEffect para inicializar estados com base nos dados existentes
   React.useEffect(() => {
     const initialApplicableBlocks: { [key: string]: boolean } = {};
     const initialExpandedBlocks: { [key: string]: boolean } = {};
 
-    // Verificar se há dados preenchidos em cada bloco
+    // Verificar estado de aplicabilidade em cada bloco
     Object.keys(value).forEach((blockKey) => {
       const blockValue = value[blockKey as keyof typeof value];
       if (blockValue && typeof blockValue === "object") {
-        const blockObj = blockValue as unknown as { [k: string]: unknown };
-        const hasData = Object.keys(blockObj).some((questionKey) => {
-          const questionObj = blockObj[questionKey];
-          return (
-            questionObj &&
-            typeof questionObj === "object" &&
-            (questionObj as { resposta?: string }).resposta
-          );
-        });
+        const blockObj = blockValue as unknown as {
+          [k: string]: unknown;
+          aplicavel?: boolean;
+        };
 
-        if (hasData) {
+        // Se é uma NR obrigatória, sempre marcar como aplicável
+        if (MANDATORY_NR_BLOCKS.includes(blockKey)) {
           initialApplicableBlocks[blockKey] = true;
           initialExpandedBlocks[blockKey] = false; // Começar colapsado
+
+          // Garantir que está marcado como aplicável no formulário
+          if (blockObj.aplicavel !== true) {
+            onChange(blockKey as keyof typeof value, {
+              ...blockObj,
+              aplicavel: true,
+            });
+          }
+        } else {
+          // Para NRs opcionais, verificar se o bloco tem a flag de aplicabilidade
+          if (blockObj.aplicavel === true) {
+            initialApplicableBlocks[blockKey] = true;
+            initialExpandedBlocks[blockKey] = false; // Começar colapsado
+          } else if (blockObj.aplicavel === false) {
+            // Bloco explicitamente marcado como não aplicável
+            initialApplicableBlocks[blockKey] = false;
+            initialExpandedBlocks[blockKey] = false;
+          } else {
+            // Compatibilidade com dados antigos: verificar se há dados preenchidos
+            const hasData = Object.keys(blockObj).some((questionKey) => {
+              const questionObj = blockObj[questionKey];
+              return (
+                questionObj &&
+                typeof questionObj === "object" &&
+                (questionObj as { resposta?: string }).resposta
+              );
+            });
+
+            if (hasData) {
+              initialApplicableBlocks[blockKey] = true;
+              initialExpandedBlocks[blockKey] = false;
+            }
+          }
         }
+      } else {
+        // Se é uma NR obrigatória e não existe no formulário, criar entrada
+        if (MANDATORY_NR_BLOCKS.includes(blockKey)) {
+          initialApplicableBlocks[blockKey] = true;
+          initialExpandedBlocks[blockKey] = false;
+          onChange(blockKey as keyof typeof value, { aplicavel: true });
+        }
+      }
+    });
+
+    // Garantir que todas as NRs obrigatórias estejam marcadas, mesmo que não estejam no formulário
+    MANDATORY_NR_BLOCKS.forEach((blockKey) => {
+      if (!(blockKey in initialApplicableBlocks)) {
+        initialApplicableBlocks[blockKey] = true;
+        initialExpandedBlocks[blockKey] = false;
+        onChange(blockKey as keyof typeof value, { aplicavel: true });
       }
     });
 
     setApplicableBlocks(initialApplicableBlocks);
     setExpandedBlocks(initialExpandedBlocks);
   }, []); // Executa apenas uma vez ao montar o componente
-
   // Função para lidar com respostas das NRs
   const handleNRResponse = (
     nrKey: keyof typeof value,
@@ -90,8 +140,11 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       nrBlockObj[questionKey] !== null
         ? (nrBlockObj[questionKey] as { [k: string]: unknown })
         : {};
+
+    // Preservar a flag de aplicabilidade ao atualizar respostas
     onChange(nrKey, {
       ...nrBlockObj,
+      aplicavel: true, // Garantir que está marcado como aplicável quando há respostas
       [questionKey]: {
         ...questionObj,
         [field]: val,
@@ -105,6 +158,11 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
     blockTitle: string,
     isApplicable: boolean
   ): void => {
+    // Não permitir desmarcar NRs obrigatórias
+    if (MANDATORY_NR_BLOCKS.includes(blockKey)) {
+      return; // Ignora tentativa de alterar NRs obrigatórias
+    }
+
     if (!isApplicable && applicableBlocks[blockKey]) {
       // Se está desmarcando um bloco que era aplicável, mostrar confirmação
       setConfirmDialog({
@@ -118,25 +176,30 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
         ...prev,
         [blockKey]: isApplicable,
       }));
-
       if (isApplicable) {
         // Expandir automaticamente quando marcar como aplicável
         setExpandedBlocks((prev) => ({
           ...prev,
           [blockKey]: true,
         }));
-        // Criar objeto vazio no formData para o bloco ao marcar como aplicável
-        onChange(blockKey as keyof typeof value, {});
+        // Criar objeto com flag de aplicabilidade para o bloco ao marcar como aplicável
+        onChange(blockKey as keyof typeof value, { aplicavel: true });
       } else {
-        // Limpar dados do bloco quando desmarcar
-        onChange(blockKey as keyof typeof value, {});
+        // Marcar como não aplicável (mas manter registro para distinguir de "nunca marcado")
+        onChange(blockKey as keyof typeof value, { aplicavel: false });
       }
     }
   };
-
   // Função para confirmar desmarcação do bloco
   const confirmBlockRemoval = (): void => {
     const { blockKey } = confirmDialog;
+
+    // Não permitir remover NRs obrigatórias
+    if (MANDATORY_NR_BLOCKS.includes(blockKey)) {
+      setConfirmDialog({ isOpen: false, blockKey: "", blockTitle: "" });
+      return;
+    }
+
     setApplicableBlocks((prev) => ({
       ...prev,
       [blockKey]: false,
@@ -145,8 +208,8 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       ...prev,
       [blockKey]: false,
     }));
-    // Limpar dados do bloco
-    onChange(blockKey as keyof typeof value, {});
+    // Marcar como não aplicável (mantém registro para distinguir de "nunca marcado")
+    onChange(blockKey as keyof typeof value, { aplicavel: false });
     setConfirmDialog({ isOpen: false, blockKey: "", blockTitle: "" });
   };
 
@@ -161,34 +224,60 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       ...prev,
       [blockKey]: !prev[blockKey],
     }));
-  };
+  }; // Função para verificar se um bloco NR está completo
+  const isBlockComplete = React.useCallback(
+    (
+      blockKey: string,
+      questions: Array<{ key: string; idx: number }>
+    ): boolean => {
+      // Se o bloco não é aplicável, considera como completo
+      if (!applicableBlocks[blockKey]) {
+        return true;
+      }
 
-  // Função para verificar se um bloco NR está completo
-  const isBlockComplete = (
-    blockKey: string,
-    questions: Array<{ key: string; idx: number }>
-  ): boolean => {
-    // Se o bloco não é aplicável, considera como completo
-    if (!applicableBlocks[blockKey]) {
-      return true;
-    }
+      const blockValue = getBlockValue(blockKey as keyof typeof value) as {
+        [key: string]: unknown;
+      };
 
-    const blockValue = getBlockValue(blockKey as keyof typeof value) as {
-      [key: string]: unknown;
-    };
+      if (!blockValue) return false;
 
-    if (!blockValue) return false;
+      // Verifica se todas as questões têm resposta preenchida e anexos quando necessário
+      return questions.every((q) => {
+        const questionObj = blockValue[q.key] as
+          | { resposta?: string }
+          | undefined;
 
-    // Verifica se todas as questões têm resposta preenchida
-    return questions.every((q) => {
-      const questionObj = blockValue[q.key] as
-        | { resposta?: string }
-        | undefined;
-      return questionObj && questionObj.resposta && questionObj.resposta !== "";
-    });
-  };
+        // Verificar se a pergunta tem resposta
+        if (
+          !questionObj ||
+          !questionObj.resposta ||
+          questionObj.resposta === ""
+        ) {
+          return false;
+        }
 
-  // Mapeamento das NRs e blocos do formulário conforme o modelo de dados e PDF
+        // Se a resposta é "SIM", verificar se há anexo obrigatório
+        if (questionObj.resposta === "SIM") {
+          const questionMeta = (
+            NR_QUESTIONS_MAP as Record<
+              string,
+              { text: string; attachment?: string }
+            >
+          )[String(q.idx)];
+
+          // Se a pergunta requer anexo e a resposta é SIM
+          if (questionMeta && questionMeta.attachment) {
+            const categoryFiles =
+              state.attachments[questionMeta.attachment] || [];
+            return categoryFiles.length > 0;
+          }
+        }
+
+        return true;
+      });
+    },
+    [applicableBlocks, value, state.attachments]
+  ); // Mapeamento das NRs e blocos do formulário conforme o modelo de dados e PDF
   const NR_BLOCKS = [
     {
       key: "nr01",
@@ -196,9 +285,6 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       questions: [
         { key: "questao1", idx: 1 },
         { key: "questao2", idx: 2 },
-        { key: "questao3", idx: 3 },
-        { key: "questao4", idx: 4 },
-        { key: "questao5", idx: 5 },
       ],
       comentarios: true,
     },
@@ -206,8 +292,8 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "nr04",
       title: "NR 04 - SESMT",
       questions: [
-        { key: "questao7", idx: 7 },
-        { key: "questao8", idx: 8 },
+        { key: "questao1", idx: 3 },
+        { key: "questao2", idx: 4 },
       ],
       comentarios: true,
     },
@@ -215,8 +301,8 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "nr05",
       title: "NR 05 - CIPA",
       questions: [
-        { key: "questao10", idx: 10 },
-        { key: "questao11", idx: 11 },
+        { key: "questao1", idx: 5 },
+        { key: "questao2", idx: 6 },
       ],
       comentarios: true,
     },
@@ -224,8 +310,8 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "nr06",
       title: "NR 06 - EPI",
       questions: [
-        { key: "questao13", idx: 13 },
-        { key: "questao14", idx: 14 },
+        { key: "questao1", idx: 7 },
+        { key: "questao2", idx: 8 },
       ],
       comentarios: true,
     },
@@ -233,29 +319,19 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "nr07",
       title: "NR 07 - PCMSO",
       questions: [
-        { key: "questao16", idx: 16 },
-        { key: "questao17", idx: 17 },
-        { key: "questao18", idx: 18 },
-      ],
-      comentarios: true,
-    },
-    {
-      key: "nr09",
-      title: "NR 09 - PPRA",
-      questions: [
-        { key: "questao20", idx: 20 },
-        { key: "questao21", idx: 21 },
-        { key: "questao22", idx: 22 },
+        { key: "questao1", idx: 9 },
+        { key: "questao2", idx: 10 },
+        { key: "questao3", idx: 11 },
       ],
       comentarios: true,
     },
     {
       key: "nr10",
-      title: "NR 10 - Segurança em Instalações e Serviços em Eletricidade",
+      title: "NR 10 - Instalações e Serviços em Eletricidade",
       questions: [
-        { key: "questao24", idx: 24 },
-        { key: "questao25", idx: 25 },
-        { key: "questao26", idx: 26 },
+        { key: "questao1", idx: 12 },
+        { key: "questao2", idx: 13 },
+        { key: "questao3", idx: 14 },
       ],
       comentarios: true,
     },
@@ -264,58 +340,68 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       title:
         "NR 11 - Transporte, Movimentação, Armazenagem e Manuseio de Materiais",
       questions: [
-        { key: "questao28", idx: 28 },
-        { key: "questao29", idx: 29 },
+        { key: "questao1", idx: 15 },
+        { key: "questao2", idx: 16 },
       ],
       comentarios: true,
     },
     {
       key: "nr12",
-      title: "NR 12 - Segurança no Trabalho em Máquinas e Equipamentos",
+      title: "NR 12 - Máquinas e Equipamentos",
       questions: [
-        { key: "questao31", idx: 31 },
-        { key: "questao32", idx: 32 },
+        { key: "questao1", idx: 17 },
+        { key: "questao2", idx: 18 },
       ],
       comentarios: true,
     },
     {
       key: "nr13",
-      title: "NR 13 - Caldeiras, Vasos de Pressão e Tubulações",
-      questions: [{ key: "questao34", idx: 34 }],
+      title: "NR 13 - Caldeiras e Vasos de Pressão",
+      questions: [{ key: "questao1", idx: 19 }],
       comentarios: true,
     },
     {
       key: "nr15",
       title: "NR 15 - Atividades e Operações Insalubres",
-      questions: [{ key: "questao36", idx: 36 }],
+      questions: [{ key: "questao1", idx: 20 }],
+      comentarios: true,
+    },
+    {
+      key: "nr16",
+      title: "NR 16 - Atividades e Operações Periculosas",
+      questions: [{ key: "questao1", idx: 21 }],
       comentarios: true,
     },
     {
       key: "nr23",
       title: "NR 23 - Proteção Contra Incêndios",
       questions: [
-        { key: "questao38", idx: 38 },
-        { key: "questao39", idx: 39 },
-        { key: "questao40", idx: 40 },
+        { key: "questao1", idx: 22 },
+        { key: "questao2", idx: 23 },
+        { key: "questao3", idx: 24 },
       ],
       comentarios: true,
     },
+  ];
+
+  // Outros itens de conformidade (não são NRs)
+  const OTHER_BLOCKS = [
     {
       key: "licencasAmbientais",
       title: "Licenças Ambientais",
-      questions: [{ key: "questao42", idx: 42 }],
+      questions: [{ key: "questao1", idx: 25 }],
       comentarios: true,
     },
     {
       key: "legislacaoMaritima",
       title: "Legislação Marítima",
       questions: [
-        { key: "questao44", idx: 44 },
-        { key: "questao45", idx: 45 },
-        { key: "questao46", idx: 46 },
-        { key: "questao47", idx: 47 },
-        { key: "questao48", idx: 48 },
-        { key: "questao49", idx: 49 },
+        { key: "questao1", idx: 26 },
+        { key: "questao2", idx: 27 },
+        { key: "questao3", idx: 28 },
+        { key: "questao4", idx: 29 },
+        { key: "questao5", idx: 30 },
+        { key: "questao6", idx: 31 },
       ],
       comentarios: true,
     },
@@ -323,9 +409,9 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "treinamentos",
       title: "Treinamentos Obrigatórios",
       questions: [
-        { key: "questao51", idx: 51 },
-        { key: "questao52", idx: 52 },
-        { key: "questao53", idx: 53 },
+        { key: "questao1", idx: 32 },
+        { key: "questao2", idx: 33 },
+        { key: "questao3", idx: 34 },
       ],
       comentarios: true,
     },
@@ -333,11 +419,11 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       key: "gestaoSMS",
       title: "Gestão de SMS (Saúde, Meio Ambiente e Segurança)",
       questions: [
-        { key: "questao55", idx: 55 },
-        { key: "questao56", idx: 56 },
-        { key: "questao57", idx: 57 },
-        { key: "questao58", idx: 58 },
-        { key: "questao59", idx: 59 },
+        { key: "questao1", idx: 35 },
+        { key: "questao2", idx: 36 },
+        { key: "questao3", idx: 37 },
+        { key: "questao4", idx: 38 },
+        { key: "questao5", idx: 39 },
       ],
       comentarios: true,
     },
@@ -353,19 +439,43 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
       <Stack tokens={{ childrenGap: 20 }}>
         <SectionTitle
           title="B - Cumprimento da Legislação Básica"
-          subtitle="Selecione apenas os blocos de NRs aplicáveis ao seu tipo de atividade"
+          subtitle="NRs 01, 04, 05, 06, 07 são obrigatórias • Selecione apenas as NRs adicionais aplicáveis ao seu tipo de atividade"
           icon="ComplianceAudit"
           variant="secondary"
-        />
+        />{" "}
         <MessageBar messageBarType={MessageBarType.info}>
-          Selecione apenas os blocos de Normas Regulamentadoras que se aplicam
-          ao seu tipo de atividade/fornecimento. Para cada questão dos blocos
-          selecionados, escolha SIM, NÃO ou NÃO APLICÁVEL (NA). Para respostas
-          &quot;SIM&quot; em questões específicas, será solicitado anexo de
-          documento comprobatório.
+          <Stack tokens={{ childrenGap: 8 }}>
+            <Text
+              variant="mediumPlus"
+              style={{ fontWeight: 600, color: "#0078d4" }}
+            >
+              📋 INSTRUÇÕES IMPORTANTES:
+            </Text>
+            <Text variant="medium">
+              <strong style={{ color: "#107c10" }}>NRs OBRIGATÓRIAS</strong>: As
+              Normas Regulamentadoras 01, 04, 05, 06 e 07 são obrigatórias para
+              todas as empresas e já estão pré-selecionadas.
+            </Text>
+            <Text variant="medium">
+              <strong style={{ color: "#d83b01" }}>SELECIONE</strong> apenas os
+              blocos adicionais de Normas Regulamentadoras que se aplicam ao seu
+              tipo de atividade/fornecimento específico.
+            </Text>
+            <Text variant="medium">
+              Para cada questão dos blocos selecionados, escolha{" "}
+              <strong>SIM</strong>, <strong>NÃO</strong> ou{" "}
+              <strong>NÃO APLICÁVEL (NA)</strong>.
+            </Text>{" "}
+            <Text variant="medium">
+              Para respostas{" "}
+              <strong style={{ color: "#107c10" }}>&quot;SIM&quot;</strong> em
+              questões específicas, será solicitado anexo de documento
+              comprobatório.
+            </Text>
+          </Stack>
         </MessageBar>
-
         <div className={styles.blocksContainer}>
+          {" "}
           {/* Primeira coluna - Blocos 1-8 */}
           <div className={styles.singleBlock}>
             {NR_BLOCKS.slice(0, Math.ceil(NR_BLOCKS.length / 2)).map(
@@ -381,30 +491,105 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                 const isExpanded = expandedBlocks[block.key] || false;
 
                 return (
-                  <div key={block.key} className={styles.nrSection}>
+                  <div
+                    key={block.key}
+                    className={`${styles.nrSection} ${
+                      isApplicable ? styles.applicable : styles.notApplicable
+                    }`}
+                  >
+                    {" "}
                     <div className={styles.blockHeader}>
                       <div className={styles.blockTitleSection}>
-                        <Toggle
-                          label={block.title}
-                          checked={isApplicable}
-                          onChange={(_, checked) =>
-                            handleBlockApplicabilityChange(
-                              block.key,
-                              block.title,
-                              checked || false
-                            )
-                          }
-                          onText="Aplicável"
-                          offText="Não aplicável"
-                          className={styles.blockToggle}
-                        />
-                        {isComplete && isApplicable && (
-                          <Icon
-                            iconName="CheckMark"
-                            className={styles.completionIcon}
-                            title="Bloco completo"
-                          />
-                        )}
+                        <div className={styles.toggleAndStatus}>
+                          {MANDATORY_NR_BLOCKS.includes(block.key) ? (
+                            // Para NRs obrigatórias, mostrar apenas o título com indicação de obrigatório
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
+                            >
+                              <Text
+                                variant="mediumPlus"
+                                style={{ fontWeight: 600 }}
+                              >
+                                {block.title}
+                              </Text>
+                              <div
+                                style={{
+                                  background: "#107c10",
+                                  color: "white",
+                                  padding: "2px 8px",
+                                  borderRadius: "4px",
+                                  fontSize: "11px",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                OBRIGATÓRIO
+                              </div>
+                            </div>
+                          ) : (
+                            // Para NRs opcionais, mostrar Toggle normal
+                            <Toggle
+                              label={block.title}
+                              checked={isApplicable}
+                              onChange={(_, checked) =>
+                                handleBlockApplicabilityChange(
+                                  block.key,
+                                  block.title,
+                                  checked || false
+                                )
+                              }
+                              onText="Selecionado"
+                              offText="Não Selecionado"
+                              className={styles.blockToggle}
+                            />
+                          )}
+                          {isApplicable && (
+                            <div className={styles.statusBadgeContainer}>
+                              {isComplete ? (
+                                <div
+                                  className={`${styles.completionBadge} ${styles.fadeIn}`}
+                                >
+                                  <Icon
+                                    iconName="CheckMark"
+                                    className={styles.completionIcon}
+                                  />
+                                  <span className={styles.completionIconBadge}>
+                                    Completo
+                                  </span>
+                                </div>
+                              ) : (
+                                <div
+                                  className={`${styles.incompleteBadge} ${styles.fadeIn}`}
+                                >
+                                  <Icon
+                                    iconName="Warning"
+                                    className={styles.incompleteIcon}
+                                  />
+                                  <span className={styles.incompleteIconBadge}>
+                                    Incompleto
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <Text
+                          variant="small"
+                          className={styles.questionCounter}
+                          style={{
+                            fontStyle: "italic",
+                            color: "#666",
+                            fontSize: "12px",
+                            marginTop: "4px",
+                          }}
+                        >
+                          {block.questions.length === 1
+                            ? "Uma questão"
+                            : `${block.questions.length} questões`}
+                        </Text>
                       </div>
 
                       {isApplicable && (
@@ -420,7 +605,6 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                         />
                       )}
                     </div>
-
                     {isApplicable && isExpanded && (
                       <div className={styles.questionsSection}>
                         {block.questions.map((q) => {
@@ -443,54 +627,72 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                           const showUpload =
                             requiresAttachment &&
                             questionObj.resposta === "SIM";
-
                           return (
                             <div
                               key={q.key}
                               className={styles.questionContainer}
                             >
                               <div className={styles.questionSection}>
-                                <Text
-                                  variant="medium"
-                                  className={styles.questionText}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                  }}
                                 >
-                                  {q.idx}.{" "}
-                                  {questionMeta?.text || `Pergunta ${q.idx}`}
-                                </Text>
+                                  <span className={styles.questionNumber}>
+                                    {q.idx}
+                                  </span>
+                                  <Text
+                                    variant="medium"
+                                    className={styles.questionText}
+                                    style={{ flex: 1 }}
+                                  >
+                                    {questionMeta?.text || `Pergunta ${q.idx}`}
+                                  </Text>
+                                </div>
                               </div>
 
                               <div className={styles.responseSection}>
-                                <Dropdown
-                                  label="Resposta"
-                                  options={RESPOSTA_OPTIONS}
-                                  selectedKey={
-                                    typeof questionObj.resposta === "string"
-                                      ? questionObj.resposta
-                                      : ""
-                                  }
-                                  onChange={(_, option) =>
-                                    handleNRResponse(
-                                      block.key as keyof typeof value,
-                                      q.key,
-                                      "resposta",
-                                      option?.key as string
-                                    )
-                                  }
-                                  required
-                                  className={styles.responseDropdown}
-                                />
+                                <div className={styles.responseControls}>
+                                  <div className={styles.dropdownContainer}>
+                                    <Dropdown
+                                      label="Resposta"
+                                      options={RESPOSTA_OPTIONS}
+                                      selectedKey={
+                                        typeof questionObj.resposta === "string"
+                                          ? questionObj.resposta
+                                          : ""
+                                      }
+                                      onChange={(_, option) =>
+                                        handleNRResponse(
+                                          block.key as keyof typeof value,
+                                          q.key,
+                                          "resposta",
+                                          option?.key as string
+                                        )
+                                      }
+                                      required
+                                      className={styles.responseDropdown}
+                                    />
+                                  </div>
+                                </div>
                                 {showUpload && (
-                                  <div style={{ marginTop: 8 }}>
+                                  <div className={styles.attachmentContainer}>
                                     <HSEFileUpload
                                       label={`Anexar documento comprobatório (${
                                         questionMeta.attachment
-                                          ? questionMeta.attachment.toUpperCase()
+                                          ? ATTACHMENT_CATEGORY_LABELS[
+                                              questionMeta.attachment
+                                            ] ||
+                                            questionMeta.attachment.toUpperCase()
                                           : ""
                                       })`}
                                       required
                                       category={questionMeta.attachment || ""}
                                       subcategory={q.key}
-                                      accept={".pdf,.docx,.xlsx,.jpg,.png"}
+                                      accept={
+                                        ".pdf,.docx,.xlsx,.jpg,.png,.txt,.zip"
+                                      }
                                       maxFileSize={50}
                                       helpText="Anexe o documento solicitado para comprovação."
                                     />
@@ -514,6 +716,7 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                             onChange={(_, v) =>
                               onChange(block.key as keyof typeof value, {
                                 ...blockValue,
+                                aplicavel: true, // Preservar flag de aplicabilidade
                                 comentarios: v || "",
                               })
                             }
@@ -529,8 +732,7 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                 );
               }
             )}
-          </div>
-
+          </div>{" "}
           {/* Segunda coluna - Blocos restantes */}
           <div className={styles.singleBlock}>
             {NR_BLOCKS.slice(Math.ceil(NR_BLOCKS.length / 2)).map((block) => {
@@ -545,30 +747,105 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
               const isExpanded = expandedBlocks[block.key] || false;
 
               return (
-                <div key={block.key} className={styles.nrSection}>
+                <div
+                  key={block.key}
+                  className={`${styles.nrSection} ${
+                    isApplicable ? styles.applicable : styles.notApplicable
+                  }`}
+                >
+                  {" "}
                   <div className={styles.blockHeader}>
                     <div className={styles.blockTitleSection}>
-                      <Toggle
-                        label={block.title}
-                        checked={isApplicable}
-                        onChange={(_, checked) =>
-                          handleBlockApplicabilityChange(
-                            block.key,
-                            block.title,
-                            checked || false
-                          )
-                        }
-                        onText="Aplicável"
-                        offText="Não aplicável"
-                        className={styles.blockToggle}
-                      />
-                      {isComplete && isApplicable && (
-                        <Icon
-                          iconName="CheckMark"
-                          className={styles.completionIcon}
-                          title="Bloco completo"
-                        />
-                      )}
+                      <div className={styles.toggleAndStatus}>
+                        {MANDATORY_NR_BLOCKS.includes(block.key) ? (
+                          // Para NRs obrigatórias, mostrar apenas o título com indicação de obrigatório
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            <Text
+                              variant="mediumPlus"
+                              style={{ fontWeight: 600 }}
+                            >
+                              {block.title}
+                            </Text>
+                            <div
+                              style={{
+                                background: "#107c10",
+                                color: "white",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                fontSize: "11px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              OBRIGATÓRIO
+                            </div>
+                          </div>
+                        ) : (
+                          // Para NRs opcionais, mostrar Toggle normal
+                          <Toggle
+                            label={block.title}
+                            checked={isApplicable}
+                            onChange={(_, checked) =>
+                              handleBlockApplicabilityChange(
+                                block.key,
+                                block.title,
+                                checked || false
+                              )
+                            }
+                            onText="Selecionado"
+                            offText="Não Selecionado"
+                            className={styles.blockToggle}
+                          />
+                        )}
+                        {isApplicable && (
+                          <div className={styles.statusBadgeContainer}>
+                            {isComplete ? (
+                              <div
+                                className={`${styles.completionBadge} ${styles.fadeIn}`}
+                              >
+                                <Icon
+                                  iconName="CheckMark"
+                                  className={styles.completionIcon}
+                                />
+                                <span className={styles.completionIconBadge}>
+                                  Completo
+                                </span>
+                              </div>
+                            ) : (
+                              <div
+                                className={`${styles.incompleteBadge} ${styles.fadeIn}`}
+                              >
+                                <Icon
+                                  iconName="Warning"
+                                  className={styles.incompleteIcon}
+                                />
+                                <span className={styles.incompleteIconBadge}>
+                                  Incompleto
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <Text
+                        variant="small"
+                        className={styles.questionCounter}
+                        style={{
+                          fontStyle: "italic",
+                          color: "#666",
+                          fontSize: "12px",
+                          marginTop: "4px",
+                        }}
+                      >
+                        {block.questions.length === 1
+                          ? "Uma questão"
+                          : `${block.questions.length} questões`}
+                      </Text>
                     </div>
 
                     {isApplicable && (
@@ -582,7 +859,6 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                       />
                     )}
                   </div>
-
                   {isApplicable && isExpanded && (
                     <div className={styles.questionsSection}>
                       {block.questions.map((q) => {
@@ -608,47 +884,65 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                         return (
                           <div key={q.key} className={styles.questionContainer}>
                             <div className={styles.questionSection}>
-                              <Text
-                                variant="medium"
-                                className={styles.questionText}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "flex-start",
+                                }}
                               >
-                                {q.idx}.{" "}
-                                {questionMeta?.text || `Pergunta ${q.idx}`}
-                              </Text>
-                            </div>
-
+                                <span className={styles.questionNumber}>
+                                  {q.idx}
+                                </span>
+                                <Text
+                                  variant="medium"
+                                  className={styles.questionText}
+                                  style={{ flex: 1 }}
+                                >
+                                  {questionMeta?.text || `Pergunta ${q.idx}`}
+                                </Text>
+                              </div>
+                            </div>{" "}
                             <div className={styles.responseSection}>
-                              <Dropdown
-                                label="Resposta"
-                                options={RESPOSTA_OPTIONS}
-                                selectedKey={
-                                  typeof questionObj.resposta === "string"
-                                    ? questionObj.resposta
-                                    : ""
-                                }
-                                onChange={(_, option) =>
-                                  handleNRResponse(
-                                    block.key as keyof typeof value,
-                                    q.key,
-                                    "resposta",
-                                    option?.key as string
-                                  )
-                                }
-                                required
-                                className={styles.responseDropdown}
-                              />
+                              <div className={styles.responseControls}>
+                                <div className={styles.dropdownContainer}>
+                                  <Dropdown
+                                    label="Resposta"
+                                    options={RESPOSTA_OPTIONS}
+                                    selectedKey={
+                                      typeof questionObj.resposta === "string"
+                                        ? questionObj.resposta
+                                        : ""
+                                    }
+                                    onChange={(_, option) =>
+                                      handleNRResponse(
+                                        block.key as keyof typeof value,
+                                        q.key,
+                                        "resposta",
+                                        option?.key as string
+                                      )
+                                    }
+                                    required
+                                    className={styles.responseDropdown}
+                                  />
+                                </div>
+                              </div>
                               {showUpload && (
-                                <div style={{ marginTop: 8 }}>
+                                <div className={styles.attachmentContainer}>
                                   <HSEFileUpload
                                     label={`Anexar documento comprobatório (${
                                       questionMeta.attachment
-                                        ? questionMeta.attachment.toUpperCase()
+                                        ? ATTACHMENT_CATEGORY_LABELS[
+                                            questionMeta.attachment
+                                          ] ||
+                                          questionMeta.attachment.toUpperCase()
                                         : ""
                                     })`}
                                     required
                                     category={questionMeta.attachment || ""}
                                     subcategory={q.key}
-                                    accept={".pdf,.docx,.xlsx,.jpg,.png"}
+                                    accept={
+                                      ".pdf,.docx,.xlsx,.jpg,.png,.txt,.zip"
+                                    }
                                     maxFileSize={50}
                                     helpText="Anexe o documento solicitado para comprovação."
                                   />
@@ -672,6 +966,7 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                           onChange={(_, v) =>
                             onChange(block.key as keyof typeof value, {
                               ...blockValue,
+                              aplicavel: true, // Preservar flag de aplicabilidade
                               comentarios: v || "",
                             })
                           }
@@ -686,7 +981,271 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                 </div>
               );
             })}
-          </div>
+          </div>{" "}
+        </div>
+        {/* Seção Outros Itens de Conformidade */}
+        <div style={{ marginTop: "40px" }}>
+          <Stack tokens={{ childrenGap: 16 }}>
+            <Stack
+              horizontal
+              verticalAlign="center"
+              tokens={{ childrenGap: 8 }}
+            >
+              <Icon
+                iconName="CheckboxCompositeReversed"
+                style={{ fontSize: 18, color: "#0078d4" }}
+              />
+              <Text
+                variant="xLarge"
+                style={{ fontWeight: 600, color: "#0078d4" }}
+              >
+                Outros Itens de Conformidade (
+                {
+                  OTHER_BLOCKS.filter((block) => applicableBlocks[block.key])
+                    .length
+                }
+                ):
+              </Text>
+            </Stack>
+
+            <div className={styles.blocksContainer}>
+              <div className={styles.singleBlock}>
+                {OTHER_BLOCKS.map((block) => {
+                  const blockValue = getBlockValue(
+                    block.key as keyof typeof value
+                  ) as {
+                    [key: string]: unknown;
+                  };
+
+                  const isComplete = isBlockComplete(
+                    block.key,
+                    block.questions
+                  );
+                  const isApplicable = applicableBlocks[block.key] || false;
+                  const isExpanded = expandedBlocks[block.key] || false;
+
+                  return (
+                    <div
+                      key={block.key}
+                      className={`${styles.nrSection} ${
+                        isApplicable ? styles.applicable : styles.notApplicable
+                      }`}
+                    >
+                      <div className={styles.blockHeader}>
+                        <div className={styles.blockTitleSection}>
+                          <div className={styles.toggleAndStatus}>
+                            <Toggle
+                              label={block.title}
+                              checked={isApplicable}
+                              onChange={(_, checked) =>
+                                handleBlockApplicabilityChange(
+                                  block.key,
+                                  block.title,
+                                  checked || false
+                                )
+                              }
+                              onText="Selecionado"
+                              offText="Não Selecionado"
+                              className={styles.blockToggle}
+                            />
+                            {isApplicable && (
+                              <div className={styles.statusBadgeContainer}>
+                                {isComplete ? (
+                                  <div
+                                    className={`${styles.completionBadge} ${styles.fadeIn}`}
+                                  >
+                                    <Icon
+                                      iconName="CheckMark"
+                                      className={styles.completionIcon}
+                                    />
+                                    <span
+                                      className={styles.completionIconBadge}
+                                    >
+                                      Completo
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div
+                                    className={`${styles.incompleteBadge} ${styles.fadeIn}`}
+                                  >
+                                    <Icon
+                                      iconName="Warning"
+                                      className={styles.incompleteIcon}
+                                    />
+                                    <span
+                                      className={styles.incompleteIconBadge}
+                                    >
+                                      Incompleto
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <Text
+                            variant="small"
+                            className={styles.questionCounter}
+                            style={{
+                              fontStyle: "italic",
+                              color: "#666",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {block.questions.length === 1
+                              ? "Uma questão"
+                              : `${block.questions.length} questões`}
+                          </Text>
+                        </div>
+
+                        {isApplicable && (
+                          <IconButton
+                            iconProps={{
+                              iconName: isExpanded
+                                ? "ChevronUp"
+                                : "ChevronDown",
+                            }}
+                            title={
+                              isExpanded ? "Recolher bloco" : "Expandir bloco"
+                            }
+                            onClick={() => toggleBlockExpansion(block.key)}
+                            className={styles.expandButton}
+                          />
+                        )}
+                      </div>
+                      {isApplicable && isExpanded && (
+                        <div className={styles.questionsSection}>
+                          {block.questions.map((q) => {
+                            const questionObj =
+                              blockValue &&
+                              typeof blockValue === "object" &&
+                              q.key in blockValue
+                                ? (blockValue[q.key] as {
+                                    [k: string]: unknown;
+                                  })
+                                : {};
+
+                            const questionMeta = (
+                              NR_QUESTIONS_MAP as Record<
+                                string,
+                                { text: string; attachment?: string }
+                              >
+                            )[String(q.idx)];
+
+                            const requiresAttachment =
+                              questionMeta && questionMeta.attachment;
+                            const showUpload =
+                              requiresAttachment &&
+                              questionObj.resposta === "SIM";
+                            return (
+                              <div
+                                key={q.key}
+                                className={styles.questionContainer}
+                              >
+                                <div className={styles.questionSection}>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "flex-start",
+                                    }}
+                                  >
+                                    <span className={styles.questionNumber}>
+                                      {q.idx}
+                                    </span>
+                                    <Text
+                                      variant="medium"
+                                      className={styles.questionText}
+                                      style={{ flex: 1 }}
+                                    >
+                                      {questionMeta?.text ||
+                                        `Pergunta ${q.idx}`}
+                                    </Text>
+                                  </div>
+                                </div>
+
+                                <div className={styles.responseSection}>
+                                  <div className={styles.responseControls}>
+                                    <div className={styles.dropdownContainer}>
+                                      <Dropdown
+                                        label="Resposta"
+                                        options={RESPOSTA_OPTIONS}
+                                        selectedKey={
+                                          typeof questionObj.resposta ===
+                                          "string"
+                                            ? questionObj.resposta
+                                            : ""
+                                        }
+                                        onChange={(_, option) =>
+                                          handleNRResponse(
+                                            block.key as keyof typeof value,
+                                            q.key,
+                                            "resposta",
+                                            option?.key as string
+                                          )
+                                        }
+                                        required
+                                        className={styles.responseDropdown}
+                                      />
+                                    </div>
+                                  </div>
+                                  {showUpload && (
+                                    <div className={styles.attachmentContainer}>
+                                      <HSEFileUpload
+                                        label={`Anexar documento comprobatório (${
+                                          questionMeta.attachment
+                                            ? ATTACHMENT_CATEGORY_LABELS[
+                                                questionMeta.attachment
+                                              ] ||
+                                              questionMeta.attachment.toUpperCase()
+                                            : ""
+                                        })`}
+                                        required
+                                        category={questionMeta.attachment || ""}
+                                        subcategory={q.key}
+                                        accept={
+                                          ".pdf,.docx,.xlsx,.jpg,.png,.txt,.zip"
+                                        }
+                                        maxFileSize={50}
+                                        helpText="Anexe o documento solicitado para comprovação."
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {block.comentarios && (
+                            <TextField
+                              label="Comentários gerais deste bloco (opcional)"
+                              value={
+                                blockValue &&
+                                typeof blockValue === "object" &&
+                                typeof blockValue.comentarios === "string"
+                                  ? blockValue.comentarios
+                                  : ""
+                              }
+                              onChange={(_, v) =>
+                                onChange(block.key as keyof typeof value, {
+                                  ...blockValue,
+                                  aplicavel: true, // Preservar flag de aplicabilidade
+                                  comentarios: v || "",
+                                })
+                              }
+                              multiline
+                              rows={2}
+                              className={styles.commentField}
+                            />
+                          )}
+                        </div>
+                      )}
+                      <Separator />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Stack>
         </div>
       </Stack>
 

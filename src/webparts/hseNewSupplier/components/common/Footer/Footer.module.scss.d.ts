@@ -1,0 +1,30 @@
+declare const styles: {
+  readonly footer: string;
+  readonly footerContent: string;
+  readonly mainSection: string;
+  readonly logoSection: string;
+  readonly footerLogo: string;
+  readonly companyInfo: string;
+  readonly companyName: string;
+  readonly systemName: string;
+  readonly linksSection: string;
+  readonly linkColumn: string;
+  readonly columnTitle: string;
+  readonly footerLink: string;
+  readonly linkIcon: string;
+  readonly supportInfo: string;
+  readonly certificationBadges: string;
+  readonly badge: string;
+  readonly systemVersion: string;
+  readonly separator: string;
+  readonly bottomSection: string;
+  readonly copyrightSection: string;
+  readonly copyright: string;
+  readonly poweredBy: string;
+  readonly creditsSection: string;
+  readonly engineeringCredit: string;
+  readonly codeIcon: string;
+  readonly creditText: string;
+};
+
+export = styles;

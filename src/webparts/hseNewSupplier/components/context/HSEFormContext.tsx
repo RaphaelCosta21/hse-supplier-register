@@ -5,6 +5,7 @@ import {
   initialFormState,
   IFormState,
   FormAction,
+  formSelectors,
 } from "./formReducer";
 import { SharePointService } from "../../services/SharePointService";
 import { SharePointFileService } from "../../services/SharePointFileService";
@@ -143,13 +144,63 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
 
       if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
         try {
-          console.log("Salvando anexos no SharePoint...");
-          savedAttachments = await sharePointFileService.saveFormAttachments(
-            cnpj,
-            empresa,
-            state.attachments
-          );
-          console.log("Anexos salvos com sucesso");
+          console.log("=== VERIFICANDO ANEXOS PARA SALVAMENTO ===");
+
+          // Separar anexos que precisam ser salvos (têm fileData) vs anexos já salvos
+          const attachmentsToSave: {
+            [category: string]: IAttachmentMetadata[];
+          } = {};
+          let hasNewAttachments = false;
+
+          Object.keys(state.attachments).forEach((category) => {
+            const files = state.attachments[category];
+            const newFiles = files.filter((file) => file.fileData);
+
+            if (newFiles.length > 0) {
+              attachmentsToSave[category] = newFiles;
+              hasNewAttachments = true;
+              console.log(
+                `Categoria '${category}': ${newFiles.length} novos anexos para salvar`
+              );
+            } else {
+              console.log(
+                `Categoria '${category}': ${files.length} anexos já salvos no SharePoint`
+              );
+            }
+          });
+
+          if (hasNewAttachments) {
+            console.log("Salvando novos anexos no SharePoint...");
+            const newlySavedAttachments =
+              await sharePointFileService.saveFormAttachments(
+                cnpj,
+                empresa,
+                attachmentsToSave
+              );
+
+            // Mesclar anexos já existentes com os recém-salvos
+            savedAttachments = { ...state.attachments };
+            Object.keys(newlySavedAttachments).forEach((category) => {
+              if (savedAttachments[category]) {
+                // Substituir anexos com fileData pelos salvos, manter os sem fileData
+                const existingFiles = savedAttachments[category].filter(
+                  (f) => !f.fileData
+                );
+                savedAttachments[category] = [
+                  ...existingFiles,
+                  ...newlySavedAttachments[category],
+                ];
+              } else {
+                savedAttachments[category] = newlySavedAttachments[category];
+              }
+            });
+
+            console.log("Novos anexos salvos com sucesso");
+          } else {
+            console.log(
+              "Todos os anexos já estão salvos no SharePoint, mantendo metadados existentes"
+            );
+          }
         } catch (attachmentError) {
           console.warn(
             "Erro ao salvar anexos, continuando com dados do formulário:",
@@ -159,8 +210,41 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         }
       }
 
-      // Salvar no SharePoint
-      await sharePointService.saveFormData(state.formData, savedAttachments);
+      console.log("=== SALVANDO FORMULÁRIO ===");
+      console.log("Form ID atual:", state.formData.id);
+      console.log("Anexos sendo salvos:", Object.keys(savedAttachments));
+
+      let formId: number;
+
+      // Verificar se é um novo formulário ou atualização
+      if (state.formData.id) {
+        // FORMULÁRIO EXISTENTE - Usar updateFormWithChanges para rastrear revisões
+        console.log("Atualizando formulário existente ID:", state.formData.id);
+        await sharePointService.updateFormWithChanges(
+          state.formData.id,
+          state.formData,
+          savedAttachments
+        );
+        formId = state.formData.id;
+        console.log("Formulário atualizado com sucesso, revisão incrementada");
+      } else {
+        // NOVO FORMULÁRIO - Usar saveFormData para criar o primeiro rascunho
+        console.log("Criando novo formulário (primeira vez)");
+        formId = await sharePointService.saveFormData(
+          state.formData,
+          savedAttachments
+        );
+        console.log("Novo formulário criado com ID:", formId);
+
+        // Atualizar o estado com o novo ID para próximos salvamentos
+        dispatch({
+          type: "SET_FORM_DATA",
+          payload: {
+            ...state.formData,
+            id: formId,
+          },
+        });
+      }
 
       dispatch({ type: "SAVE_SUCCESS", payload: new Date() });
       return true;
@@ -333,11 +417,53 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       const empresa = state.formData.dadosGerais.empresa;
 
       if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
-        savedAttachments = await sharePointFileService.saveFormAttachments(
-          cnpj,
-          empresa,
-          state.attachments
-        );
+        console.log("=== SUBMISSÃO: VERIFICANDO ANEXOS ===");
+
+        // Separar anexos que precisam ser salvos (têm fileData) vs anexos já salvos
+        const attachmentsToSave: { [category: string]: IAttachmentMetadata[] } =
+          {};
+        let hasNewAttachments = false;
+
+        Object.keys(state.attachments).forEach((category) => {
+          const files = state.attachments[category];
+          const newFiles = files.filter((file) => file.fileData);
+
+          if (newFiles.length > 0) {
+            attachmentsToSave[category] = newFiles;
+            hasNewAttachments = true;
+            console.log(
+              `Categoria '${category}': ${newFiles.length} novos anexos para salvar na submissão`
+            );
+          }
+        });
+
+        if (hasNewAttachments) {
+          console.log("Salvando novos anexos na submissão final...");
+          const newlySavedAttachments =
+            await sharePointFileService.saveFormAttachments(
+              cnpj,
+              empresa,
+              attachmentsToSave
+            );
+
+          // Mesclar anexos já existentes com os recém-salvos
+          savedAttachments = { ...state.attachments };
+          Object.keys(newlySavedAttachments).forEach((category) => {
+            if (savedAttachments[category]) {
+              const existingFiles = savedAttachments[category].filter(
+                (f) => !f.fileData
+              );
+              savedAttachments[category] = [
+                ...existingFiles,
+                ...newlySavedAttachments[category],
+              ];
+            } else {
+              savedAttachments[category] = newlySavedAttachments[category];
+            }
+          });
+        } else {
+          console.log("Todos os anexos já estão salvos para submissão final");
+        }
       }
 
       // Marcar como "Enviado" no SharePoint
@@ -451,15 +577,17 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
   // Navegação de etapas
   const goToNextStep = React.useCallback(() => {
     const { currentStep } = state;
-    if (currentStep < 5) {
-      dispatch({ type: "SET_CURRENT_STEP", payload: currentStep + 1 });
+    const nextStep = currentStep + 1;
+    if (nextStep <= 5 && formSelectors.canProceedToStep(state, nextStep)) {
+      dispatch({ type: "SET_CURRENT_STEP", payload: nextStep });
     }
-  }, [state.currentStep]);
+  }, [state.currentStep, state]);
 
   const goToPreviousStep = React.useCallback(() => {
     const { currentStep } = state;
-    if (currentStep > 1) {
-      dispatch({ type: "SET_CURRENT_STEP", payload: currentStep - 1 });
+    const previousStep = currentStep - 1;
+    if (previousStep >= 1) {
+      dispatch({ type: "SET_CURRENT_STEP", payload: previousStep });
     }
   }, [state.currentStep]);
   // Reset do formulário

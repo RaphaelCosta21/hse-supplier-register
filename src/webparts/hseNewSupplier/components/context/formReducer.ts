@@ -7,6 +7,7 @@ import type {
   IAttachmentMetadata,
   IValidationError,
 } from "../../types/IHSEFormData";
+import { NR_QUESTIONS_MAP } from "../../utils/formConstants";
 
 export type { IFormState };
 
@@ -47,7 +48,7 @@ export const initialFormState: IFormState = {
       atividadePrincipalCNAE: "",
       totalEmpregados: undefined,
       empregadosParaServico: undefined,
-      grauRisco: "1",
+      grauRisco: "",
       possuiSESMT: false,
       numeroComponentesSESMT: undefined,
       gerenteContratoMarine: "",
@@ -56,6 +57,7 @@ export const initialFormState: IFormState = {
     servicosEspeciais: {
       fornecedorEmbarcacoes: false,
       fornecedorIcamento: false,
+      naoFornecedorServicos: false,
     } as IServicosEspeciais,
     anexos: {} as IAnexosFormulario,
   } as IHSEFormData,
@@ -129,15 +131,12 @@ export const formReducer = (
         });
       }
 
-      // Corrija aqui: mantenha os campos obrigatórios do IHSEFormData
+      // Corrija aqui: preserve todos os campos do payload, incluindo id
       return {
         ...state,
         formData: {
-          ...state.formData, // mantém id, statusFormulario, etc.
-          dadosGerais: action.payload.dadosGerais,
-          conformidadeLegal: action.payload.conformidadeLegal,
-          servicosEspeciais: action.payload.servicosEspeciais,
-          anexos: action.payload.anexos,
+          ...state.formData, // mantém campos existentes como fallback
+          ...action.payload, // sobrescreve com os dados recebidos, incluindo id
         },
         attachments: convertedAttachments,
         isDirty: false,
@@ -248,218 +247,329 @@ export const formSelectors = {
     return Math.round((completed / 4) * 100);
   },
   hasRequiredAttachments: (state: IFormState): boolean => {
-    const requiredCategories = ["rem", "sesmt", "cipa", "ppra", "pcmso", "aso"];
+    const requiredCategories = ["rem", "sesmt", "cipa", "pcmso", "aso"];
     return requiredCategories.every(
       (category) => (state.attachments[category] || []).length > 0
     );
   },
+
+  // Função auxiliar para validar Dados Gerais
+  isDadosGeraisValid: (state: IFormState): boolean => {
+    const { dadosGerais } = state.formData;
+    const attachments = state.attachments || {};
+    if (!dadosGerais) return false;
+
+    // Validar campos básicos
+    const camposOk = [
+      dadosGerais.empresa,
+      dadosGerais.cnpj,
+      dadosGerais.numeroContrato,
+      dadosGerais.dataInicioContrato,
+      dadosGerais.dataTerminoContrato,
+      dadosGerais.responsavelTecnico,
+      dadosGerais.atividadePrincipalCNAE,
+      dadosGerais.gerenteContratoMarine,
+    ].every((v) => v !== undefined && v !== null && v !== "");
+
+    // Validar grau de risco separadamente (não pode ser string vazia)
+    const grauRiscoOk = dadosGerais.grauRisco !== "";
+
+    const remOk = attachments.rem && attachments.rem.length > 0;
+    return camposOk && grauRiscoOk && remOk;
+  },
+
+  // Função auxiliar para validar Conformidade Legal
+  isConformidadeLegalValid: (state: IFormState): boolean => {
+    const conformidade = state.formData.conformidadeLegal || {};
+    const attachments = state.attachments || {};
+
+    // NRs obrigatórias que sempre devem estar presentes
+    const MANDATORY_NR_BLOCKS = ["nr01", "nr04", "nr05", "nr06", "nr07"];
+
+    const NR_BLOCKS = [
+      {
+        key: "nr01",
+        questions: [{ key: "questao1" }, { key: "questao2" }],
+      },
+      { key: "nr04", questions: [{ key: "questao1" }, { key: "questao2" }] },
+      {
+        key: "nr05",
+        questions: [{ key: "questao1" }, { key: "questao2" }],
+      },
+      {
+        key: "nr06",
+        questions: [{ key: "questao1" }, { key: "questao2" }],
+      },
+      {
+        key: "nr07",
+        questions: [
+          { key: "questao1" },
+          { key: "questao2" },
+          { key: "questao3" },
+        ],
+      },
+      {
+        key: "nr10",
+        questions: [
+          { key: "questao1" },
+          { key: "questao2" },
+          { key: "questao3" },
+        ],
+      },
+      {
+        key: "nr11",
+        questions: [{ key: "questao1" }, { key: "questao2" }],
+      },
+      {
+        key: "nr12",
+        questions: [{ key: "questao1" }, { key: "questao2" }],
+      },
+      { key: "nr13", questions: [{ key: "questao1" }] },
+      { key: "nr15", questions: [{ key: "questao1" }] },
+      { key: "nr16", questions: [{ key: "questao1" }] },
+      {
+        key: "nr23",
+        questions: [
+          { key: "questao1" },
+          { key: "questao2" },
+          { key: "questao3" },
+        ],
+      },
+      { key: "licencasAmbientais", questions: [{ key: "questao1" }] },
+      {
+        key: "legislacaoMaritima",
+        questions: [
+          { key: "questao1" },
+          { key: "questao2" },
+          { key: "questao3" },
+          { key: "questao4" },
+          { key: "questao5" },
+          { key: "questao6" },
+        ],
+      },
+      {
+        key: "treinamentos",
+        questions: [
+          { key: "questao1" },
+          { key: "questao2" },
+          { key: "questao3" },
+        ],
+      },
+      {
+        key: "gestaoSMS",
+        questions: [
+          { key: "questao1" },
+          { key: "questao2" },
+          { key: "questao3" },
+          { key: "questao4" },
+          { key: "questao5" },
+        ],
+      },
+    ];
+
+    const applicableBlocks: { [key: string]: boolean } = {};
+    NR_BLOCKS.forEach((block) => {
+      const bloco = conformidade[block.key as keyof typeof conformidade];
+      if (bloco && typeof bloco === "object") {
+        const blockObj = bloco as unknown as { aplicavel?: boolean };
+
+        // NRs obrigatórias são sempre aplicáveis
+        if (MANDATORY_NR_BLOCKS.includes(block.key)) {
+          applicableBlocks[block.key] = true;
+        } else {
+          // NRs opcionais: verificar flag de aplicabilidade
+          applicableBlocks[block.key] = blockObj.aplicavel === true;
+        }
+      } else if (MANDATORY_NR_BLOCKS.includes(block.key)) {
+        // Garantir que NRs obrigatórias sejam sempre consideradas aplicáveis
+        applicableBlocks[block.key] = true;
+      }
+    });
+
+    const isBlockComplete = (
+      blockKey: string,
+      questions: Array<{ key: string }>
+    ): boolean => {
+      const bloco = conformidade[blockKey as keyof typeof conformidade];
+      if (!bloco || typeof bloco !== "object") return false;
+
+      // Mapeamento de questões para índices no NR_QUESTIONS_MAP
+      const questionIndexMap: {
+        [blockKey: string]: { [questionKey: string]: number };
+      } = {
+        nr01: { questao1: 1, questao2: 2 },
+        nr04: { questao1: 3, questao2: 4 },
+        nr05: { questao1: 5, questao2: 6 },
+        nr06: { questao1: 7, questao2: 8 },
+        nr07: { questao1: 9, questao2: 10, questao3: 11 },
+        nr10: { questao1: 12, questao2: 13, questao3: 14 },
+        nr11: { questao1: 15, questao2: 16 },
+        nr12: { questao1: 17, questao2: 18 },
+        nr13: { questao1: 19 },
+        nr15: { questao1: 20 },
+        nr16: { questao1: 21 },
+        nr23: { questao1: 22, questao2: 23, questao3: 24 },
+        licencasAmbientais: { questao1: 25 },
+        legislacaoMaritima: {
+          questao1: 26,
+          questao2: 27,
+          questao3: 28,
+          questao4: 29,
+          questao5: 30,
+          questao6: 31,
+        },
+        treinamentos: { questao1: 32, questao2: 33, questao3: 34 },
+        gestaoSMS: {
+          questao1: 35,
+          questao2: 36,
+          questao3: 37,
+          questao4: 38,
+          questao5: 39,
+        },
+      };
+
+      return questions.every((q) => {
+        const questionObj = (
+          bloco as unknown as Record<string, { resposta?: string }>
+        )[q.key];
+
+        // Verificar se a pergunta tem resposta
+        if (
+          !questionObj ||
+          typeof questionObj.resposta !== "string" ||
+          questionObj.resposta === ""
+        ) {
+          return false;
+        }
+
+        // Se a resposta é "SIM", verificar se há anexo obrigatório
+        if (questionObj.resposta === "SIM") {
+          const questionIndex = questionIndexMap[blockKey]?.[q.key];
+          if (questionIndex) {
+            const questionMeta = (
+              NR_QUESTIONS_MAP as Record<
+                string,
+                { text: string; attachment?: string }
+              >
+            )[String(questionIndex)];
+
+            // Se a pergunta requer anexo e a resposta é SIM
+            if (questionMeta && questionMeta.attachment) {
+              const categoryFiles = attachments[questionMeta.attachment] || [];
+              return categoryFiles.length > 0;
+            }
+          }
+        }
+
+        return true;
+      });
+    };
+
+    const blocosAplicaveis = NR_BLOCKS.filter(
+      (block) => applicableBlocks[block.key]
+    );
+
+    // Validação: deve ter pelo menos as NRs obrigatórias aplicáveis
+    const mandatoryBlocksApplicable = MANDATORY_NR_BLOCKS.every(
+      (blockKey) => applicableBlocks[blockKey]
+    );
+
+    return (
+      mandatoryBlocksApplicable &&
+      blocosAplicaveis.length > 0 &&
+      blocosAplicaveis.every((block) =>
+        isBlockComplete(block.key, block.questions)
+      )
+    );
+  },
+
+  // Função auxiliar para validar Serviços Especializados
+  isServicosEspeciaisValid: (state: IFormState): boolean => {
+    const { servicosEspeciais } = state.formData;
+    const attachments = state.attachments || {};
+
+    if (!servicosEspeciais) return true;
+
+    // Se marcou que não fornece serviços, está válido
+    if (servicosEspeciais.naoFornecedorServicos) return true;
+
+    // Se não marcou nenhum serviço E não marcou "não fornece", é inválido
+    if (
+      !servicosEspeciais.fornecedorEmbarcacoes &&
+      !servicosEspeciais.fornecedorIcamento &&
+      !servicosEspeciais.naoFornecedorServicos
+    ) {
+      return false;
+    }
+
+    if (servicosEspeciais.fornecedorEmbarcacoes) {
+      const required = [
+        "iopp",
+        "registroArmador",
+        "propriedadeMaritima",
+        "arqueacao",
+        "segurancaNavegacao",
+        "classificacaoCasco",
+        "classificacaoMaquinas",
+        "bordaLivre",
+        "seguroDepem",
+        "autorizacaoAntaq",
+        "tripulacaoSeguranca",
+        "agulhaMagnetica",
+        "balsaInflavel",
+        "licencaRadio",
+      ];
+      for (const cert of required) {
+        if (!attachments[cert] || attachments[cert].length === 0) {
+          return false;
+        }
+      }
+    }
+
+    if (servicosEspeciais.fornecedorIcamento) {
+      const required = [
+        "testeCarga",
+        "registroCREA",
+        "art",
+        "planoManutencao",
+        "monitoramentoFumaca",
+        "certificacaoEquipamentos",
+      ];
+      for (const doc of required) {
+        if (!attachments[doc] || attachments[doc].length === 0) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  },
+
   canProceedToStep: (state: IFormState, targetStep: number): boolean => {
-    // Etapas 1-3: permitir navegação livre
-    if (targetStep >= 1 && targetStep <= 3) {
+    // Etapa 1 (Dados Gerais): sempre permitir acesso
+    if (targetStep === 1) {
       return true;
     }
 
-    // Etapa 4 (Revisão Final): só permitir se todas as outras etapas estão completas
-    if (targetStep === 4) {
-      // Validar Dados Gerais
-      const { dadosGerais } = state.formData;
-      const attachments = state.attachments || {};
-      if (!dadosGerais) return false;
-      const dadosOk = [
-        dadosGerais.empresa,
-        dadosGerais.cnpj,
-        dadosGerais.numeroContrato,
-        dadosGerais.dataInicioContrato,
-        dadosGerais.dataTerminoContrato,
-        dadosGerais.responsavelTecnico,
-        dadosGerais.atividadePrincipalCNAE,
-        dadosGerais.grauRisco,
-        dadosGerais.gerenteContratoMarine,
-      ].every((v) => v !== undefined && v !== null && v !== "");
-      const remOk = attachments.rem && attachments.rem.length > 0;
-      const isDadosGeraisValid = dadosOk && remOk;
+    // Etapa 2 (Conformidade Legal): só permitir se Dados Gerais estiver completa
+    if (targetStep === 2) {
+      return formSelectors.isDadosGeraisValid(state);
+    }
 
-      // Validar Conformidade Legal
-      const conformidade = state.formData.conformidadeLegal || {};
-      const NR_BLOCKS = [
-        {
-          key: "nr01",
-          questions: [
-            { key: "questao1" },
-            { key: "questao2" },
-            { key: "questao3" },
-            { key: "questao4" },
-            { key: "questao5" },
-          ],
-        },
-        { key: "nr04", questions: [{ key: "questao7" }, { key: "questao8" }] },
-        {
-          key: "nr05",
-          questions: [{ key: "questao10" }, { key: "questao11" }],
-        },
-        {
-          key: "nr06",
-          questions: [{ key: "questao13" }, { key: "questao14" }],
-        },
-        {
-          key: "nr07",
-          questions: [
-            { key: "questao16" },
-            { key: "questao17" },
-            { key: "questao18" },
-          ],
-        },
-        {
-          key: "nr09",
-          questions: [
-            { key: "questao20" },
-            { key: "questao21" },
-            { key: "questao22" },
-          ],
-        },
-        {
-          key: "nr10",
-          questions: [
-            { key: "questao24" },
-            { key: "questao25" },
-            { key: "questao26" },
-          ],
-        },
-        {
-          key: "nr11",
-          questions: [{ key: "questao28" }, { key: "questao29" }],
-        },
-        {
-          key: "nr12",
-          questions: [{ key: "questao31" }, { key: "questao32" }],
-        },
-        { key: "nr13", questions: [{ key: "questao34" }] },
-        { key: "nr15", questions: [{ key: "questao36" }] },
-        {
-          key: "nr23",
-          questions: [
-            { key: "questao38" },
-            { key: "questao39" },
-            { key: "questao40" },
-          ],
-        },
-        { key: "licencasAmbientais", questions: [{ key: "questao42" }] },
-        {
-          key: "legislacaoMaritima",
-          questions: [
-            { key: "questao44" },
-            { key: "questao45" },
-            { key: "questao46" },
-            { key: "questao47" },
-            { key: "questao48" },
-            { key: "questao49" },
-          ],
-        },
-        {
-          key: "treinamentos",
-          questions: [
-            { key: "questao51" },
-            { key: "questao52" },
-            { key: "questao53" },
-          ],
-        },
-        {
-          key: "gestaoSMS",
-          questions: [
-            { key: "questao55" },
-            { key: "questao56" },
-            { key: "questao57" },
-            { key: "questao58" },
-            { key: "questao59" },
-          ],
-        },
-      ];
-
-      const applicableBlocks: { [key: string]: boolean } = {};
-      NR_BLOCKS.forEach((block) => {
-        const bloco = conformidade[block.key as keyof typeof conformidade];
-        if (bloco && typeof bloco === "object") {
-          applicableBlocks[block.key] = true;
-        }
-      });
-
-      const isBlockComplete = (
-        blockKey: string,
-        questions: Array<{ key: string }>
-      ): boolean => {
-        const bloco = conformidade[blockKey as keyof typeof conformidade];
-        if (!bloco || typeof bloco !== "object") return false;
-        return questions.every((q) => {
-          const questionObj = (
-            bloco as unknown as Record<string, { resposta?: string }>
-          )[q.key];
-          return (
-            questionObj &&
-            typeof questionObj.resposta === "string" &&
-            questionObj.resposta !== ""
-          );
-        });
-      };
-
-      const blocosAplicaveis = NR_BLOCKS.filter(
-        (block) => applicableBlocks[block.key]
-      );
-      const isConformidadeLegalValid =
-        blocosAplicaveis.length > 0 &&
-        blocosAplicaveis.every((block) =>
-          isBlockComplete(block.key, block.questions)
-        );
-
-      // Validar Serviços Especializados
-      const { servicosEspeciais } = state.formData;
-      let isServicosEspeciaisValid = true;
-      if (servicosEspeciais) {
-        if (servicosEspeciais.fornecedorEmbarcacoes) {
-          const required = [
-            "iopp",
-            "registroArmador",
-            "propriedadeMaritima",
-            "arqueacao",
-            "segurancaNavegacao",
-            "classificacaoCasco",
-            "classificacaoMaquinas",
-            "bordaLivre",
-            "seguroDepem",
-            "autorizacaoAntaq",
-            "tripulacaoSeguranca",
-            "agulhaMagnetica",
-            "balsaInflavel",
-            "licencaRadio",
-          ];
-          for (const cert of required) {
-            if (!attachments[cert] || attachments[cert].length === 0) {
-              isServicosEspeciaisValid = false;
-              break;
-            }
-          }
-        }
-        if (servicosEspeciais.fornecedorIcamento && isServicosEspeciaisValid) {
-          const required = [
-            "testeCarga",
-            "creaEngenheiro",
-            "art",
-            "planoManutencao",
-            "fumacaPreta",
-            "certificacaoEquipamentos",
-          ];
-          for (const doc of required) {
-            if (!attachments[doc] || attachments[doc].length === 0) {
-              isServicosEspeciaisValid = false;
-              break;
-            }
-          }
-        }
-      }
-
+    // Etapa 3 (Serviços Especializados): só permitir se Dados Gerais E Conformidade Legal estiverem completas
+    if (targetStep === 3) {
       return (
-        isDadosGeraisValid &&
-        isConformidadeLegalValid &&
-        isServicosEspeciaisValid
+        formSelectors.isDadosGeraisValid(state) &&
+        formSelectors.isConformidadeLegalValid(state)
+      );
+    }
+
+    // Etapa 4 (Revisão Final): só permitir se todas as etapas anteriores estiverem completas
+    if (targetStep === 4) {
+      return (
+        formSelectors.isDadosGeraisValid(state) &&
+        formSelectors.isConformidadeLegalValid(state) &&
+        formSelectors.isServicosEspeciaisValid(state)
       );
     }
 

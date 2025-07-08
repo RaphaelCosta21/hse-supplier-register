@@ -3,11 +3,168 @@
   bottom: 30px;
   right: 30px;
   z-index: 1000;
-  background: white;
-  border-radius: 50px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
-  min-width: 180px; // Prevent button width changes
+  overflow: visible;
+
+  // Estados de hover e expansão
+  &:hover {
+    transform: translateY(-3px);
+
+    &::before {
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25),
+        0 4px 12px rgba(0, 120, 212, 0.2), 0 6px 16px rgba(0, 120, 212, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  // Painel de expansão que aparece acima do botão
+  &::before {
+    content: "";
+    position: absolute;
+    bottom: 30px; // Posicionado na metade do botão (60px/2 = 30px)
+    left: 0;
+    right: auto; // Mudança para permitir largura fixa
+    width: 280px; // Largura fixa
+    max-width: 280px; // Garantir que não exceda 280px
+    height: 0;
+    background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+    border-radius: 30px 30px 0px 0px; // Bordas superiores arredondadas
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12),
+      0 4px 12px rgba(0, 120, 212, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.2); // Mesma borda do botão
+    opacity: 0;
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  // Conteúdo da expansão
+  .expansionContent {
+    position: absolute;
+    bottom: 55px; // Alinhado com o ::before - começa na metade do botão
+    left: 0;
+    right: auto; // Mudança para permitir largura fixa
+    width: 280px; // Largura fixa
+    max-width: 280px; // Garantir que não exceda 280px
+    padding: 25px 24px 15px 24px; // Mais padding no topo para subir o texto
+    color: white;
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease 0.1s;
+    pointer-events: none;
+    z-index: 1;
+    box-sizing: border-box; // Incluir padding na largura
+    word-wrap: break-word; // Quebrar palavras longas
+    overflow-wrap: break-word; // Quebrar palavras longas
+    hyphens: auto; // Hifenização automática
+
+    .progressInfo {
+      display: flex;
+      align-items: center;
+      gap: 10px; // Aumentado para mais espaço
+      margin-bottom: 12px; // Aumentado
+      font-weight: 600;
+      font-size: 16px; // Aumentado para destaque
+
+      .progressIcon {
+        font-size: 18px; // Aumentado
+      }
+    }
+
+    .stepInfo {
+      display: flex;
+      align-items: center;
+      gap: 10px; // Aumentado
+      margin-bottom: 10px; // Aumentado
+      font-size: 13px; // Aumentado
+
+      .stepIcon {
+        font-size: 16px; // Aumentado
+      }
+    }
+
+    .missingInfo {
+      display: flex;
+      align-items: center;
+      gap: 10px; // Aumentado
+      margin-bottom: 10px; // Aumentado
+      font-size: 13px; // Aumentado
+
+      .missingIcon {
+        font-size: 16px; // Aumentado
+      }
+    }
+
+    .nextInfo {
+      display: flex;
+      align-items: center;
+      gap: 10px; // Aumentado
+      font-size: 13px; // Aumentado
+
+      .nextIcon {
+        font-size: 16px; // Aumentado
+      }
+    }
+  }
+
+  // Estado expandido
+  &.expanded {
+    &::before {
+      height: 220px; // Aumentado para ter mais espaço para o conteúdo adicional
+      opacity: 1;
+      transform: scaleY(1);
+      width: 280px; // Largura fixa para o painel expandido
+    }
+
+    .expansionContent {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+  }
+
+  // Cores diferentes baseadas no estado
+  &.completed {
+    &::before {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12),
+        0 4px 12px rgba(40, 167, 69, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  &.disabled {
+    &::before {
+      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12),
+        0 4px 12px rgba(108, 117, 125, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    // Quando o container está disabled, o botão também fica acinzentado
+    .saveButton {
+      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12),
+        0 4px 12px rgba(108, 117, 125, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+
+      &:hover {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18),
+          0 2px 8px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(108, 117, 125, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        transform: none; // Remove o efeito de hover
+      }
+    }
+  }
 
   // Prevent flickering during state changes
   &.stabilized {
@@ -16,33 +173,147 @@
   }
 
   &:hover:not(.stabilized) {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
   }
 
   .saveButton {
-    padding: 12px 20px;
-    border-radius: 50px;
+    padding: 20px 60px 20px 28px; // Padding direito aumentado para acomodar círculo mais distante
+    border-radius: 70px;
     background: #0078d4;
     color: white;
-    border: none;
+    border: 2px solid rgba(255, 255, 255, 0.2);
     font-weight: 600;
-    min-width: 160px; // Consistent button width
+    font-size: 16px;
+    min-width: 284px;
+    min-height: 60px;
     transition: all 0.2s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12),
+      0 4px 12px rgba(0, 120, 212, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; // Alinha texto à esquerda
 
     &:hover {
-      background: #106ebe;
+      background: linear-gradient(135deg, #106ebe 0%, #0078d4 100%);
       color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25),
+        0 4px 12px rgba(0, 120, 212, 0.2), 0 6px 16px rgba(0, 120, 212, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    // Corrigir comportamento no estado ativo (quando clicado)
+    &:active {
+      transform: none !important; // Prevenir mudanças de transformação
+      position: relative !important; // Manter posição relativa
+
+      // Manter o círculo de progresso no lugar correto
+      .progressCircle {
+        position: absolute !important;
+        right: 20px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+      }
+    }
+
+    // Corrigir também no estado focus
+    &:focus {
+      .progressCircle {
+        position: absolute !important;
+        right: 20px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+      }
     }
 
     &:disabled {
       background: #cccccc;
       color: #666666;
       cursor: not-allowed;
+      border-color: rgba(102, 102, 102, 0.2);
+      box-shadow: none;
+
+      // Força ícone visível mesmo quando disabled
+      :global(.ms-Button-icon) {
+        color: #666666 !important;
+        opacity: 1 !important;
+      }
+
+      :global(.ms-Icon) {
+        color: #666666 !important;
+        opacity: 1 !important;
+      }
     }
 
     :global(.ms-Button-icon) {
-      margin-right: 8px;
+      margin-right: 12px;
+      color: white !important;
+      opacity: 1 !important;
+      font-size: 20px !important;
+    }
+
+    :global(.ms-Icon) {
+      color: white !important;
+      opacity: 1 !important;
+      font-size: 20px !important;
+    }
+  }
+
+  // Círculo de progresso
+  .progressCircle {
+    position: absolute !important; // Força posicionamento absoluto
+    right: 20px !important; // Aumentado para ficar mais distante do texto
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 32px; // Aumentado de 28px para 32px
+    height: 32px; // Aumentado de 28px para 32px
+    //border-radius: 50%;
+    //background: rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px; // Aumentado para melhor legibilidade
+    font-weight: 600;
+    color: white;
+    // Borda removida para não interferir com o ring
+    //box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    z-index: 10; // Garante que fique acima de outros elementos
+
+    .progressRing {
+      position: absolute;
+      top: -2px;
+      left: -3.5px;
+      width: 37px; // Aumentado de 28px para 32px
+      height: 37px; // Aumentado de 28px para 32px
+      border-radius: 50%;
+      background: conic-gradient(
+        from 0deg,
+        rgba(255, 255, 255, 0.8) 0deg,
+        rgba(255, 255, 255, 0.8) var(--progress-angle, 0deg),
+        rgba(255, 255, 255, 0.2) var(--progress-angle, 0deg),
+        rgba(255, 255, 255, 0.2) 360deg
+      );
+      mask: radial-gradient(
+        circle at center,
+        transparent 14px,
+        black 17px
+      ); // Ajustado para o novo tamanho
+      -webkit-mask: radial-gradient(
+        circle at center,
+        transparent 14px,
+        black 17px
+      );
+    }
+
+    .progressText {
+      position: relative;
+      z-index: 1;
+      font-size: 10px; // Aumentado para melhor legibilidade
+      line-height: 1;
+      font-weight: 700;
     }
   }
 }
@@ -58,28 +329,85 @@
 }
 
 .submitButtonGreen {
-  padding: 12px 20px;
-  border-radius: 50px;
+  padding: 20px 60px 20px 28px; // Padding direito aumentado para acomodar círculo mais distante
+  border-radius: 70px;
   background: #21a366;
   color: white;
-  border: none;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   font-weight: 600;
-  min-width: 160px; // Consistent button width
+  font-size: 16px;
+  min-width: 284px;
+  min-height: 60px;
   transition: all 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(33, 163, 102, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; // Alinha texto à esquerda
 
   &:hover {
-    background: #198754;
+    background: linear-gradient(135deg, #198754 0%, #21a366 100%);
     color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25),
+      0 4px 12px rgba(33, 163, 102, 0.2), 0 6px 16px rgba(33, 163, 102, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  // Corrigir comportamento no estado ativo (quando clicado)
+  &:active {
+    transform: none !important; // Prevenir mudanças de transformação
+    position: relative !important; // Manter posição relativa
+
+    // Manter o círculo de progresso no lugar correto
+    .progressCircle {
+      position: absolute !important;
+      right: 20px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+    }
+  }
+
+  // Corrigir também no estado focus
+  &:focus {
+    .progressCircle {
+      position: absolute !important;
+      right: 20px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+    }
   }
 
   &:disabled {
     background: #cccccc;
     color: #666666;
     cursor: not-allowed;
+    border-color: rgba(102, 102, 102, 0.2);
+    box-shadow: none;
+
+    // Força ícone visível mesmo quando disabled
+    :global(.ms-Button-icon) {
+      color: #666666 !important;
+      opacity: 1 !important;
+    }
+
+    :global(.ms-Icon) {
+      color: #666666 !important;
+      opacity: 1 !important;
+    }
   }
 
   :global(.ms-Button-icon) {
-    margin-right: 8px;
+    margin-right: 12px;
+    color: white !important;
+    opacity: 1 !important;
+  }
+
+  :global(.ms-Icon) {
+    color: white !important;
+    opacity: 1 !important;
   }
 }
 
@@ -88,6 +416,29 @@
   .floatingSaveButton {
     pointer-events: none;
     opacity: 0.8;
+
+    // Garantir que os ícones permaneçam visíveis durante processamento
+    :global(.ms-Button-icon),
+    :global(.ms-Icon) {
+      color: white !important;
+      opacity: 1 !important;
+    }
+
+    .saveButton {
+      :global(.ms-Button-icon),
+      :global(.ms-Icon) {
+        color: white !important;
+        opacity: 1 !important;
+      }
+    }
+
+    .submitButtonGreen {
+      :global(.ms-Button-icon),
+      :global(.ms-Icon) {
+        color: white !important;
+        opacity: 1 !important;
+      }
+    }
   }
 }
 
@@ -98,9 +449,30 @@
 
     .saveButton,
     .submitButtonGreen {
-      min-width: 140px;
-      padding: 10px 16px;
+      min-width: 200px;
+      padding: 15px 40px 15px 20px; // Padding direito aumentado para mobile
       font-size: 14px;
+    }
+
+    .progressCircle {
+      right: 12px; // Distância ajustada para mobile
+      width: 28px; // Tamanho menor no mobile
+      height: 28px; // Tamanho menor no mobile
+
+      .progressRing {
+        width: 28px; // Tamanho menor no mobile
+        height: 28px; // Tamanho menor no mobile
+        mask: radial-gradient(circle at center, transparent 8px, black 10px);
+        -webkit-mask: radial-gradient(
+          circle at center,
+          transparent 8px,
+          black 10px
+        );
+      }
+
+      .progressText {
+        font-size: 9px; // Tamanho menor no mobile
+      }
     }
   }
 
@@ -109,5 +481,200 @@
     right: 10px;
     left: 10px;
     max-width: none;
+  }
+}
+
+// Regras globais para forçar visibilidade dos ícones em todos os estados
+.floatingSaveButton {
+  // Força estilos de ícone independente do estado
+  :global(.ms-Button) {
+    :global(.ms-Button-icon),
+    :global(.ms-Icon) {
+      color: white !important;
+      opacity: 1 !important;
+      display: inline-block !important;
+      visibility: visible !important;
+    }
+
+    // Estados específicos
+    &:hover {
+      :global(.ms-Button-icon),
+      :global(.ms-Icon) {
+        color: white !important;
+        opacity: 1 !important;
+      }
+    }
+
+    &:focus {
+      :global(.ms-Button-icon),
+      :global(.ms-Icon) {
+        color: white !important;
+        opacity: 1 !important;
+      }
+    }
+
+    &:active {
+      :global(.ms-Button-icon),
+      :global(.ms-Icon) {
+        color: white !important;
+        opacity: 1 !important;
+      }
+    }
+  }
+
+  // Regras específicas para botões com classe personalizada
+  .saveButton,
+  .submitButtonGreen {
+    :global(.ms-Button-icon),
+    :global(.ms-Icon) {
+      color: white !important;
+      opacity: 1 !important;
+      display: inline-block !important;
+      visibility: visible !important;
+      font-size: 16px !important;
+      line-height: 1 !important;
+    }
+  }
+}
+
+// Regras globais específicas para manter o círculo de progresso no lugar
+:global(.ms-Button) {
+  .progressCircle {
+    position: absolute !important;
+    right: 20px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 10 !important;
+  }
+}
+
+// Regras específicas para estados active e focus do FluentUI
+:global(.ms-Button:active) {
+  .progressCircle {
+    position: absolute !important;
+    right: 20px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 10 !important;
+  }
+}
+
+:global(.ms-Button:focus) {
+  .progressCircle {
+    position: absolute !important;
+    right: 20px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 10 !important;
+  }
+}
+
+// Regras específicas para os botões dentro do container
+.floatingSaveButton {
+  :global(.ms-Button) {
+    .progressCircle {
+      position: absolute !important;
+      right: 20px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      z-index: 10 !important;
+    }
+
+    &:active .progressCircle {
+      position: absolute !important;
+      right: 20px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      z-index: 10 !important;
+    }
+
+    &:focus .progressCircle {
+      position: absolute !important;
+      right: 20px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      z-index: 10 !important;
+    }
+
+    &:hover .progressCircle {
+      position: absolute !important;
+      right: 20px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      z-index: 10 !important;
+    }
+  }
+}
+
+// Animação de pulse para a seta indicativa
+:global {
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Estilos específicos para a seta indicativa
+.floatingSaveButton {
+  // Garantir que a seta seja visível quando o botão não está expandido
+  .saveButton,
+  .submitButtonGreen {
+    // Overflow visível para permitir que a seta apareça fora do botão
+    overflow: visible;
+
+    // Garantir que elementos com position absolute dentro do botão sejam posicionados corretamente
+    position: relative;
+  }
+}
+
+// Estilos específicos para a seta indicativa (aplicados globalmente)
+:global(.floatingSaveButton) {
+  // Garantir que a seta seja visível e posicionada corretamente
+  :global(.ms-Button) {
+    overflow: visible !important;
+    position: relative !important;
+
+    // Elementos com position absolute dentro do botão
+    span[style*="position: absolute"] {
+      z-index: 10 !important;
+    }
+  }
+}
+
+// Estilo para mensagem de alerta no Dialog de confirmação
+.alertMessage {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-left: 3px solid #ffc107;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  .alertIcon {
+    font-size: 18px;
+    color: #856404;
+    flex-shrink: 0;
+  }
+
+  .alertText {
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
+    line-height: 1.4;
+
+    strong {
+      color: #856404;
+    }
   }
 }

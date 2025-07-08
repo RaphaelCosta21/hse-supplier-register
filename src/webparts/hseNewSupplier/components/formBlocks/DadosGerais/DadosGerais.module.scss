@@ -1,14 +1,14 @@
 @import "~@fluentui/react/dist/sass/References.scss";
 
 .dadosGerais {
-  padding: 32px;
+  padding: 24px; // Reduzido de 32px para 24px
 
   .formGrid {
     .gridRow {
       display: flex;
       gap: 20px;
       margin-bottom: 20px;
-      align-items: flex-start;
+      align-items: flex-end; // Mudança aqui: alinha pela base dos campos
 
       .fullWidth {
         flex: 1;
@@ -20,16 +20,18 @@
 
       .quarterWidth {
         flex: 0 1 calc(25% - 15px);
+        min-width: 180px; // Garantir largura mínima
       }
 
       .toggleSection {
         flex: 1;
         display: flex;
-        align-items: center;
+        align-items: flex-end; // Alinha pela base também
         gap: 20px;
 
         .componentesInput {
-          max-width: 150px;
+          max-width: 200px; // Aumentado de 150px para 200px
+          min-width: 180px; // Largura mínima para melhor alinhamento
         }
       }
     }
@@ -79,6 +81,7 @@
         .componentesInput {
           max-width: none;
           width: 100%;
+          min-width: auto; // Remove largura mínima no mobile
         }
       }
     }
@@ -88,10 +91,50 @@
 .fieldError {
   // Força borda vermelha no input do Fluent UI TextField
   :global(.ms-TextField-field),
+  :global(.ms-TextField-fieldGroup),
   :global(input),
   :global(.ms-Dropdown-title),
-  :global(.ms-DatePicker input) {
+  :global(.ms-DatePicker input),
+  :global(.ms-DatePicker-wrapper) {
     border-color: #d13438 !important;
-    box-shadow: 0 0 0 1px #d13438 !important;
+    // Removido box-shadow para evitar borda dupla mais espessa
+  }
+
+  // Seletores mais específicos para TextField
+  :global(.ms-TextField) {
+    :global(.ms-TextField-field) {
+      border-color: #d13438 !important;
+    }
+    :global(.ms-TextField-fieldGroup) {
+      border-color: #d13438 !important;
+    }
+  }
+
+  // Seletores mais específicos para DatePicker
+  :global(.ms-DatePicker) {
+    :global(.ms-TextField-field) {
+      border-color: #d13438 !important;
+    }
+    :global(.ms-TextField-fieldGroup) {
+      border-color: #d13438 !important;
+    }
+  }
+}
+
+// Estilos específicos para melhor alinhamento dos campos
+:global(.ms-SpinButton),
+:global(.ms-Dropdown),
+:global(.ms-TextField) {
+  .gridRow & {
+    margin-bottom: 0; // Remove margem para melhor alinhamento
+  }
+}
+
+// Garantir que labels dos campos tenham altura consistente
+:global(.ms-Label) {
+  .gridRow & {
+    line-height: 1.4;
+    margin-bottom: 8px;
+    min-height: 22px; // Altura consistente para labels
   }
 }

@@ -3,20 +3,19 @@
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
-  padding: 32px;
+  padding: 24px; // Reduzido de 32px para 24px
   margin-bottom: 32px;
 }
 
 .nrSection {
   background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
   border-radius: 12px;
-  padding: 28px 36px 24px 36px;
+  padding: 12px 20px; // Reduzido ainda mais para compactar quando fechada
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid #e3e8ee;
-  margin-bottom: 28px;
+  margin-bottom: 12px; // Reduzido mais o espaçamento entre seções
   position: relative;
   transition: all 0.3s ease;
-
   &::before {
     content: "";
     position: absolute;
@@ -24,14 +23,60 @@
     left: 0;
     width: 4px;
     height: 100%;
-    background: linear-gradient(180deg, #0078d4, #106ebe);
-    border-radius: 0 0 0 12px;
+    background: #003b5c; // Tom cinza escuro para a seção principal
+    border-radius: 12px 0 0 12px; // Curva apenas nos cantos esquerdos para seguir a curvatura da caixa
   }
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     border-color: #b3e5fc;
+  }
+
+  // Estado quando a seção está marcada como "Não Aplicável"
+  &.notApplicable {
+    opacity: 0.5;
+    background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%);
+    border-color: #e0e0e0;
+
+    &::before {
+      background: #bdbdbd; // Borda lateral mais apagada
+    }
+
+    &:hover {
+      opacity: 0.7; // Fica um pouco menos apagada no hover
+      transform: translateY(-1px); // Movimento mais sutil
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border-color: #d0d0d0;
+    }
+
+    // Textos também ficam mais apagados
+    > :global(.ms-Text) {
+      color: #757575;
+
+      &::after {
+        opacity: 0.3; // Linha decorativa mais apagada
+      }
+    }
+  }
+
+  // Estado quando a seção está marcada como "Aplicável" - cores originais
+  &.applicable {
+    opacity: 1;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border-color: #e3e8ee;
+
+    &::before {
+      background: #003b5c; // Borda lateral na cor original
+    }
+
+    > :global(.ms-Text) {
+      color: #1a1a1a;
+
+      &::after {
+        opacity: 1; // Linha decorativa na opacidade original
+      }
+    }
   }
 
   > :global(.ms-Text) {
@@ -55,78 +100,106 @@
 }
 
 .blocksContainer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; // Reduzido para compactar as seções quando fechadas
   margin-bottom: 24px;
 }
 
 .singleBlock {
-  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .questionContainer {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   padding: 20px 24px;
-  border: 1px solid #e8eef7;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
-  align-items: start;
+  border: 1px solid #e3e8ee;
+  border-radius: 8px;
+  background: #ffffff;
+  display: flex;
+  align-items: flex-start;
+  gap: 0; // Removendo gap aqui pois usaremos margin no ícone
   position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  overflow: hidden; // Para garantir que a animação da borda fique contida
 
+  // Borda lateral esquerda inicial (sempre visível)
   &::before {
     content: "";
     position: absolute;
     top: 0;
     left: 0;
-    width: 0;
+    width: 4px;
     height: 100%;
-    background: linear-gradient(180deg, #0078d4, #4caf50);
-    border-radius: 12px 0 0 12px;
-    transition: width 0.3s ease;
+    background: #5b7f95;
+    border-radius: 8px 0 0 8px;
+    z-index: 2;
+  }
+  // Bordas que se estendem no hover (topo, direita, baixo)
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 4px; // Começa onde a borda esquerda termina
+    right: 0;
+    bottom: 0;
+    border: 2px solid #5b7f95;
+    border-left: none; // Remove a borda esquerda para não duplicar
+    border-radius: 0 8px 8px 0; // Arredondamento apenas nos cantos direitos
+    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); // Inicialmente invisível
+    transition: clip-path 0.5s cubic-bezier(0.4, 0, 0.2, 1); // Reduzido de 0.8s para 0.5s
+    pointer-events: none;
   }
 
   &:hover {
-    border-color: #b3e5fc;
-    box-shadow: 0 4px 16px rgba(0, 120, 212, 0.1);
-    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
 
-    &::before {
-      width: 4px;
-    }
-  }
-
-  &:focus-within {
-    border-color: #0078d4;
-    box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
-
-    &::before {
-      width: 4px;
+    &::after {
+      // A borda percorre: topo → direita → baixo
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
     }
   }
 }
 
 .questionText {
   font-weight: 500;
-  color: #222;
+  color: #323130;
   margin-bottom: 0;
   line-height: 1.4;
+  flex: 1;
 }
 
 .questionSection {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 0; // Removendo gap pois o margin do ícone já controla
+  flex: 1;
+  margin-right: 20px; // Espaçamento entre pergunta e resposta
 }
 
 .responseSection {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  min-width: 200px;
+  margin-left: auto;
+  padding: 12px;
+  background-color: #f8f9fa; // Fundo cinza claro
+  border-radius: 8px; // Arredondamento em todos os cantos para seguir a curvatura
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    background: #0097a9; // Tom cinza claro
+    border-radius: 8px 0 0 8px; // Curva apenas nos cantos esquerdos para seguir a curvatura da caixa
+  }
 }
 
 .responseDropdown {
@@ -139,10 +212,121 @@
   width: 100%;
 }
 
+// Estilo para seção de comentários gerais
+.generalComments {
+  margin-top: 24px;
+  padding: 0;
+
+  .commentLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: #323130;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .commentTextArea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 1px solid #d2d0ce;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.4;
+    resize: vertical;
+
+    &:focus {
+      border-color: #0078d4;
+      box-shadow: 0 0 0 1px #0078d4;
+      outline: none;
+    }
+
+    &::placeholder {
+      color: #a19f9d;
+    }
+  }
+}
+
 .required {
   color: #e53935;
   margin-left: 4px;
   font-size: 1.1em;
+}
+
+// Ícone e texto de seção completada
+.completionIcon {
+  color: #22c55e !important; // Verde moderno mas mais sutil
+  font-size: 16px !important; // Tamanho menor, mais discreto
+  margin-left: 6px;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 1px 3px rgba(34, 197, 94, 0.2)); // Sombra mais sutil
+
+  &:hover {
+    color: #16a34a !important;
+    transform: scale(1.05); // Aumento mais sutil no hover
+    filter: drop-shadow(0 2px 4px rgba(34, 197, 94, 0.3));
+  }
+}
+
+.completionBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px; // Espaçamento menor
+  padding: 4px 10px; // Padding menor para ficar mais discreto
+  background: linear-gradient(
+    135deg,
+    #f0fdf4 0%,
+    #dcfce7 100%
+  ); // Verde muito sutil
+  border: 1px solid #22c55e; // Borda mais fina
+  border-radius: 16px; // Menos arredondado
+  margin-left: 8px;
+  box-shadow: 0 1px 3px rgba(34, 197, 94, 0.1); // Sombra bem sutil
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    box-shadow: 0 2px 6px rgba(34, 197, 94, 0.15);
+    transform: translateY(-1px); // Movimento mais sutil
+    border-color: #16a34a;
+  }
+
+  .completionText {
+    font-size: 12px; // Fonte menor
+    font-weight: 500; // Peso menor
+    color: #166534; // Verde escuro mas não muito pesado
+    margin: 0;
+    text-shadow: none; // Remove text-shadow para ficar mais limpo
+    letter-spacing: 0.3px; // Espaçamento menor
+  }
+
+  .completionIconBadge {
+    color: #22c55e;
+    font-size: 12px; // Fonte do texto menor
+    font-weight: 500; // Peso menor
+    text-shadow: none; // Remove text-shadow
+  }
+}
+
+// Animação para quando a seção fica completa
+@keyframes completionAnimation {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.9);
+  }
+  70% {
+    transform: translateX(1px) scale(1.02);
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.completionBadge.fadeIn {
+  animation: completionAnimation 0.5s ease-out; // Animação mais rápida e suave
 }
 
 // Animações e efeitos visuais modernos
@@ -439,6 +623,119 @@
   }
 }
 
+// Adicionando classes para título com contador e badge de status
+
+.titleAndCounter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.toggleAndStatus {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.questionCounter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-style: italic;
+  font-size: 12px;
+  color: #666;
+  font-weight: 400;
+  margin-left: 4px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+  border-radius: 6px;
+  padding: 4px 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  &::before {
+    content: "ℹ";
+    color: #1565c0;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 2px;
+  }
+}
+
+.statusBadgeContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.incompleteBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 16px;
+  margin-left: 8px;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.1);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
+    transform: translateY(-1px);
+    border-color: #d97706;
+  }
+
+  .incompleteText {
+    font-size: 12px;
+    font-weight: 500;
+    color: #92400e;
+    margin: 0;
+    letter-spacing: 0.3px;
+  }
+
+  .incompleteIconBadge {
+    color: #f59e0b;
+    font-size: 12px;
+    font-weight: 500;
+  }
+}
+
+.incompleteIcon {
+  color: #f59e0b !important;
+  font-size: 16px !important;
+  margin-left: 6px;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 1px 3px rgba(245, 158, 11, 0.2));
+
+  &:hover {
+    color: #d97706 !important;
+    transform: scale(1.05);
+    filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3));
+  }
+}
+
+// Animação para quando a seção fica incompleta
+@keyframes incompleteAnimation {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.9);
+  }
+  70% {
+    transform: translateX(1px) scale(1.02);
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.incompleteBadge.fadeIn {
+  animation: incompleteAnimation 0.5s ease-out;
+}
+
 // Animações de estado
 .fieldEnter {
   animation: fieldEnterAnimation 0.4s ease-out;
@@ -629,13 +926,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .blockTitleSection {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
   flex: 1;
 }
 
@@ -645,6 +942,7 @@
     font-weight: 600;
     color: #1a1a1a;
     margin-bottom: 0;
+    line-height: 1.2; // Reduzido para compactar mais
     order: 2;
   }
 
@@ -652,64 +950,285 @@
     order: 1;
     margin-right: 8px;
   }
-
   :global(.ms-Toggle-thumb) {
-    background-color: #fff;
-    border: 2px solid #0078d4;
-    transition: all 0.2s ease;
+    background-color: #fff !important;
+    border: 3px solid #0078d4 !important; // Borda mais espessa desde o início
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 6px rgba(0, 120, 212, 0.3) !important; // Sombra para destacar
   }
 
   :global(.ms-Toggle-track) {
-    background-color: #e1dfdd;
-    border: 1px solid #c8c6c4;
+    background-color: #0078d4 !important; // Azul mais vibrante no track
+    border: 2px solid #005a9e !important; // Borda mais forte
+    transition: all 0.2s ease !important;
+    opacity: 0.8 !important; // Leve transparência para indicar estado inativo
+
+    &:hover {
+      border: 3px solid #005a9e !important; // Borda ainda mais espessa no hover
+      box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.3) !important; // Sombra mais forte
+      opacity: 1 !important; // Remove transparência no hover
+      transform: scale(1.02) !important; // Leve aumento no hover
+    }
+  }
+  :global(.ms-Toggle-track:hover .ms-Toggle-thumb) {
+    background-color: #fff !important; // Mantém branco no hover
+    border: 4px solid #0078d4 !important; // Borda ainda mais espessa
+    transform: scale(1.15) !important; // Aumento mais perceptível
+    box-shadow: 0 3px 8px rgba(0, 120, 212, 0.5) !important; // Sombra mais forte
   }
 
   :global(.ms-Toggle-track.is-checked) {
-    background-color: #0078d4;
-    border-color: #0078d4;
-  }
-
-  :global(.ms-Toggle-track.is-checked) .ms-Toggle-thumb {
-    background-color: #fff;
-    border-color: #0078d4;
-  }
-}
-
-.completionIcon {
-  color: #4caf50;
-  font-size: 18px;
-  animation: checkmarkBounce 0.4s ease-out;
-}
-
-.expandButton {
-  :global(.ms-Button-icon) {
-    font-size: 16px;
-    transition: transform 0.2s ease;
-  }
-
-  :global(.ms-Button) {
-    min-width: 32px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: #f3f2f1;
-    border: 1px solid #e1dfdd;
+    background-color: #0078d4 !important;
+    border: 2px solid #005a9e !important;
+    opacity: 1 !important; // Sempre visível quando ativo
 
     &:hover {
-      background-color: #edebe9;
-      border-color: #c8c6c4;
-      transform: scale(1.05);
+      border: 3px solid #003d66 !important; // Azul ainda mais escuro no hover
+      background-color: #005a9e !important; // Cor mais escura no hover
+      box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.4) !important;
+      transform: scale(1.02) !important;
+    }
+  }
+
+  :global(.ms-Toggle-track.is-checked .ms-Toggle-thumb) {
+    background-color: #fff !important;
+    border: 3px solid #0078d4 !important; // Borda mais espessa quando ativo
+    box-shadow: 0 2px 6px rgba(0, 120, 212, 0.4) !important;
+  }
+
+  :global(.ms-Toggle-track.is-checked:hover .ms-Toggle-thumb) {
+    background-color: #fff !important; // Mantém branco quando ativo
+    border: 4px solid #fff !important; // Borda branca ainda mais espessa
+    transform: scale(1.15) !important; // Aumento mais perceptível
+    box-shadow: 0 4px 10px rgba(255, 255, 255, 0.8) !important; // Sombra branca
+  }
+  // Adicionar estilos específicos para o container do toggle
+  :global(.ms-Toggle) {
+    cursor: pointer !important; // Força cursor de pointer
+
+    &:hover {
+      .ms-Toggle-track {
+        border: 3px solid #005a9e !important;
+        box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.3) !important;
+        opacity: 1 !important;
+        transform: scale(1.02) !important;
+      }
+
+      .ms-Toggle-thumb {
+        background-color: #fff !important;
+        border: 4px solid #0078d4 !important;
+        transform: scale(1.15) !important;
+        box-shadow: 0 3px 8px rgba(0, 120, 212, 0.5) !important;
+      }
+
+      &.is-checked {
+        .ms-Toggle-track {
+          border: 3px solid #003d66 !important;
+          background-color: #005a9e !important;
+          box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.4) !important;
+        }
+
+        .ms-Toggle-thumb {
+          background-color: #fff !important;
+          border: 4px solid #fff !important;
+          transform: scale(1.15) !important;
+          box-shadow: 0 4px 10px rgba(255, 255, 255, 0.8) !important;
+        }
+      }
+    }
+  }
+
+  // Adicionar um brilho sutil para indicar interatividade
+  :global(.ms-Toggle-container) {
+    position: relative !important;
+
+    &::before {
+      content: "" !important;
+      position: absolute !important;
+      top: -4px !important;
+      left: -4px !important;
+      right: -4px !important;
+      bottom: -4px !important;
+      border-radius: 50px !important;
+      background: linear-gradient(
+        45deg,
+        rgba(0, 120, 212, 0.1),
+        rgba(0, 120, 212, 0.2)
+      ) !important;
+      opacity: 0 !important;
+      transition: opacity 0.3s ease !important;
+      z-index: -1 !important;
     }
 
-    &:active {
-      background-color: #e1dfdd;
-      transform: scale(0.98);
+    &:hover::before {
+      opacity: 1 !important;
+    }
+  }
+}
+
+// Estados para elementos dentro de seções não aplicáveis
+.nrSection.notApplicable {
+  .blockToggle {
+    :global(.ms-Toggle-label) {
+      color: #1a1a1a; // Mantém a cor original para parecer clicável
+    }
+
+    :global(.ms-Toggle-thumb) {
+      background-color: #fff !important; // Mantém a cor original
+      border: 3px solid #0078d4 !important; // Mantém a cor original
+      box-shadow: 0 2px 6px rgba(0, 120, 212, 0.3) !important;
+      transition: all 0.2s ease !important;
+    }
+
+    :global(.ms-Toggle-track) {
+      background-color: #0078d4 !important; // Mantém a cor vibrante
+      border: 2px solid #005a9e !important; // Mantém a cor forte
+      opacity: 0.8 !important; // Leve transparência
+      transition: all 0.2s ease !important;
+
+      &:hover {
+        border: 3px solid #005a9e !important; // Mantém o hover igual
+        box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.3) !important;
+        opacity: 1 !important;
+        transform: scale(1.02) !important;
+      }
+    }
+
+    :global(.ms-Toggle-track:hover .ms-Toggle-thumb) {
+      background-color: #fff !important; // Mantém branco no hover
+      border: 4px solid #0078d4 !important; // Borda ainda mais espessa
+      transform: scale(1.15) !important; // Aumento mais perceptível
+      box-shadow: 0 3px 8px rgba(0, 120, 212, 0.5) !important; // Sombra mais forte
+    }
+
+    :global(.ms-Toggle-track.is-checked) {
+      background-color: #0078d4 !important; // Mantém a cor original quando ativo
+      border: 2px solid #005a9e !important;
+      opacity: 1 !important;
+
+      &:hover {
+        border: 3px solid #003d66 !important;
+        background-color: #005a9e !important;
+        box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.4) !important;
+        transform: scale(1.02) !important;
+      }
+    }
+
+    :global(.ms-Toggle-track.is-checked .ms-Toggle-thumb) {
+      background-color: #fff !important;
+      border: 3px solid #0078d4 !important;
+      box-shadow: 0 2px 6px rgba(0, 120, 212, 0.4) !important;
+    }
+
+    :global(.ms-Toggle-track.is-checked:hover .ms-Toggle-thumb) {
+      background-color: #fff !important; // Mantém branco quando ativo
+      border: 4px solid #fff !important; // Borda branca ainda mais espessa
+      transform: scale(1.15) !important; // Aumento mais perceptível
+      box-shadow: 0 4px 10px rgba(255, 255, 255, 0.8) !important; // Sombra branca
+    }
+
+    // Garantir que o hover funcione também nos não aplicáveis
+    :global(.ms-Toggle) {
+      cursor: pointer !important;
+
+      &:hover {
+        .ms-Toggle-track {
+          border: 3px solid #005a9e !important;
+          box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.3) !important;
+          opacity: 1 !important;
+          transform: scale(1.02) !important;
+        }
+
+        .ms-Toggle-thumb {
+          background-color: #fff !important;
+          border: 4px solid #0078d4 !important;
+          transform: scale(1.15) !important;
+          box-shadow: 0 3px 8px rgba(0, 120, 212, 0.5) !important;
+        }
+
+        &.is-checked {
+          .ms-Toggle-track {
+            border: 3px solid #003d66 !important;
+            background-color: #005a9e !important;
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.4) !important;
+          }
+
+          .ms-Toggle-thumb {
+            background-color: #fff !important;
+            border: 4px solid #fff !important;
+            transform: scale(1.15) !important;
+            box-shadow: 0 4px 10px rgba(255, 255, 255, 0.8) !important;
+          }
+        }
+      }
+    }
+
+    // Adicionar o brilho de fundo também nos não aplicáveis
+    :global(.ms-Toggle-container) {
+      position: relative !important;
+
+      &::before {
+        content: "" !important;
+        position: absolute !important;
+        top: -4px !important;
+        left: -4px !important;
+        right: -4px !important;
+        bottom: -4px !important;
+        border-radius: 50px !important;
+        background: linear-gradient(
+          45deg,
+          rgba(0, 120, 212, 0.1),
+          rgba(0, 120, 212, 0.2)
+        ) !important;
+        opacity: 0 !important;
+        transition: opacity 0.3s ease !important;
+        z-index: -1 !important;
+      }
+
+      &:hover::before {
+        opacity: 1 !important;
+      }
+    }
+  }
+  .completionIcon {
+    color: #9ca3af !important; // Ícone de completado mais apagado (cinza neutro)
+    opacity: 0.4;
+    filter: none; // Remove sombra quando não aplicável
+  }
+
+  .completionBadge {
+    opacity: 0.4; // Badge mais apagado quando não aplicável
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-color: #d1d5db;
+
+    .completionText {
+      color: #6b7280; // Texto mais apagado
+    }
+
+    .completionIconBadge {
+      color: #9ca3af; // Ícone mais apagado
+      filter: none;
+    }
+  }
+
+  .expandButton {
+    :global(.ms-Button) {
+      background-color: #f8f8f8;
+      border-color: #e0e0e0;
+
+      &:hover {
+        background-color: #f0f0f0;
+        border-color: #d0d0d0;
+      }
+    }
+
+    :global(.ms-Button-icon) {
+      color: #9e9e9e;
     }
   }
 }
 
 .questionsSection {
-  margin-top: 20px;
   padding-top: 20px;
   border-top: 2px solid #f0f2f5;
   animation: slideDown 0.3s ease-out;
@@ -725,5 +1244,136 @@
     opacity: 1;
     max-height: 1000px;
     transform: translateY(0);
+  }
+}
+
+// Classes necessárias para resolver erros TypeScript
+.questionNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #00263e; // Azul mais escuro
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-right: 24px; // Mais espaçamento entre ícone e pergunta
+  box-shadow: 0 4px 8px rgba(0, 38, 62, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1); // Sombra elegante
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 6px 12px rgba(0, 38, 62, 0.4), 0 3px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+  }
+}
+
+.responseControls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 200px;
+  padding: 12px;
+
+  border-radius: 0 8px 8px 0; // Arredondamento só na direita
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 0;
+    width: 4px;
+    height: 100%;
+
+    border-radius: 8px; // Efeito curvo nas pontas
+  }
+}
+
+.dropdownContainer {
+  display: block;
+  width: 100%;
+
+  :global(.ms-ComboBox) {
+    min-width: 200px;
+  }
+}
+
+.attachmentContainer {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 12px;
+
+  // Customização para o componente de upload ficar mais compacto
+  :global(.ms-Stack) {
+    gap: 6px !important;
+  }
+
+  :global(.ms-Label) {
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 3px;
+    color: #323130;
+  }
+
+  // Torna a área de drop mais compacta
+  :global(.dropzone-container) {
+    min-height: 60px !important;
+    padding: 8px !important;
+    border-radius: 6px;
+  }
+
+  :global(.dropzone-content) {
+    font-size: 11px !important;
+    line-height: 1.3;
+  }
+
+  :global(.file-list) {
+    margin-top: 6px !important;
+  }
+
+  :global(.file-item) {
+    padding: 6px !important;
+    font-size: 10px !important;
+  }
+
+  // Estilos para campos de texto com bordas arredondadas como na imagem
+  :global(.ms-TextField-field) {
+    border-radius: 8px !important; // Bordas bem arredondadas
+    border: 1px solid #d2d0ce !important;
+    padding: 12px 16px !important;
+    transition: all 0.2s ease !important;
+
+    &:focus {
+      border-color: #0078d4 !important;
+      box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2) !important;
+      outline: none !important;
+    }
+  }
+
+  :global(.ms-TextField-fieldGroup) {
+    border-radius: 8px !important;
+    border: 1px solid #d2d0ce !important;
+
+    &:hover {
+      border-color: #0078d4 !important;
+    }
+
+    &.is-focused {
+      border-color: #0078d4 !important;
+      box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2) !important;
+    }
+  }
+
+  // Para TextArea também
+  :global(.ms-TextField-field[data-automation-id*="textArea"]) {
+    border-radius: 8px !important;
+    min-height: 80px !important;
+    resize: vertical !important;
   }
 }

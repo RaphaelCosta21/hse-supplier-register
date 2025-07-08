@@ -40,7 +40,35 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
     // Verificar erros do contexto (validação do botão salvar)
     const contextErrors = state.errors && state.errors[field];
     return !!(propErrors || contextErrors);
-  }; // Função para limpar erro específico quando campo é alterado
+  }; // Função auxiliar para verificar se um campo específico está válido
+  const isFieldValidNow = (
+    fieldName: string,
+    fieldValue: string | number | boolean | Date | undefined
+  ): boolean => {
+    switch (fieldName) {
+      case "empresa":
+      case "numeroContrato":
+      case "responsavelTecnico":
+      case "atividadePrincipalCNAE":
+      case "gerenteContratoMarine":
+        return !!(
+          fieldValue &&
+          typeof fieldValue === "string" &&
+          fieldValue.trim() !== ""
+        );
+      case "dataInicioContrato":
+      case "dataTerminoContrato":
+        return fieldValue !== null && fieldValue !== undefined;
+      case "grauRisco":
+        return (
+          fieldValue !== null && fieldValue !== undefined && fieldValue !== ""
+        );
+      default:
+        return true;
+    }
+  };
+
+  // Função para limpar erro específico quando campo é alterado
   const handleFieldChange = (
     fieldName: string,
     fieldValue: string | number | boolean | Date | undefined
@@ -48,14 +76,18 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
     // Chamar a função onChange original
     onChange(fieldName as keyof typeof value, fieldValue);
 
-    // Limpar erro específico deste campo se existir
+    // Limpar erro específico deste campo se existir E se o campo agora está válido
     if (state.errors && state.errors[fieldName] && dispatch) {
-      const newErrors = { ...state.errors };
-      delete newErrors[fieldName];
-      dispatch({
-        type: "SET_FIELD_ERRORS",
-        payload: newErrors,
-      });
+      const isFieldValid = isFieldValidNow(fieldName, fieldValue);
+
+      if (isFieldValid) {
+        const newErrors = { ...state.errors };
+        delete newErrors[fieldName];
+        dispatch({
+          type: "SET_FIELD_ERRORS",
+          payload: newErrors,
+        });
+      }
     }
   };
   return (
@@ -64,13 +96,33 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
         {" "}
         <SectionTitle
           title="A - Informações e Dados Gerais da Contratada"
-          subtitle="Preencha todas as informações básicas sobre a empresa contratada"
+          subtitle="Preencha todas as informações básicas sobre a empresa contratada para seguir para a próxima etapa (Conformidade Legal)."
           icon="ContactInfo"
           variant="primary"
         />
         <MessageBar messageBarType={MessageBarType.info}>
           Preencha todas as informações obrigatórias (*) sobre a empresa
-          contratada. O anexo do REM (Resumo Estatístico Mensal) é obrigatório.
+          contratada para seguir para a próxima etapa (Conformidade Legal). O
+          anexo do Resumo Estatístico Mensal de Acidentes é obrigatório.
+        </MessageBar>
+        {/* Nova nota destacada sobre salvamento de rascunho */}
+        <MessageBar
+          messageBarType={MessageBarType.warning}
+          styles={{
+            root: {
+              backgroundColor: "#fff4e6",
+              borderLeft: "4px solid #ff8c00",
+              marginTop: "12px",
+            },
+            content: {
+              fontWeight: "500",
+            },
+          }}
+        >
+          <strong>💾 Salvamento de Rascunho:</strong> Você poderá salvar um
+          rascunho do formulário após o preenchimento dos campos obrigatórios
+          dessa página. O Rascunho irá aparecer no bloco de &quot;Meus
+          Formulários&quot; na página inicial.
         </MessageBar>
         <div className={styles.formGrid}>
           {" "}
@@ -156,14 +208,14 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
           </div>{" "}
           <div className={styles.gridRow}>
             <TextField
-              label="Responsável Técnico"
+              label="Responsável Técnico ou Representante Legal"
               value={value.responsavelTecnico || ""}
               onChange={(_, v) => handleFieldChange("responsavelTecnico", v)}
               required
               className={`${styles.halfWidth} ${
                 showError("responsavelTecnico") ? styles.fieldError : ""
               }`}
-              placeholder="Nome completo do responsável técnico"
+              placeholder="Nome completo do responsável técnico ou representante legal"
             />
             <TextField
               label="Atividade Principal (CNAE)"
@@ -228,12 +280,27 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
           </div>
           <div className={styles.gridRow}>
             <div className={styles.toggleSection}>
-              <Toggle
-                label="Possui SESMT registrado?"
-                checked={value.possuiSESMT || false}
-                onChange={(_, checked) => onChange("possuiSESMT", checked)}
-                inlineLabel
-              />
+              <div>
+                <Toggle
+                  label="Possui SESMT registrado?"
+                  checked={value.possuiSESMT || false}
+                  onChange={(_, checked) => onChange("possuiSESMT", checked)}
+                  inlineLabel
+                />
+                <Text
+                  variant="small"
+                  style={{
+                    color: "#666",
+                    fontStyle: "italic",
+                    marginTop: "4px",
+                    lineHeight: "1.3",
+                    maxWidth: "400px",
+                  }}
+                >
+                  SESMT (Serviços Especializados em Engenharia de Segurança e
+                  Medicina do Trabalho), segundo NR-4 no estabelecimento
+                </Text>
+              </div>
               {value.possuiSESMT && (
                 <SpinButton
                   label="Número de Componentes SESMT"
@@ -276,17 +343,17 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
             Anexo
           </Text>{" "}
           <HSEFileUpload
-            label="REM - Resumo Estatístico Mensal"
+            label="Resumo Estatístico Mensal de Acidentes"
             required={true}
             category="rem"
-            accept=".pdf,.xlsx,.xls,.docx,.doc"
+            accept=".pdf,.xlsx,.xls,.docx,.doc,.txt,.zip"
             maxFileSize={50}
-            helpText="Anexe o REM dos acidentes de trabalho do ano corrente e do ano anterior (NBR14280)."
+            helpText="Anexe o Resumo Estatístico Mensal de Acidentes de trabalho do ano corrente e do ano anterior (NBR14280)."
           />
         </div>
         <MessageBar messageBarType={MessageBarType.warning}>
           <Text variant="medium" style={{ fontWeight: 600 }}>
-            OBS.: a) Cabe a contratada anexar a este questionário o REM: Resumo
+            OBS.: a) Cabe a contratada anexar a este questionário o Resumo
             Estatístico Mensal dos acidentes de trabalho (típico e trajeto) do
             ano corrente e do ano anterior ao preenchimento deste questionário.
             As estatísticas de acidentes devem estar preparadas de acordo com a

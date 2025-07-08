@@ -25,7 +25,25 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
     service: "fornecedorEmbarcacoes" | "fornecedorIcamento",
     checked: boolean
   ): void => {
+    // Se marcar um serviço, desmarcar "não fornecedor"
+    if (checked && value?.naoFornecedorServicos) {
+      onChange("naoFornecedorServicos", false);
+    }
     onChange(service, checked);
+  };
+
+  const handleNaoFornecedorToggle = (checked: boolean): void => {
+    onChange("naoFornecedorServicos", checked);
+
+    // Se marcar "não fornecedor", desmarcar todos os serviços
+    if (checked) {
+      if (value?.fornecedorEmbarcacoes) {
+        onChange("fornecedorEmbarcacoes", false);
+      }
+      if (value?.fornecedorIcamento) {
+        onChange("fornecedorIcamento", false);
+      }
+    }
   };
   const renderMaritimeCertificates = (): JSX.Element | null => {
     if (!value?.fornecedorEmbarcacoes) return null;
@@ -57,7 +75,7 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
                 category={certificate.category}
                 subcategory="servicosEspeciais"
                 required={certificate.isRequired}
-                accept=".pdf,.jpg,.png"
+                accept=".pdf,.jpg,.png,.txt,.zip"
                 maxFileSize={50}
                 helpText="Anexar certificado válido"
               />
@@ -97,7 +115,7 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
                 category={document.category}
                 subcategory="servicosEspeciais"
                 required={document.isRequired}
-                accept=".pdf,.docx,.xlsx"
+                accept=".pdf,.docx,.xlsx,.txt,.zip"
                 maxFileSize={50}
                 helpText="Anexar documento técnico"
               />
@@ -122,7 +140,6 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
           Documentos adicionais serão solicitados conforme aplicável.
         </MessageBar>{" "}
         <div className={styles.serviceToggles}>
-          {" "}
           <Toggle
             label="Fornecedor de Serviços Envolvendo Embarcações"
             checked={value?.fornecedorEmbarcacoes || false}
@@ -131,6 +148,7 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
             }
             inlineLabel
             className={styles.serviceToggle}
+            disabled={value?.naoFornecedorServicos || false}
           />
           <Toggle
             label="Fornecedor de Serviços Envolvendo Içamento de Carga"
@@ -140,15 +158,32 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
             }
             inlineLabel
             className={styles.serviceToggle}
+            disabled={value?.naoFornecedorServicos || false}
+          />
+
+          <Separator />
+
+          <Toggle
+            label="Minha empresa não fornece nenhum dos serviços especializados listados acima"
+            checked={value?.naoFornecedorServicos || false}
+            onChange={(_, checked) =>
+              handleNaoFornecedorToggle(checked || false)
+            }
+            inlineLabel
+            className={styles.serviceToggle}
+            styles={{
+              root: { marginTop: 16 },
+              label: { fontWeight: 600, color: "#0078d4" },
+            }}
           />
         </div>
-        <Separator /> {renderMaritimeCertificates()}
+        <Separator />
+        {renderMaritimeCertificates()}
         {renderLiftingDocuments()}
-        {!value?.fornecedorEmbarcacoes && !value?.fornecedorIcamento && (
+        {value?.naoFornecedorServicos && (
           <MessageBar messageBarType={MessageBarType.success}>
-            {" "}
-            Nenhum serviço especializado selecionado. Você pode prosseguir para
-            a próxima etapa.
+            Confirmado: Sua empresa não fornece serviços especializados. Você
+            pode prosseguir para a próxima etapa.
           </MessageBar>
         )}
       </Stack>
