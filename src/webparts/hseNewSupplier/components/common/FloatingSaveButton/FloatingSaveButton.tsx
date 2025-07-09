@@ -9,7 +9,6 @@ import {
 } from "@fluentui/react";
 import { useHSEForm } from "../../context/HSEFormContext";
 import styles from "./FloatingSaveButton.module.scss";
-import { ProgressModal } from "../ProgressModal";
 import { useScreenLock } from "../../../hooks/useScreenLock";
 import { Toast } from "../Toast/Toast";
 import {
@@ -23,9 +22,6 @@ import { LoadingOverlay } from "../LoadingOverlay/LoadingOverlay";
 export const FloatingSaveButton: React.FC = (): JSX.Element => {
   const { actions, state, dispatch } = useHSEForm();
   const [isSaving, setIsSaving] = React.useState(false);
-  const [progressOpen, setProgressOpen] = React.useState(false);
-  const [progressPercent, setProgressPercent] = React.useState(0);
-  const [progressLabel, setProgressLabel] = React.useState("");
   const [toastVisible, setToastVisible] = React.useState(false);
   const [toastMessage, setToastMessage] = React.useState("");
   const [toastType, setToastType] = React.useState<
@@ -43,7 +39,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     React.useState<NodeJS.Timeout | null>(null);
 
   // Hook para travar a tela durante o processamento
-  useScreenLock(progressOpen);
+  useScreenLock(loadingVisible);
 
   // Funções para validar cada etapa (mesma lógica da navbar)
   const isDadosGeraisValid = React.useCallback(() => {
@@ -558,91 +554,19 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     if (dispatch) {
       dispatch({ type: "SET_CURRENT_STEP", payload: 4 });
     }
-  }; // Função utilitária para progresso visual mais fluido
-  const runWithProgressSimulation = async (
+  }; // Função utilitária para execução com loading
+  const runWithLoading = async (
     action: () => Promise<void>,
-    operationType: "save" | "submit" = "save"
+    message: string = "Processando..."
   ): Promise<void> => {
-    // Contar total de arquivos anexados
-    const attachments = state.attachments || {};
-    const totalFiles = Object.values(attachments).reduce((total, files) => {
-      return total + (Array.isArray(files) ? files.length : 0);
-    }, 0);
+    setLoadingVisible(true);
+    setLoadingMessage(message);
 
-    setProgressOpen(true);
-    setProgressPercent(0);
-
-    // Progresso simulado realista baseado no tipo de operação e quantidade de arquivos
-    const progressSteps =
-      operationType === "save"
-        ? [
-            {
-              label: "Preparando dados para salvamento...",
-              percent: 10,
-              delay: 300,
-            },
-            {
-              label: "Validando campos obrigatórios...",
-              percent: 25,
-              delay: 400,
-            },
-            {
-              label: "Salvando informações no SharePoint...",
-              percent: 60,
-              delay: 600,
-            },
-            { label: "Finalizando salvamento...", percent: 90, delay: 300 },
-          ]
-        : [
-            {
-              label: "Validando formulário completo...",
-              percent: 8,
-              delay: 400,
-            },
-            {
-              label: "Preparando documentos para envio...",
-              percent: 20,
-              delay: 500,
-            },
-            {
-              label: "Criando estrutura no SharePoint...",
-              percent: 35,
-              delay: 700,
-            },
-            {
-              label: "Enviando arquivos anexados...",
-              percent: 70,
-              delay: totalFiles > 10 ? 2000 : totalFiles > 5 ? 1200 : 800,
-            },
-            { label: "Finalizando submissão...", percent: 95, delay: 400 },
-          ];
-
-    // Executar progresso simulado em paralelo com a ação real
-    const progressPromise = (async () => {
-      for (const step of progressSteps) {
-        setProgressLabel(step.label);
-        setProgressPercent(step.percent);
-        await new Promise((resolve) => setTimeout(resolve, step.delay));
-      }
-    })();
-
-    // Executar ação real
-    const actionPromise = action();
-
-    // Aguardar ambas terminarem
-    await Promise.all([progressPromise, actionPromise]);
-
-    // Finalizar progresso
-    const finalMessage =
-      operationType === "save"
-        ? "Rascunho salvo com sucesso! Você pode continuar de onde parou."
-        : "Formulário enviado com sucesso!";
-    setProgressLabel(finalMessage);
-    setProgressPercent(100);
-
-    // Pequeno delay para mostrar conclusão
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setProgressOpen(false);
+    try {
+      await action();
+    } finally {
+      setLoadingVisible(false);
+    }
   };
   // Handler para validar campos e mostrar confirmação se válido
   const handleSaveClick = async (): Promise<void> => {
@@ -680,14 +604,12 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
 
   // Handler para salvar com progresso visual (chamado após confirmação)
   const handleSaveWithProgress = async (): Promise<void> => {
-    setLoadingVisible(true);
-    setLoadingMessage("Salvando rascunho...");
     setIsSaving(true);
 
     try {
-      await runWithProgressSimulation(async () => {
+      await runWithLoading(async () => {
         await actions.saveFormData();
-      }, "save");
+      }, "Salvando rascunho...");
 
       // Mostrar toast de sucesso
       setToastMessage(
@@ -714,7 +636,6 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       }
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      setProgressOpen(false);
 
       // Mostrar toast de erro
       setToastMessage("Erro ao salvar o rascunho. Tente novamente.");
@@ -722,7 +643,6 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       setToastVisible(true);
     } finally {
       setIsSaving(false);
-      setLoadingVisible(false);
     }
   };
 
@@ -733,9 +653,20 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
 
   return (
     <>
-      {/* Overlay de loading: só aparece se NÃO estiver mostrando o ProgressModal */}
-      {loadingVisible && !progressOpen && (
-        <LoadingOverlay visible={loadingVisible} message={loadingMessage} />
+      {/* Overlay de loading */}
+      {loadingVisible && (
+        <LoadingOverlay
+          visible={loadingVisible}
+          message={loadingMessage}
+          operationType="save"
+          fileCount={Object.values(state.attachments || {}).reduce(
+            (total, files) => {
+              return total + (Array.isArray(files) ? files.length : 0);
+            },
+            0
+          )}
+          showTimeWarning={true}
+        />
       )}
 
       {/* Toast global, sempre fora do botão flutuante */}
@@ -750,7 +681,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       {/* Botão flutuante de salvar ou revisar/submeter */}
       <div
         className={`${styles.floatingSaveButton} ${
-          isSaving || progressOpen ? styles.processing : ""
+          isSaving || loadingVisible ? styles.processing : ""
         } ${isExpanded ? styles.expanded : ""} ${
           allStepsCompleted
             ? styles.completed
@@ -841,9 +772,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
               )}
               text="Revisar e Submeter"
               onClick={handleReviewAndSubmit}
-              disabled={
-                isSaving || state.isSubmitting || progressOpen || loadingVisible
-              }
+              disabled={isSaving || state.isSubmitting || loadingVisible}
               className={styles.submitButtonGreen}
               title="Revisar e submeter o formulário"
               styles={{ root: { width: "100%" } }}
@@ -913,9 +842,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
               )}
               text={isSaving ? "Salvando..." : "Salvar Rascunho"}
               onClick={handleSaveClick}
-              disabled={
-                isSaving || state.isSubmitting || progressOpen || loadingVisible
-              }
+              disabled={isSaving || state.isSubmitting || loadingVisible}
               className={styles.saveButton}
               styles={{ root: { width: "100%" } }}
             />
@@ -937,10 +864,12 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
             </div>
           </div>
         )}
-        <ProgressModal
-          open={progressOpen}
-          percent={progressPercent}
-          label={progressLabel}
+
+        {/* LoadingOverlay adicional */}
+        <LoadingOverlay
+          visible={loadingVisible}
+          message={loadingMessage}
+          operationType="save"
           fileCount={Object.values(state.attachments || {}).reduce(
             (total, files) => {
               return total + (Array.isArray(files) ? files.length : 0);
@@ -949,9 +878,6 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
           )}
           showTimeWarning={true}
         />
-
-        {/* LoadingOverlay adicional */}
-        <LoadingOverlay visible={loadingVisible} message={loadingMessage} />
 
         {/* Dialog de confirmação para salvar rascunho */}
         <Dialog
