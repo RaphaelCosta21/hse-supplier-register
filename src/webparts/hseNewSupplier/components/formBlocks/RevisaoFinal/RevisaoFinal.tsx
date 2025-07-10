@@ -669,14 +669,27 @@ export const RevisaoFinal: React.FC = () => {
           }
         }
 
-        // Call submitFormData directly
-        await sharePointService.submitFormData(
-          {
-            ...state.formData,
-            statusFormulario: "Enviado",
-          },
-          savedAttachments
-        );
+        // Atualizar formulário existente ao invés de criar novo
+        if (state.formData.id) {
+          // Se já existe um ID, atualizar o formulário existente
+          await sharePointService.submitFormWithUpdate(
+            state.formData.id,
+            {
+              ...state.formData,
+              statusFormulario: "Enviado",
+            },
+            savedAttachments
+          );
+        } else {
+          // Se não tem ID, usar o método original (criar novo)
+          await sharePointService.submitFormData(
+            {
+              ...state.formData,
+              statusFormulario: "Enviado",
+            },
+            savedAttachments
+          );
+        }
 
         // Clear local draft after successful submission
         localStorage.removeItem("hse_form_draft");
@@ -1100,16 +1113,68 @@ export const RevisaoFinal: React.FC = () => {
           hidden={!showSubmitDialog}
           onDismiss={() => setShowSubmitDialog(false)}
           dialogContentProps={{
-            type: DialogType.normal,
+            type: DialogType.largeHeader,
             title: "Confirmar Envio do Formulário",
-            subText:
-              "Tem certeza que deseja enviar o formulário? Esta ação não pode ser desfeita.",
           }}
           modalProps={{
             isBlocking: true,
+            styles: { main: { maxWidth: 450 } },
           }}
         >
-          {" "}
+          <div style={{ padding: "20px 0" }}>
+            <Text
+              variant="medium"
+              style={{ marginBottom: "16px", display: "block" }}
+            >
+              Tem certeza que deseja enviar o formulário para revisão do HSE?
+            </Text>
+            <Text
+              variant="medium"
+              style={{ marginBottom: "16px", display: "block" }}
+            >
+              Esta ação não pode ser desfeita.
+            </Text>
+            <div
+              style={{
+                background: "#fff4e6",
+                border: "1px solid #ffb900",
+                borderRadius: "2px",
+                padding: "12px",
+                marginBottom: "16px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                }}
+              >
+                <Icon
+                  iconName="Warning"
+                  style={{
+                    color: "#ffb900",
+                    marginTop: "2px",
+                    fontSize: "16px",
+                  }}
+                />
+                <div>
+                  <Text
+                    variant="medium"
+                    style={{ fontWeight: "600", color: "#323130" }}
+                  >
+                    IMPORTANTE:
+                  </Text>
+                  <Text
+                    variant="medium"
+                    style={{ color: "#323130", display: "block" }}
+                  >
+                    Após submissão, você não poderá mais editar esse formulário.
+                  </Text>
+                </div>
+              </div>
+            </div>
+          </div>
           <DialogFooter>
             <PrimaryButton
               onClick={handleSubmit}
@@ -1132,13 +1197,50 @@ export const RevisaoFinal: React.FC = () => {
             type: DialogType.largeHeader,
             title: "Confirmar Salvamento",
             subText:
-              "Tem certeza que deseja salvar o rascunho do formulário HSE?",
+              "Tem certeza que deseja salvar o rascunho do formulário HSE? Após salvar, você poderá fechar a página e continuar de onde parou a qualquer hora.",
           }}
           modalProps={{
             isBlocking: true,
             styles: { main: { maxWidth: 450 } },
           }}
         >
+          {/* Mensagem de alerta destacada */}
+          <div
+            style={{
+              backgroundColor: "#f8f9fa",
+              border: "1px solid #dee2e6",
+              borderLeft: "3px solid #ffc107",
+              borderRadius: "4px",
+              padding: "12px 16px",
+              margin: "12px 0",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "18px",
+                color: "#856404",
+                flexShrink: 0,
+              }}
+            >
+              ⚠️
+            </div>
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: "500",
+                color: "#495057",
+                lineHeight: "1.4",
+              }}
+            >
+              <strong style={{ color: "#856404" }}>IMPORTANTE:</strong>{" "}
+              Oceaneering irá avaliar apenas os formulários finalizados e
+              submetidos.
+            </div>
+          </div>
           <DialogFooter>
             <PrimaryButton
               onClick={async () => {

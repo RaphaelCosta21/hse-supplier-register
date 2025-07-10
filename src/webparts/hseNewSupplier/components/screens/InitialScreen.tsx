@@ -814,22 +814,25 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                           tokens={{ childrenGap: 8 }}
                         >
                           {renderStatusBadge(form.status)}
-                          <DefaultButton
-                            text="Editar"
-                            iconProps={{ iconName: "Edit" }}
-                            onClick={() => handleEditUserForm(form)}
-                            styles={{
-                              root: {
-                                borderColor: oceaneeringColors.primaryBlue,
-                                color: oceaneeringColors.primaryBlue,
-                                ":hover": {
-                                  backgroundColor:
-                                    oceaneeringColors.primaryBlue,
-                                  color: oceaneeringColors.white,
+                          {/* Só mostrar botão Editar se o status não for "Enviado" */}
+                          {form.status !== "Enviado" && (
+                            <DefaultButton
+                              text="Editar"
+                              iconProps={{ iconName: "Edit" }}
+                              onClick={() => handleEditUserForm(form)}
+                              styles={{
+                                root: {
+                                  borderColor: oceaneeringColors.primaryBlue,
+                                  color: oceaneeringColors.primaryBlue,
+                                  ":hover": {
+                                    backgroundColor:
+                                      oceaneeringColors.primaryBlue,
+                                    color: oceaneeringColors.white,
+                                  },
                                 },
-                              },
-                            }}
-                          />
+                              }}
+                            />
+                          )}
                         </Stack>
                       </Stack>
                     </Stack>

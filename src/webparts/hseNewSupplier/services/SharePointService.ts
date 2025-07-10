@@ -97,6 +97,14 @@ export class SharePointService {
           email: userContext?.email || "usuario@externo.com",
           temAnexos: attachmentCount > 0,
           totalAnexos: attachmentCount,
+          // Adicionar histórico de mudança de status
+          historicoStatusChange: {
+            "Em Andamento": {
+              dataAlteracao: now.toISOString(),
+              usuario: userContext?.displayName || "Usuário Externo",
+              email: userContext?.email || "usuario@externo.com",
+            },
+          },
         },
       };
 
@@ -211,6 +219,14 @@ export class SharePointService {
           email: userContext?.email || "usuario@externo.com",
           temAnexos: attachmentCount > 0,
           totalAnexos: attachmentCount,
+          // Adicionar histórico de mudança de status (para novos formulários que vão direto para Enviado)
+          historicoStatusChange: {
+            Enviado: {
+              dataAlteracao: now.toISOString(),
+              usuario: userContext?.displayName || "Usuário Externo",
+              email: userContext?.email || "usuario@externo.com",
+            },
+          },
         },
       };
 
@@ -268,6 +284,238 @@ export class SharePointService {
       }
     }
   }
+  /**
+   * Submete formulário final atualizando o item existente ao invés de criar novo
+   * Se houver alterações, cria uma nova revisão ANTES de alterar o status
+   */
+  public async submitFormWithUpdate(
+    itemId: number,
+    formData: IHSEFormData,
+    attachments: { [category: string]: IAttachmentMetadata[] }
+  ): Promise<void> {
+    const dados = formData.dadosGerais;
+    const userContext = this.context?.pageContext?.user;
+    const now = new Date();
+
+    console.log("=== INICIANDO SUBMISSÃO COM VERIFICAÇÃO DE ALTERAÇÕES ===");
+
+    // Contar anexos de forma segura
+    const countAttachments = (): number => {
+      if (!attachments || typeof attachments !== "object") {
+        return 0;
+      }
+
+      const keys = Object.keys(attachments);
+      if (keys.length === 0) {
+        return 0;
+      }
+
+      const count = keys.reduce((total, category) => {
+        const categoryFiles = attachments[category];
+        const categoryCount = Array.isArray(categoryFiles)
+          ? categoryFiles.length
+          : 0;
+        return total + categoryCount;
+      }, 0);
+
+      return count;
+    };
+
+    // Normalizar anexos
+    const normalizeAttachments = (): {
+      [category: string]: IAttachmentMetadata[];
+    } => {
+      if (!attachments || typeof attachments !== "object") {
+        return {};
+      }
+
+      const normalized: { [category: string]: IAttachmentMetadata[] } = {};
+
+      Object.keys(attachments).forEach((category) => {
+        const categoryFiles = attachments[category];
+        if (Array.isArray(categoryFiles) && categoryFiles.length > 0) {
+          normalized[category] = categoryFiles;
+        }
+      });
+
+      return normalized;
+    };
+
+    const normalizedAttachments = normalizeAttachments();
+    const attachmentCount = countAttachments();
+
+    // PRIMEIRO: Verificar se há alterações no formulário
+    const currentFormData = await this.getFormById(itemId);
+    if (!currentFormData) {
+      throw new Error(`Formulário com ID ${itemId} não encontrado`);
+    }
+
+    const formChanges = this.detectChanges(currentFormData, formData);
+    const currentAttachments =
+      (currentFormData.anexos as unknown as {
+        [category: string]: IAttachmentMetadata[];
+      }) || {};
+    const attachmentChanges = this.detectAttachmentChanges(
+      currentAttachments,
+      normalizedAttachments
+    );
+    const hasChanges = formChanges.length > 0 || attachmentChanges.length > 0;
+
+    console.log("📊 Verificação de alterações:", {
+      formChanges: formChanges.length,
+      attachmentChanges: attachmentChanges.length,
+      hasChanges,
+    });
+
+    // SEGUNDO: Se houver alterações, criar nova revisão ANTES de submeter
+    if (hasChanges) {
+      console.log(
+        "🔄 Detectadas alterações. Criando nova revisão antes de submeter..."
+      );
+      await this.updateFormWithChanges(itemId, formData, normalizedAttachments);
+    }
+
+    // TERCEIRO: Carregar dados atuais COMPLETOS (após possível nova revisão)
+    let historicoStatusChange: Record<
+      string,
+      { dataAlteracao: string; usuario: string; email: string }
+    > = {};
+    let historicoRevisoesExistente: IRevisionEntry[] = [];
+    let metadataExistente: Record<string, unknown> = {};
+    let formDataAtual: IHSEFormData;
+    let dataCriacaoOriginal: string; // Data de criação original do item
+
+    try {
+      const currentItem = await this.sp.web.lists
+        .getByTitle(this.listName)
+        .items.getById(itemId)
+        .select("DadosFormulario", "StatusAvaliacao", "Created")();
+
+      // Armazenar data de criação original do item (nunca deve ser alterada)
+      dataCriacaoOriginal = currentItem.Created;
+
+      if (currentItem.DadosFormulario) {
+        const currentData = JSON.parse(currentItem.DadosFormulario);
+
+        // Preservar TUDO que já existia
+        historicoStatusChange =
+          currentData.metadata?.historicoStatusChange || {};
+        historicoRevisoesExistente =
+          currentData.metadata?.historicoRevisoes || [];
+        metadataExistente = currentData.metadata || {};
+        formDataAtual = currentData;
+
+        console.log("📋 Dados preservados após possível revisão:");
+        console.log(
+          "- Histórico de Status:",
+          Object.keys(historicoStatusChange)
+        );
+        console.log(
+          "- Revisões existentes:",
+          historicoRevisoesExistente.length
+        );
+        console.log("- Data de criação original:", dataCriacaoOriginal);
+
+        // Adicionar entrada de quando o status "Em Andamento" foi criado (se não existir)
+        if (!historicoStatusChange["Em Andamento"] && currentItem.Created) {
+          historicoStatusChange["Em Andamento"] = {
+            dataAlteracao: currentItem.Created,
+            usuario: userContext?.displayName || "Sistema",
+            email: userContext?.email || "sistema@oceaneering.com",
+          };
+        }
+      } else {
+        formDataAtual = formData;
+      }
+    } catch (error) {
+      console.log(
+        "Erro ao carregar histórico existente, iniciando novo:",
+        error
+      );
+      formDataAtual = formData;
+      dataCriacaoOriginal = now.toISOString(); // Fallback se não conseguir carregar
+    }
+
+    // QUARTO: Adicionar entrada para status "Enviado" (APENAS isso, sem criar nova revisão)
+    historicoStatusChange.Enviado = {
+      dataAlteracao: now.toISOString(),
+      usuario: userContext?.displayName || "Usuário Externo",
+      email: userContext?.email || "usuario@externo.com",
+    };
+
+    console.log(
+      "🔄 Atualizando status para 'Enviado' - SEM criar nova revisão"
+    );
+
+    // QUINTO: Criar JSON dos dados para submissão (PRESERVANDO TODOS OS CAMPOS)
+    const createFormDataJSON = (): Record<string, unknown> => {
+      return {
+        // Preservar campos obrigatórios do formulário
+        id: itemId,
+        statusFormulario: "Enviado",
+        dataCriacao: dataCriacaoOriginal, // SEMPRE usar a data de criação original do item
+        dataUltimaModificacao: now.toISOString(),
+        // Dados do formulário
+        dadosGerais: formDataAtual.dadosGerais || {},
+        conformidadeLegal: formDataAtual.conformidadeLegal || {},
+        servicosEspeciais: formDataAtual.servicosEspeciais || {},
+        anexos: normalizedAttachments,
+        metadata: {
+          // Preservar metadata existente (EXCETO dataSubmissao que é redundante)
+          ...metadataExistente,
+          // Remover campo duplicado se existir
+          dataSubmissao: undefined,
+          // Atualizar apenas campos necessários
+          dataUltimaModificacao: now.toISOString(),
+          usuario: userContext?.displayName || "Usuário Externo",
+          email: userContext?.email || "usuario@externo.com",
+          temAnexos: attachmentCount > 0,
+          totalAnexos: attachmentCount,
+          // PRESERVAR histórico de revisões existente
+          historicoRevisoes: historicoRevisoesExistente,
+          // ATUALIZAR apenas histórico de status
+          historicoStatusChange: historicoStatusChange,
+          // Manter operação como mudança de status
+          tipoOperacao: hasChanges
+            ? "Formulário Submetido com Alterações"
+            : "Formulário Submetido",
+        },
+      };
+    };
+
+    const jsonData = createFormDataJSON();
+
+    // SEXTO: Dados para atualização no SharePoint
+    const updateData = {
+      Title: (dados.empresa || "Formulário HSE").toString(),
+      CNPJ: (dados.cnpj || "").toString(),
+      NumeroContrato: (dados.numeroContrato || "").toString(),
+      StatusAvaliacao: "Enviado", // Alterar status para Enviado
+      DataEnvio: now.toISOString(),
+      ResponsavelTecnico: (dados.responsavelTecnico || "").toString(),
+      GrauRisco: (dados.grauRisco || "1").toString(),
+      PercentualConclusao: 100,
+      DadosFormulario: JSON.stringify(jsonData),
+      UltimaModificacao: now.toISOString(),
+      AnexosCount: attachmentCount,
+    };
+
+    try {
+      const list = this.sp.web.lists.getByTitle(this.listName);
+
+      // Atualizar item existente ao invés de criar novo
+      await list.items.getById(itemId).update(updateData);
+
+      console.log("✅ Formulário HSE submetido com sucesso! ID:", itemId);
+      console.log("- Status alterado para: Enviado");
+      console.log("- Alterações detectadas:", hasChanges ? "Sim" : "Não");
+      console.log("- Revisões totais:", historicoRevisoesExistente.length);
+    } catch (error) {
+      console.error("Erro ao submeter formulário:", error);
+      throw new Error(`Falha ao submeter formulário: ${error.message}`);
+    }
+  }
+
   /**
    * Detecta mudanças entre formulários antigo e novo, focando apenas em alterações reais do usuário
    */
@@ -822,6 +1070,36 @@ export class SharePointService {
 
       // 7. Preparar dados finais para salvamento
       const numeroRevisaoAtual = historicoRevisoes.length;
+
+      // Manter ou criar histórico de status (se não existir)
+      let historicoStatusExistente: Record<
+        string,
+        { dataAlteracao: string; usuario: string; email: string }
+      > = {};
+      try {
+        const rawItem = await this.sp.web.lists
+          .getByTitle(this.listName)
+          .items.getById(itemId)
+          .select("DadosFormulario")();
+
+        if (rawItem.DadosFormulario) {
+          const rawData = JSON.parse(rawItem.DadosFormulario);
+          historicoStatusExistente =
+            rawData.metadata?.historicoStatusChange || {};
+        }
+      } catch (error) {
+        console.log("Erro ao carregar histórico de status:", error);
+      }
+
+      // Se não existe histórico de "Em Andamento", criar
+      if (!historicoStatusExistente["Em Andamento"]) {
+        historicoStatusExistente["Em Andamento"] = {
+          dataAlteracao: now.toISOString(),
+          usuario: userContext?.displayName || "Usuário Externo",
+          email: userContext?.email || "usuario@externo.com",
+        };
+      }
+
       const updatedFormData = {
         ...newFormData,
         anexos: newAttachments,
@@ -838,6 +1116,7 @@ export class SharePointService {
           numeroRevisao: numeroRevisaoAtual,
           tipoOperacao:
             allChanges.length > 0 ? "Rascunho Atualizado" : "Sem Alterações",
+          historicoStatusChange: historicoStatusExistente,
         },
       };
 

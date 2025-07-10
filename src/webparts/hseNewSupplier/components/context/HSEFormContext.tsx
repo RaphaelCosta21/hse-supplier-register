@@ -466,14 +466,27 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         }
       }
 
-      // Marcar como "Enviado" no SharePoint
-      await sharePointService.submitFormData(
-        {
-          ...state.formData,
-          statusFormulario: "Enviado",
-        },
-        savedAttachments
-      );
+      // Marcar como "Enviado" no SharePoint - atualizar ao invés de criar novo
+      if (state.formData.id) {
+        // Se já existe um ID, atualizar o formulário existente
+        await sharePointService.submitFormWithUpdate(
+          state.formData.id,
+          {
+            ...state.formData,
+            statusFormulario: "Enviado",
+          },
+          savedAttachments
+        );
+      } else {
+        // Se não tem ID, usar o método original (criar novo)
+        await sharePointService.submitFormData(
+          {
+            ...state.formData,
+            statusFormulario: "Enviado",
+          },
+          savedAttachments
+        );
+      }
 
       // Limpar rascunho local após envio bem-sucedido
       localStorage.removeItem("hse_form_draft");

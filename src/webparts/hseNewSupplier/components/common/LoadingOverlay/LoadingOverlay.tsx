@@ -63,11 +63,16 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
             },
             {
               label: "Salvando informações no SharePoint...",
-              percent: 60,
+              percent: 50,
               delay: 600,
             },
-            { label: "Finalizando salvamento...", percent: 90, delay: 300 },
-            { label: "Rascunho salvo com sucesso!", percent: 100, delay: 500 },
+            {
+              label: "Processando anexos...",
+              percent: 85,
+              delay: fileCount > 10 ? 1500 : fileCount > 5 ? 1000 : 600,
+            },
+            { label: "Finalizando salvamento...", percent: 95, delay: 200 },
+            { label: "Rascunho salvo com sucesso!", percent: 100, delay: 300 },
           ]
         : [
             {
@@ -76,25 +81,39 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
               delay: 400,
             },
             {
+              label: "Detectando alterações no formulário...",
+              percent: 15,
+              delay: 500,
+            },
+            {
+              label: "Criando revisão (se necessário)...",
+              percent: 25,
+              delay: 600,
+            },
+            {
               label: "Preparando documentos para envio...",
-              percent: 20,
+              percent: 35,
               delay: 500,
             },
             {
               label: "Criando estrutura no SharePoint...",
-              percent: 35,
+              percent: 50,
               delay: 700,
             },
             {
               label: "Enviando arquivos anexados...",
-              percent: 70,
+              percent: 80,
               delay: fileCount > 10 ? 2000 : fileCount > 5 ? 1200 : 800,
             },
-            { label: "Finalizando submissão...", percent: 95, delay: 400 },
+            {
+              label: "Atualizando status para 'Enviado'...",
+              percent: 95,
+              delay: 400,
+            },
             {
               label: "Formulário enviado com sucesso!",
               percent: 100,
-              delay: 500,
+              delay: 300,
             },
           ];
 
