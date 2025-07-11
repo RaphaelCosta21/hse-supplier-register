@@ -243,6 +243,28 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
     }
   };
 
+  // Handler para download do formulário em PDF
+  const handleDownloadFormPDF = async (
+    form: IUserFormSummary
+  ): Promise<void> => {
+    try {
+      console.log("Gerando PDF para o formulário:", form);
+
+      // Carregar dados completos do formulário
+      const formData = await actions.loadFormDataForPDF(form.id);
+
+      if (!formData) {
+        console.error("Não foi possível carregar os dados do formulário");
+        return;
+      }
+
+      // Gerar e baixar PDF
+      await actions.downloadFormAsPDF(formData, form.empresa || form.cnpj);
+    } catch (error) {
+      console.error("Erro ao gerar PDF do formulário:", error);
+    }
+  };
+
   // Render status badge
   const renderStatusBadge = (status: string): JSX.Element => {
     const statusConfig: Record<string, { color: string; icon: string }> = {
@@ -427,35 +449,46 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                 variant="medium"
                 style={{ color: oceaneeringColors.textSecondary }}
               >
-                • Você só pode visualizar e editar formulários que você mesmo
-                criou
+                • Apenas o usuário responsável pela criação do formulário possui
+                permissão para visualização e edição.
               </Text>
               <Text
                 variant="medium"
                 style={{ color: oceaneeringColors.textSecondary }}
               >
-                • Você pode salvar o progresso do formulário a qualquer momento
-                após preencher os campos obrigatórios da seção &quot;Dados
-                Gerais&quot;. O rascunho ficará disponível em &quot;Meus
-                Formulários&quot;
+                • É permitido criar múltiplos formulários; entretanto, somente
+                aqueles marcados como &quot;Enviado&quot; serão avaliados pela
+                Oceaneering.
               </Text>
               <Text
                 variant="medium"
                 style={{ color: oceaneeringColors.textSecondary }}
               >
-                • Formulários aprovados não podem mais ser editados
+                • O progresso do formulário pode ser salvo a qualquer momento
+                após o preenchimento dos campos obrigatórios da seção
+                &quot;Dados Gerais&quot;. Os rascunhos ficam disponíveis em
+                &quot;Meus Formulários&quot; para consulta e edição.
               </Text>
               <Text
                 variant="medium"
                 style={{ color: oceaneeringColors.textSecondary }}
               >
-                • Mantenha suas informações sempre atualizadas
+                • Formulários com status &quot;Aprovado&quot; tornam-se
+                bloqueados para edição.
               </Text>
               <Text
                 variant="medium"
                 style={{ color: oceaneeringColors.textSecondary }}
               >
-                • Em caso de dúvidas, entre em contato com o suporte técnico
+                • Após iniciado, o formulário não pode ser excluído, mas pode
+                ser revisado e alterado quantas vezes necessário até sua
+                submissão e envio.
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Em caso de dúvidas, entre em contato com o time de HSE.
               </Text>
             </Stack>
           </Stack>
@@ -707,8 +740,17 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
             <div className={styles.alertMessageInitial}>
               <Icon iconName="Warning" className={styles.alertIcon} />
               <div className={styles.alertText}>
-                <strong>IMPORTANTE:</strong> Oceaneering irá avaliar apenas os
-                formulários finalizados e submetidos.
+                <strong>IMPORTANTE:</strong> Apenas formulários com o status
+                &quot;Enviado&quot; serão avaliados pela Oceaneering.
+              </div>
+            </div>
+            {/* Mensagem de alerta sobre revisão */}
+            <div className={styles.alertMessageInitial}>
+              <Icon iconName="Warning" className={styles.alertIcon} />
+              <div className={styles.alertText}>
+                <strong>IMPORTANTE:</strong> Caso seja necessária a revisão de
+                qualquer campo de um formulário já enviado, solicite suporte ao
+                time de HSE.
               </div>
             </div>
 
@@ -814,8 +856,26 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                           tokens={{ childrenGap: 8 }}
                         >
                           {renderStatusBadge(form.status)}
-                          {/* Só mostrar botão Editar se o status não for "Enviado" */}
-                          {form.status !== "Enviado" && (
+                          {/* Mostrar botão Download PDF se o status for "Enviado" */}
+                          {form.status === "Enviado" ? (
+                            <DefaultButton
+                              text="Download PDF"
+                              iconProps={{ iconName: "Download" }}
+                              onClick={() => handleDownloadFormPDF(form)}
+                              styles={{
+                                root: {
+                                  borderColor: oceaneeringColors.lightBlue,
+                                  color: oceaneeringColors.lightBlue,
+                                  ":hover": {
+                                    backgroundColor:
+                                      oceaneeringColors.lightBlue,
+                                    color: oceaneeringColors.white,
+                                  },
+                                },
+                              }}
+                            />
+                          ) : (
+                            /* Só mostrar botão Editar se o status não for "Enviado" */
                             <DefaultButton
                               text="Editar"
                               iconProps={{ iconName: "Edit" }}

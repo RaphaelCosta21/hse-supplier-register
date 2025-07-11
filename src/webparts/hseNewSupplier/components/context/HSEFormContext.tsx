@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { WebPartContext } from "@microsoft/sp-webpart-base";
 import {
   formReducer,
@@ -9,6 +9,7 @@ import {
 } from "./formReducer";
 import { SharePointService } from "../../services/SharePointService";
 import { SharePointFileService } from "../../services/SharePointFileService";
+import { PDFGeneratorService } from "../../services/pdfGenerator";
 import { IHSEFormData, IValidationError } from "../../types/IHSEFormData";
 import { IAttachmentMetadata } from "../../types/IAttachmentMetadata";
 import {
@@ -24,7 +25,7 @@ export interface IHSEFormContext {
   sharePointFileService: SharePointFileService;
   // Novo estado de fase
   applicationPhase: IApplicationPhase;
-  // Informações do usuário atual
+  // InformaÃ§Ãµes do usuÃ¡rio atual
   currentUser: {
     displayName: string;
     email: string;
@@ -51,9 +52,15 @@ export interface IHSEFormContext {
     loadExistingForm: (itemId: number) => Promise<void>;
     startNewForm: (cnpj: string) => void;
     setApplicationPhase: (phase: IApplicationPhase) => void;
-    // Novas funcionalidades para gerenciamento do usuário
+    // Novas funcionalidades para gerenciamento do usuÃ¡rio
     getUserForms: () => Promise<IUserFormSummary[]>;
     searchCNPJWithSecurity: (cnpj: string) => Promise<ICNPJVerificationResult>;
+    // Funcionalidades para download de PDF
+    loadFormDataForPDF: (formId: number) => Promise<IHSEFormData | undefined>;
+    downloadFormAsPDF: (
+      formData: IHSEFormData,
+      fileName: string
+    ) => Promise<void>;
   };
 }
 
@@ -69,7 +76,7 @@ interface IHSEFormProviderProps {
   children: React.ReactNode;
 }
 
-// Criar o contexto com valor padrão
+// Criar o contexto com valor padrÃ£o
 export const HSEFormContext = React.createContext<IHSEFormContext | undefined>(
   undefined
 );
@@ -92,7 +99,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
   children,
 }) => {
   const [state, dispatch] = React.useReducer(formReducer, initialFormState);
-  // Inicialização dos serviços SharePoint
+  // InicializaÃ§Ã£o dos serviÃ§os SharePoint
   const sharePointService = React.useMemo(() => {
     return new SharePointService(context, "hse-new-register");
   }, [context]);
@@ -103,13 +110,13 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     );
   }, [context, sharePointConfig.documentLibraryName]);
 
-  // Carregar dados do formulário do SharePoint (se existir)
+  // Carregar dados do formulÃ¡rio do SharePoint (se existir)
   const loadFormData = React.useCallback(
     async (formId?: number) => {
       dispatch({ type: "SET_LOADING", payload: true });
       try {
         if (formId) {
-          // Carregar formulário existente
+          // Carregar formulÃ¡rio existente
           const loadedFormData = await sharePointService.getFormById(formId);
           if (loadedFormData) {
             dispatch({ type: "SET_FORM_DATA", payload: loadedFormData });
@@ -123,14 +130,14 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           }
         }
       } catch (error) {
-        console.error("Erro ao carregar formulário:", error);
+        console.error("Erro ao carregar formulÃ¡rio:", error);
         // Tratar erro de carregamento
       } finally {
         dispatch({ type: "SET_LOADING", payload: false });
       }
     },
     [sharePointService]
-  ); // Salvar dados do formulário (como rascunho ou no SharePoint)
+  ); // Salvar dados do formulÃ¡rio (como rascunho ou no SharePoint)
   const saveFormData = React.useCallback(async (): Promise<boolean> => {
     dispatch({ type: "SET_SUBMITTING", payload: true });
     try {
@@ -146,7 +153,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         try {
           console.log("=== VERIFICANDO ANEXOS PARA SALVAMENTO ===");
 
-          // Separar anexos que precisam ser salvos (têm fileData) vs anexos já salvos
+          // Separar anexos que precisam ser salvos (tÃªm fileData) vs anexos jÃ¡ salvos
           const attachmentsToSave: {
             [category: string]: IAttachmentMetadata[];
           } = {};
@@ -164,7 +171,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
               );
             } else {
               console.log(
-                `Categoria '${category}': ${files.length} anexos já salvos no SharePoint`
+                `Categoria '${category}': ${files.length} anexos jÃ¡ salvos no SharePoint`
               );
             }
           });
@@ -178,7 +185,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
                 attachmentsToSave
               );
 
-            // Mesclar anexos já existentes com os recém-salvos
+            // Mesclar anexos jÃ¡ existentes com os recÃ©m-salvos
             savedAttachments = { ...state.attachments };
             Object.keys(newlySavedAttachments).forEach((category) => {
               if (savedAttachments[category]) {
@@ -198,45 +205,47 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
             console.log("Novos anexos salvos com sucesso");
           } else {
             console.log(
-              "Todos os anexos já estão salvos no SharePoint, mantendo metadados existentes"
+              "Todos os anexos jÃ¡ estÃ£o salvos no SharePoint, mantendo metadados existentes"
             );
           }
         } catch (attachmentError) {
           console.warn(
-            "Erro ao salvar anexos, continuando com dados do formulário:",
+            "Erro ao salvar anexos, continuando com dados do formulÃ¡rio:",
             attachmentError
           );
           // Continuar mesmo se houver erro nos anexos
         }
       }
 
-      console.log("=== SALVANDO FORMULÁRIO ===");
+      console.log("=== SALVANDO FORMULÃRIO ===");
       console.log("Form ID atual:", state.formData.id);
       console.log("Anexos sendo salvos:", Object.keys(savedAttachments));
 
       let formId: number;
 
-      // Verificar se é um novo formulário ou atualização
+      // Verificar se Ã© um novo formulÃ¡rio ou atualizaÃ§Ã£o
       if (state.formData.id) {
-        // FORMULÁRIO EXISTENTE - Usar updateFormWithChanges para rastrear revisões
-        console.log("Atualizando formulário existente ID:", state.formData.id);
+        // FORMULÃRIO EXISTENTE - Usar updateFormWithChanges para rastrear revisÃµes
+        console.log("Atualizando formulÃ¡rio existente ID:", state.formData.id);
         await sharePointService.updateFormWithChanges(
           state.formData.id,
           state.formData,
           savedAttachments
         );
         formId = state.formData.id;
-        console.log("Formulário atualizado com sucesso, revisão incrementada");
+        console.log(
+          "FormulÃ¡rio atualizado com sucesso, revisÃ£o incrementada"
+        );
       } else {
-        // NOVO FORMULÁRIO - Usar saveFormData para criar o primeiro rascunho
-        console.log("Criando novo formulário (primeira vez)");
+        // NOVO FORMULÃRIO - Usar saveFormData para criar o primeiro rascunho
+        console.log("Criando novo formulÃ¡rio (primeira vez)");
         formId = await sharePointService.saveFormData(
           state.formData,
           savedAttachments
         );
-        console.log("Novo formulário criado com ID:", formId);
+        console.log("Novo formulÃ¡rio criado com ID:", formId);
 
-        // Atualizar o estado com o novo ID para próximos salvamentos
+        // Atualizar o estado com o novo ID para prÃ³ximos salvamentos
         dispatch({
           type: "SET_FORM_DATA",
           payload: {
@@ -249,7 +258,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       dispatch({ type: "SAVE_SUCCESS", payload: new Date() });
       return true;
     } catch (error) {
-      console.error("Erro ao salvar formulário:", error);
+      console.error("Erro ao salvar formulÃ¡rio:", error);
       return false;
     } finally {
       dispatch({ type: "SET_SUBMITTING", payload: false });
@@ -261,38 +270,38 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     state.attachments,
   ]);
 
-  // Validar uma etapa específica
+  // Validar uma etapa especÃ­fica
   const validateStep = React.useCallback(
     async (stepNumber: number): Promise<boolean> => {
       const { formData, attachments } = state;
       const errors: IValidationError[] = [];
 
-      // Função auxiliar para adicionar erro
+      // FunÃ§Ã£o auxiliar para adicionar erro
       const addError = (field: string, message: string): void => {
         errors.push({ field, message, section: `Step ${stepNumber}` });
       };
 
-      // Validação específica para cada etapa
+      // ValidaÃ§Ã£o especÃ­fica para cada etapa
       switch (stepNumber) {
         case 1: {
           // Validar Dados Gerais
           if (!formData.dadosGerais.empresa)
-            addError("empresa", "O nome da empresa é obrigatório");
+            addError("empresa", "O nome da empresa Ã© obrigatÃ³rio");
           if (!formData.dadosGerais.cnpj)
-            addError("cnpj", "O CNPJ é obrigatório");
+            addError("cnpj", "O CNPJ Ã© obrigatÃ³rio");
           else if (
             !/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(
               formData.dadosGerais.cnpj
             )
           )
-            addError("cnpj", "CNPJ inválido");
+            addError("cnpj", "CNPJ invÃ¡lido");
 
           if (!formData.dadosGerais.numeroContrato)
-            addError("numeroContrato", "O número do contrato é obrigatório");
+            addError("numeroContrato", "O nÃºmero do contrato Ã© obrigatÃ³rio");
           if (!formData.dadosGerais.dataInicioContrato)
             addError(
               "dataInicioContrato",
-              "A data de início do contrato é obrigatória"
+              "A data de inÃ­cio do contrato Ã© obrigatÃ³ria"
             );
           if (!formData.dadosGerais.dataTerminoContrato)
             addError(
@@ -300,7 +309,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
               "A data de término do contrato é obrigatória"
             );
 
-          // Validar que data de término é posterior à de início
+          // Validar que data de tÃ©rmino Ã© posterior Ã de inÃ­cio
           if (
             formData.dadosGerais.dataInicioContrato &&
             formData.dadosGerais.dataTerminoContrato &&
@@ -309,29 +318,29 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           ) {
             addError(
               "dataTerminoContrato",
-              "A data de término deve ser posterior à de início"
+              "A data de tÃ©rmino deve ser posterior Ã  de inÃ­cio"
             );
           }
 
-          // REM é opcional para testes
+          // REM Ã© opcional para testes
           // const remAttachments = attachments.rem || [];
           // if (remAttachments.length === 0) {
-          //   addError("rem", "O Resumo Estatístico Mensal (REM) é obrigatório");
+          //   addError("rem", "O Resumo EstatÃ­stico Mensal (REM) Ã© obrigatÃ³rio");
           // }
 
           break;
         }
         case 2: {
-          // Validação da Conformidade Legal
-          // A lógica completa depende das respostas do formulário
+          // ValidaÃ§Ã£o da Conformidade Legal
+          // A lÃ³gica completa depende das respostas do formulÃ¡rio
           break;
         }
 
         case 3: {
-          // Validação dos Serviços Especializados
-          // Validar embarcações
+          // ValidaÃ§Ã£o dos ServiÃ§os Especializados
+          // Validar embarcaÃ§Ãµes
           if (formData.servicosEspeciais.fornecedorEmbarcacoes) {
-            // Verificar certificados marítimos obrigatórios
+            // Verificar certificados marÃ­timos obrigatÃ³rios
             const requiredCertificates = [
               "iopp",
               "registroArmador",
@@ -343,21 +352,21 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
               if (certAttachments.length === 0) {
                 addError(
                   cert,
-                  `O certificado ${cert.toUpperCase()} é obrigatório`
+                  `O certificado ${cert.toUpperCase()} Ã© obrigatÃ³rio`
                 );
               }
             });
           }
 
-          // Validar içamento
+          // Validar iÃ§amento
           if (formData.servicosEspeciais.fornecedorIcamento) {
-            // Verificar documentos técnicos obrigatórios
+            // Verificar documentos tÃ©cnicos obrigatÃ³rios
             const requiredDocuments = ["testeCarga", "registroCREA", "art"];
 
             requiredDocuments.forEach((doc) => {
               const docAttachments = attachments[doc] || [];
               if (docAttachments.length === 0) {
-                addError(doc, `O documento ${doc} é obrigatório`);
+                addError(doc, `O documento ${doc} Ã© obrigatÃ³rio`);
               }
             });
           }
@@ -365,7 +374,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         }
 
         case 4: {
-          // Revisão final - verificar todas as validações anteriores
+          // RevisÃ£o final - verificar todas as validaÃ§Ãµes anteriores
           const allStepsValid = await Promise.all(
             [1, 2, 3].map((step) => validateStep(step))
           ).then((results) => results.every(Boolean));
@@ -398,7 +407,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       ).then((results) => results.every(Boolean));
 
       return allStepsValid;
-    }, [validateStep]); // Enviar formulário (versão final)
+    }, [validateStep]); // Enviar formulÃ¡rio (versÃ£o final)
   const submitForm = React.useCallback(async (): Promise<boolean> => {
     dispatch({ type: "SET_SUBMITTING", payload: true });
 
@@ -417,9 +426,9 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       const empresa = state.formData.dadosGerais.empresa;
 
       if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
-        console.log("=== SUBMISSÃO: VERIFICANDO ANEXOS ===");
+        console.log("=== SUBMISSÃƒO: VERIFICANDO ANEXOS ===");
 
-        // Separar anexos que precisam ser salvos (têm fileData) vs anexos já salvos
+        // Separar anexos que precisam ser salvos (tÃªm fileData) vs anexos jÃ¡ salvos
         const attachmentsToSave: { [category: string]: IAttachmentMetadata[] } =
           {};
         let hasNewAttachments = false;
@@ -432,13 +441,13 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
             attachmentsToSave[category] = newFiles;
             hasNewAttachments = true;
             console.log(
-              `Categoria '${category}': ${newFiles.length} novos anexos para salvar na submissão`
+              `Categoria '${category}': ${newFiles.length} novos anexos para salvar na submissÃ£o`
             );
           }
         });
 
         if (hasNewAttachments) {
-          console.log("Salvando novos anexos na submissão final...");
+          console.log("Salvando novos anexos na submissÃ£o final...");
           const newlySavedAttachments =
             await sharePointFileService.saveFormAttachments(
               cnpj,
@@ -446,7 +455,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
               attachmentsToSave
             );
 
-          // Mesclar anexos já existentes com os recém-salvos
+          // Mesclar anexos jÃ¡ existentes com os recÃ©m-salvos
           savedAttachments = { ...state.attachments };
           Object.keys(newlySavedAttachments).forEach((category) => {
             if (savedAttachments[category]) {
@@ -462,13 +471,15 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
             }
           });
         } else {
-          console.log("Todos os anexos já estão salvos para submissão final");
+          console.log(
+            "Todos os anexos jÃ¡ estÃ£o salvos para submissÃ£o final"
+          );
         }
       }
 
-      // Marcar como "Enviado" no SharePoint - atualizar ao invés de criar novo
+      // Marcar como "Enviado" no SharePoint - atualizar ao invÃ©s de criar novo
       if (state.formData.id) {
-        // Se já existe um ID, atualizar o formulário existente
+        // Se jÃ¡ existe um ID, atualizar o formulÃ¡rio existente
         await sharePointService.submitFormWithUpdate(
           state.formData.id,
           {
@@ -478,7 +489,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           savedAttachments
         );
       } else {
-        // Se não tem ID, usar o método original (criar novo)
+        // Se nÃ£o tem ID, usar o mÃ©todo original (criar novo)
         await sharePointService.submitFormData(
           {
             ...state.formData,
@@ -488,12 +499,12 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         );
       }
 
-      // Limpar rascunho local após envio bem-sucedido
+      // Limpar rascunho local apÃ³s envio bem-sucedido
       localStorage.removeItem("hse_form_draft");
 
       return true;
     } catch (error) {
-      console.error("Erro ao enviar formulário:", error);
+      console.error("Erro ao enviar formulÃ¡rio:", error);
       return false;
     } finally {
       dispatch({ type: "SET_SUBMITTING", payload: false });
@@ -514,7 +525,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       try {
         console.log(`=== UPLOAD ATTACHMENT PARA CATEGORIA: ${category} ===`);
         console.log(
-          "Armazenando arquivo apenas localmente (não será salvo no SharePoint até clicar em Salvar/Submeter)"
+          "Armazenando arquivo apenas localmente (nÃ£o serÃ¡ salvo no SharePoint atÃ© clicar em Salvar/Submeter)"
         );
 
         // Criar metadata local sem fazer upload para SharePoint
@@ -524,7 +535,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           subcategory
         );
 
-        // Registrar o anexo no estado do formulário (armazenamento local apenas)
+        // Registrar o anexo no estado do formulÃ¡rio (armazenamento local apenas)
         dispatch({
           type: "ADD_ATTACHMENT",
           payload: {
@@ -537,7 +548,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           `Arquivo ${file.name} armazenado localmente para categoria ${category}`
         );
         console.log(
-          "O arquivo será salvo no SharePoint apenas quando o usuário clicar em 'Salvar' ou 'Submeter'"
+          "O arquivo serÃ¡ salvo no SharePoint apenas quando o usuÃ¡rio clicar em 'Salvar' ou 'Submeter'"
         );
 
         return localMetadata;
@@ -561,7 +572,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         );
 
         if (attachment) {
-          // Se o arquivo já foi salvo no SharePoint, remover de lá também
+          // Se o arquivo jÃ¡ foi salvo no SharePoint, remover de lÃ¡ tambÃ©m
           if (attachment.sharepointItemId) {
             await sharePointFileService.deleteFile(attachment.sharepointItemId);
           }
@@ -587,7 +598,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     [sharePointFileService, state.attachments, debugMode]
   );
 
-  // Navegação de etapas
+  // NavegaÃ§Ã£o de etapas
   const goToNextStep = React.useCallback(() => {
     const { currentStep } = state;
     const nextStep = currentStep + 1;
@@ -603,13 +614,13 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       dispatch({ type: "SET_CURRENT_STEP", payload: previousStep });
     }
   }, [state.currentStep]);
-  // Reset do formulário
+  // Reset do formulÃ¡rio
   const resetForm = React.useCallback(() => {
     dispatch({ type: "RESET_FORM" });
     localStorage.removeItem("hse_form_draft");
   }, []);
 
-  // Nova funcionalidade: Estado da fase da aplicação
+  // Nova funcionalidade: Estado da fase da aplicaÃ§Ã£o
   const [applicationPhase, setApplicationPhaseState] =
     React.useState<IApplicationPhase>({
       phase: "ENTRADA",
@@ -618,13 +629,13 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
   const verifyCNPJ = React.useCallback(
     async (cnpj: string): Promise<ICNPJVerificationResult> => {
       try {
-        console.log("=== INICIANDO VERIFICAÇÃO DE CNPJ ===");
+        console.log("=== INICIANDO VERIFICAÃ‡ÃƒO DE CNPJ ===");
         console.log("CNPJ recebido:", cnpj);
 
-        // Validação prévia do CNPJ
+        // ValidaÃ§Ã£o prÃ©via do CNPJ
         const normalizedCNPJ = cnpj.replace(/\D/g, "");
         if (normalizedCNPJ.length !== 14) {
-          throw new Error("CNPJ deve conter exatamente 14 dígitos");
+          throw new Error("CNPJ deve conter exatamente 14 dÃ­gitos");
         }
 
         dispatch({ type: "SET_LOADING", payload: true });
@@ -643,21 +654,21 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
             result.status === "Enviado" || result.status === "Aprovado",
         };
 
-        console.log("Resultado final da verificação:", verificationResult);
+        console.log("Resultado final da verificaÃ§Ã£o:", verificationResult);
         return verificationResult;
       } catch (error) {
-        console.error("=== ERRO NA VERIFICAÇÃO DE CNPJ ===");
+        console.error("=== ERRO NA VERIFICAÃ‡ÃƒO DE CNPJ ===");
         console.error("Erro:", error);
         console.error("Stack:", error.stack);
 
-        // Re-throw com mensagem mais específica
-        if (error.message && error.message.includes("dígitos")) {
-          throw new Error("CNPJ inválido: deve conter exatamente 14 dígitos");
+        // Re-throw com mensagem mais especÃ­fica
+        if (error.message && error.message.includes("dÃ­gitos")) {
+          throw new Error("CNPJ invÃ¡lido: deve conter exatamente 14 dÃ­gitos");
         }
 
-        if (error.message && error.message.includes("conexão")) {
+        if (error.message && error.message.includes("conexÃ£o")) {
           throw new Error(
-            "Erro de conexão. Verifique sua internet e tente novamente."
+            "Erro de conexÃ£o. Verifique sua internet e tente novamente."
           );
         }
 
@@ -671,21 +682,21 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     [sharePointService]
   );
 
-  // Nova funcionalidade: Definir fase da aplicação
+  // Nova funcionalidade: Definir fase da aplicaÃ§Ã£o
   const setApplicationPhase = React.useCallback(
     (phase: IApplicationPhase): void => {
-      console.log("Mudando fase da aplicação:", phase);
+      console.log("Mudando fase da aplicaÃ§Ã£o:", phase);
       setApplicationPhaseState(phase);
-      // Não altera mais o formData aqui!
+      // NÃ£o altera mais o formData aqui!
     },
     []
   );
 
-  // Nova funcionalidade: Carregar formulário existente
+  // Nova funcionalidade: Carregar formulÃ¡rio existente
   const loadExistingForm = React.useCallback(
     async (itemId: number): Promise<void> => {
       try {
-        console.log("=== CARREGANDO FORMULÁRIO EXISTENTE ===");
+        console.log("=== CARREGANDO FORMULÃRIO EXISTENTE ===");
         console.log("Item ID:", itemId);
 
         dispatch({ type: "SET_LOADING", payload: true });
@@ -698,7 +709,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           console.log("Form Data completo:", formData);
 
           dispatch({ type: "SET_FORM_DATA", payload: formData });
-          console.log("Formulário carregado e enviado para o reducer"); // Mudar para a fase do formulário após carregar os dados
+          console.log("FormulÃ¡rio carregado e enviado para o reducer"); // Mudar para a fase do formulÃ¡rio apÃ³s carregar os dados
           setApplicationPhase({
             phase: "FORMULARIO",
             cnpj: formData.dadosGerais?.cnpj || "",
@@ -709,29 +720,29 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
 
           // Aguardar um pouco para garantir que o estado foi atualizado
           setTimeout(() => {
-            console.log("=== VERIFICAÇÃO FINAL DO ESTADO ===");
-            console.log("Estado atual após carregamento");
+            console.log("=== VERIFICAÃ‡ÃƒO FINAL DO ESTADO ===");
+            console.log("Estado atual apÃ³s carregamento");
           }, 100);
         } else {
-          console.error("Formulário não encontrado ou dados vazios");
+          console.error("FormulÃ¡rio nÃ£o encontrado ou dados vazios");
           throw new Error(
-            "Formulário não encontrado ou não pôde ser carregado"
+            "FormulÃ¡rio nÃ£o encontrado ou nÃ£o pÃ´de ser carregado"
           );
         }
       } catch (error) {
-        console.error("=== ERRO AO CARREGAR FORMULÁRIO EXISTENTE ===");
+        console.error("=== ERRO AO CARREGAR FORMULÃRIO EXISTENTE ===");
         console.error("Erro:", error);
 
-        // Mostrar mensagem de erro mais amigável para o usuário
+        // Mostrar mensagem de erro mais amigÃ¡vel para o usuÃ¡rio
         const errorMessage =
           error instanceof Error
             ? error.message
-            : "Erro desconhecido ao carregar formulário";
+            : "Erro desconhecido ao carregar formulÃ¡rio";
         console.error("Mensagem de erro:", errorMessage);
 
         // Re-throw para que o componente chamador possa lidar com o erro
         throw new Error(
-          `Falha ao carregar formulário existente: ${errorMessage}`
+          `Falha ao carregar formulÃ¡rio existente: ${errorMessage}`
         );
       } finally {
         dispatch({ type: "SET_LOADING", payload: false });
@@ -739,9 +750,9 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     },
     [sharePointService, setApplicationPhase]
   );
-  // Nova funcionalidade: Iniciar novo formulário
+  // Nova funcionalidade: Iniciar novo formulÃ¡rio
   const startNewForm = React.useCallback((cnpj: string): void => {
-    console.log("Iniciando novo formulário para CNPJ:", cnpj);
+    console.log("Iniciando novo formulÃ¡rio para CNPJ:", cnpj);
 
     // Reset form state
     dispatch({ type: "RESET_FORM" });
@@ -763,24 +774,24 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       cnpj: cnpj,
       isOverwrite: false,
     });
-    console.log("Novo formulário iniciado");
+    console.log("Novo formulÃ¡rio iniciado");
   }, []);
 
-  // Nova funcionalidade: Buscar formulários do usuário
+  // Nova funcionalidade: Buscar formulÃ¡rios do usuÃ¡rio
   const getUserForms = React.useCallback(async (): Promise<
     IUserFormSummary[]
   > => {
     try {
-      console.log("=== BUSCANDO FORMULÁRIOS DO USUÁRIO ===");
+      console.log("=== BUSCANDO FORMULÃRIOS DO USUÃRIO ===");
       const currentUserEmail = context.pageContext.user.email;
-      console.log("Email do usuário atual:", currentUserEmail);
+      console.log("Email do usuÃ¡rio atual:", currentUserEmail);
 
       const forms = await sharePointService.getUserForms(currentUserEmail);
-      console.log("Formulários encontrados:", forms.length);
+      console.log("FormulÃ¡rios encontrados:", forms.length);
 
       return forms;
     } catch (error) {
-      console.error("Erro ao buscar formulários do usuário:", error);
+      console.error("Erro ao buscar formulÃ¡rios do usuÃ¡rio:", error);
       throw error;
     }
   }, [sharePointService, context.pageContext.user.email]);
@@ -792,7 +803,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         console.log("=== BUSCA SEGURA POR CNPJ ===");
         const currentUserEmail = context.pageContext.user.email;
         console.log("CNPJ:", cnpj);
-        console.log("Email do usuário atual:", currentUserEmail);
+        console.log("Email do usuÃ¡rio atual:", currentUserEmail);
 
         const result = await sharePointService.searchFormByCNPJWithOwnership(
           cnpj,
@@ -809,16 +820,63 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
     [sharePointService, context.pageContext.user.email]
   );
 
-  // Informações do usuário atual
-  const currentUser = React.useMemo(
-    () => ({
-      displayName: context.pageContext.user.displayName,
-      email: context.pageContext.user.email,
-      loginName: context.pageContext.user.loginName,
-    }),
+  // FunÃ§Ã£o para carregar dados do formulÃ¡rio para PDF
+  const loadFormDataForPDF = React.useCallback(
+    async (formId: number): Promise<IHSEFormData | undefined> => {
+      try {
+        console.log("Carregando dados do formulÃ¡rio para PDF:", formId);
+        const formData = await sharePointService.getFormById(formId);
+        return formData;
+      } catch (error) {
+        console.error("Erro ao carregar dados do formulÃ¡rio para PDF:", error);
+        return undefined;
+      }
+    },
+    [sharePointService]
+  );
+
+  // Função para download do formulário como PDF
+  const downloadFormAsPDF = React.useCallback(
+    async (formData: IHSEFormData, fileName: string): Promise<void> => {
+      try {
+        console.log("Gerando PDF do formulário...");
+
+        // Obter informações do usuário atual
+        const userDisplayName = context.pageContext.user.displayName;
+        const userEmail = context.pageContext.user.email;
+
+        // Usar o serviço de PDF para gerar o HTML
+        const htmlContent = PDFGeneratorService.generateFormHTML(
+          formData,
+          userDisplayName,
+          userEmail
+        );
+
+        // Criar um blob com o HTML
+        const blob = new Blob([htmlContent], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+
+        // Abrir em nova janela para impressão/PDF
+        const printWindow = window.open(url, "_blank");
+        if (printWindow) {
+          printWindow.onload = () => {
+            setTimeout(() => {
+              printWindow.print();
+              URL.revokeObjectURL(url);
+            }, 1000);
+          };
+        }
+
+        console.log("PDF gerado com sucesso!");
+      } catch (error) {
+        console.error("Erro ao gerar PDF:", error);
+        throw error;
+      }
+    },
     [context.pageContext.user]
   );
-  // Expor ações e estado para os componentes filhos
+
+  // Montar o valor do contexto
   const contextValue = React.useMemo<IHSEFormContext>(
     () => ({
       state,
@@ -826,7 +884,11 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       sharePointService,
       sharePointFileService,
       applicationPhase,
-      currentUser,
+      currentUser: {
+        displayName: context.pageContext.user.displayName,
+        email: context.pageContext.user.email,
+        loginName: context.pageContext.user.loginName,
+      },
       actions: {
         loadFormData,
         saveFormData,
@@ -844,6 +906,8 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         setApplicationPhase,
         getUserForms,
         searchCNPJWithSecurity,
+        loadFormDataForPDF,
+        downloadFormAsPDF,
       },
     }),
     [
@@ -852,7 +916,7 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       sharePointService,
       sharePointFileService,
       applicationPhase,
-      currentUser,
+      context.pageContext.user,
       loadFormData,
       saveFormData,
       submitForm,
@@ -869,6 +933,8 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
       setApplicationPhase,
       getUserForms,
       searchCNPJWithSecurity,
+      loadFormDataForPDF,
+      downloadFormAsPDF,
     ]
   );
 
