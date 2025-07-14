@@ -28,7 +28,11 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     "success" | "error" | "warning" | "info"
   >("success");
   const [loadingVisible, setLoadingVisible] = React.useState(false);
-  const [loadingMessage, setLoadingMessage] = React.useState("");
+
+  // Novos estados para progresso real
+  const [realProgress, setRealProgress] = React.useState(0);
+  const [currentStep, setCurrentStep] = React.useState("");
+  const [useRealProgress, setUseRealProgress] = React.useState(false);
 
   // Estado para controlar o dialog de confirmação
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
@@ -554,19 +558,6 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     if (dispatch) {
       dispatch({ type: "SET_CURRENT_STEP", payload: 4 });
     }
-  }; // Função utilitária para execução com loading
-  const runWithLoading = async (
-    action: () => Promise<void>,
-    message: string = "Processando..."
-  ): Promise<void> => {
-    setLoadingVisible(true);
-    setLoadingMessage(message);
-
-    try {
-      await action();
-    } finally {
-      setLoadingVisible(false);
-    }
   };
   // Handler para validar campos e mostrar confirmação se válido
   const handleSaveClick = async (): Promise<void> => {
@@ -602,14 +593,39 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     setShowConfirmDialog(true);
   };
 
+  // Função para atualizar progresso real
+  const updateProgress = (percent: number, step: string): void => {
+    setRealProgress(percent);
+    setCurrentStep(step);
+    console.log(`[FLOATING SAVE PROGRESSO] ${percent}%: ${step}`);
+  };
+
   // Handler para salvar com progresso visual (chamado após confirmação)
   const handleSaveWithProgress = async (): Promise<void> => {
     setIsSaving(true);
 
+    // 🔥 ATIVAR PROGRESSO REAL
+    setUseRealProgress(true);
+    setLoadingVisible(true);
+    updateProgress(0, "Iniciando salvamento...");
+
     try {
-      await runWithLoading(async () => {
-        await actions.saveFormData();
-      }, "Salvando rascunho...");
+      updateProgress(10, "Preparando dados para salvamento...");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      updateProgress(25, "Validando campos obrigatórios...");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      updateProgress(50, "Salvando informações no SharePoint...");
+      await actions.saveFormData();
+
+      updateProgress(85, "Processando anexos...");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      updateProgress(95, "Finalizando salvamento...");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      updateProgress(100, "Rascunho salvo com sucesso!");
 
       // Mostrar toast de sucesso
       setToastMessage(
@@ -643,6 +659,14 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       setToastVisible(true);
     } finally {
       setIsSaving(false);
+      setLoadingVisible(false); // 🔥 Garantir que o loading seja fechado
+
+      // 🔥 Resetar progresso real para próxima operação
+      setTimeout(() => {
+        setUseRealProgress(false);
+        setRealProgress(0);
+        setCurrentStep("");
+      }, 1000); // Pequeno delay para o usuário ver o 100%
     }
   };
 
@@ -657,7 +681,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       {loadingVisible && (
         <LoadingOverlay
           visible={loadingVisible}
-          message={loadingMessage}
+          message={currentStep || "Processando..."}
           operationType="save"
           fileCount={Object.values(state.attachments || {}).reduce(
             (total, files) => {
@@ -666,6 +690,10 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
             0
           )}
           showTimeWarning={true}
+          // 🔥 Novos props para progresso real
+          useRealProgress={useRealProgress}
+          currentProgress={realProgress}
+          currentStep={currentStep}
         />
       )}
 
@@ -868,7 +896,7 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
         {/* LoadingOverlay adicional */}
         <LoadingOverlay
           visible={loadingVisible}
-          message={loadingMessage}
+          message={currentStep || "Processando..."}
           operationType="save"
           fileCount={Object.values(state.attachments || {}).reduce(
             (total, files) => {

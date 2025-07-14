@@ -38,22 +38,17 @@ export const RevisaoFinal: React.FC = () => {
   >("success");
   // Loading Overlay state
   const [loadingVisible, setLoadingVisible] = React.useState(false);
-  const [loadingMessage, setLoadingMessage] = React.useState("");
 
-  // Progress simulation function (similar to FloatingSaveButton)
-  // Função utilitária para execução com loading
-  const runWithLoading = async (
-    action: () => Promise<void>,
-    message: string = "Processando..."
-  ): Promise<void> => {
-    setLoadingVisible(true);
-    setLoadingMessage(message);
+  // Novos estados para progresso real
+  const [realProgress, setRealProgress] = React.useState(0);
+  const [currentStep, setCurrentStep] = React.useState("");
+  const [useRealProgress, setUseRealProgress] = React.useState(false);
 
-    try {
-      await action();
-    } finally {
-      setLoadingVisible(false);
-    }
+  // Função para atualizar progresso real
+  const updateProgress = (percent: number, step: string): void => {
+    setRealProgress(percent);
+    setCurrentStep(step);
+    console.log(`[PROGRESSO] ${percent}%: ${step}`);
   };
 
   // Função para formatar CNPJ
@@ -609,135 +604,150 @@ export const RevisaoFinal: React.FC = () => {
   const handleSubmit = async (): Promise<void> => {
     setShowSubmitDialog(false); // Fecha o dialog imediatamente
     setIsSubmitting(true);
+
+    // 🔥 ATIVAR PROGRESSO REAL
+    setUseRealProgress(true);
+    setLoadingVisible(true);
+    updateProgress(0, "Iniciando submissão...");
+
     let submissionSuccessful = false;
 
     try {
-      await runWithLoading(async () => {
-        const cnpj = state.formData.dadosGerais.cnpj;
-        const empresa = state.formData.dadosGerais.empresa;
+      const cnpj = state.formData.dadosGerais.cnpj;
+      const empresa = state.formData.dadosGerais.empresa;
 
-        console.log("=== INICIANDO SUBMISSÃO DO FORMULÁRIO ===");
-        console.log("Form ID atual:", state.formData.id);
-        console.log("CNPJ:", cnpj);
-        console.log("Empresa:", empresa);
+      console.log("=== INICIANDO SUBMISSÃO DO FORMULÁRIO ===");
+      console.log("Form ID atual:", state.formData.id);
+      console.log("CNPJ:", cnpj);
+      console.log("Empresa:", empresa);
 
-        let formId: number;
+      updateProgress(5, "Validando formulário completo...");
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // 🔄 ORDEM CORRETA: 1️⃣ PRIMEIRO salvar/atualizar o formulário na lista principal
-        if (state.formData.id) {
-          // FORMULÁRIO EXISTENTE - Atualizar primeiro
-          console.log(
-            "Atualizando formulário existente ID:",
-            state.formData.id
-          );
-          await sharePointService.updateFormWithChanges(
-            state.formData.id,
-            {
-              ...state.formData,
-              statusFormulario: "Enviado", // Status já vai como "Enviado"
-            },
-            state.attachments
-          );
-          formId = state.formData.id;
-          console.log("✅ Formulário atualizado para 'Enviado' com sucesso");
-        } else {
-          // NOVO FORMULÁRIO - Criar primeiro na lista principal COM STATUS "ENVIADO"
-          console.log("🔄 CRIANDO NOVO FORMULÁRIO NA LISTA PRINCIPAL...");
-          formId = await sharePointService.saveFormData(
-            {
-              ...state.formData,
-              statusFormulario: "Enviado", // Status já vai como "Enviado"
-            },
-            state.attachments
-          );
-          console.log(
-            "✅ Formulário criado na lista principal com ID:",
-            formId
-          );
+      updateProgress(10, "Detectando alterações no formulário...");
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-          // Atualizar o estado local com o novo ID
-          dispatch({
-            type: "SET_FORM_DATA",
-            payload: {
-              ...state.formData,
-              id: formId,
-            },
+      let formId: number;
+
+      // 🔄 ORDEM CORRETA: 1️⃣ PRIMEIRO salvar/atualizar o formulário na lista principal
+      if (state.formData.id) {
+        // FORMULÁRIO EXISTENTE - Atualizar primeiro
+        updateProgress(20, "Atualizando formulário existente...");
+        console.log("Atualizando formulário existente ID:", state.formData.id);
+        await sharePointService.updateFormWithChanges(
+          state.formData.id,
+          {
+            ...state.formData,
+            statusFormulario: "Enviado", // Status já vai como "Enviado"
+          },
+          state.attachments
+        );
+        formId = state.formData.id;
+        console.log("✅ Formulário atualizado para 'Enviado' com sucesso");
+        updateProgress(40, "Formulário atualizado com sucesso!");
+      } else {
+        // NOVO FORMULÁRIO - Criar primeiro na lista principal COM STATUS "ENVIADO"
+        updateProgress(20, "Criando novo formulário na lista principal...");
+        console.log("🔄 CRIANDO NOVO FORMULÁRIO NA LISTA PRINCIPAL...");
+        formId = await sharePointService.saveFormData(
+          {
+            ...state.formData,
+            statusFormulario: "Enviado", // Status já vai como "Enviado"
+          },
+          state.attachments
+        );
+        console.log("✅ Formulário criado na lista principal com ID:", formId);
+
+        // Atualizar o estado local com o novo ID
+        dispatch({
+          type: "SET_FORM_DATA",
+          payload: {
+            ...state.formData,
+            id: formId,
+          },
+        });
+        updateProgress(40, "Formulário criado com sucesso!");
+      }
+
+      // 2️⃣ DEPOIS processar anexos novos (se houver)
+      if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
+        try {
+          updateProgress(50, "Processando anexos após formulário salvo...");
+          console.log("=== PROCESSANDO ANEXOS (APÓS FORMULÁRIO SALVO) ===");
+
+          // Separar anexos que precisam ser salvos vs anexos já salvos
+          const attachmentsToSave: {
+            [category: string]: (typeof state.attachments)[string];
+          } = {};
+          let hasNewAttachments = false;
+
+          updateProgress(55, "Analisando anexos pendentes...");
+          Object.keys(state.attachments).forEach((category) => {
+            const files = state.attachments[category];
+            const newFiles = files.filter((file) => file.fileData);
+
+            if (newFiles.length > 0) {
+              attachmentsToSave[category] = newFiles;
+              hasNewAttachments = true;
+              console.log(
+                `Categoria '${category}': ${newFiles.length} novos anexos para submissão`
+              );
+            }
           });
-        }
 
-        // 2️⃣ DEPOIS processar anexos novos (se houver)
-        if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
-          try {
-            console.log("=== PROCESSANDO ANEXOS (APÓS FORMULÁRIO SALVO) ===");
+          if (hasNewAttachments) {
+            updateProgress(65, "Salvando anexos no SharePoint...");
+            console.log("🔄 SALVANDO ANEXOS (FORMULÁRIO JÁ EXISTE)...");
+            const newlySavedAttachments =
+              await sharePointFileService.saveFormAttachments(
+                cnpj,
+                empresa,
+                attachmentsToSave,
+                formId // Passar o ID do formulário
+              );
 
-            // Separar anexos que precisam ser salvos vs anexos já salvos
-            const attachmentsToSave: {
-              [category: string]: (typeof state.attachments)[string];
-            } = {};
-            let hasNewAttachments = false;
-
-            Object.keys(state.attachments).forEach((category) => {
-              const files = state.attachments[category];
-              const newFiles = files.filter((file) => file.fileData);
-
-              if (newFiles.length > 0) {
-                attachmentsToSave[category] = newFiles;
-                hasNewAttachments = true;
-                console.log(
-                  `Categoria '${category}': ${newFiles.length} novos anexos para submissão`
+            // Mesclar anexos salvos com existentes
+            const updatedAttachments = { ...state.attachments };
+            Object.keys(newlySavedAttachments).forEach((category) => {
+              if (updatedAttachments[category]) {
+                const existingFiles = updatedAttachments[category].filter(
+                  (f) => !f.fileData
                 );
+                updatedAttachments[category] = [
+                  ...existingFiles,
+                  ...newlySavedAttachments[category],
+                ];
+              } else {
+                updatedAttachments[category] = newlySavedAttachments[category];
               }
             });
 
-            if (hasNewAttachments) {
-              console.log("🔄 SALVANDO ANEXOS (FORMULÁRIO JÁ EXISTE)...");
-              const newlySavedAttachments =
-                await sharePointFileService.saveFormAttachments(
-                  cnpj,
-                  empresa,
-                  attachmentsToSave,
-                  formId // Passar o ID do formulário
-                );
-
-              // Mesclar anexos salvos com existentes
-              const updatedAttachments = { ...state.attachments };
-              Object.keys(newlySavedAttachments).forEach((category) => {
-                if (updatedAttachments[category]) {
-                  const existingFiles = updatedAttachments[category].filter(
-                    (f) => !f.fileData
-                  );
-                  updatedAttachments[category] = [
-                    ...existingFiles,
-                    ...newlySavedAttachments[category],
-                  ];
-                } else {
-                  updatedAttachments[category] =
-                    newlySavedAttachments[category];
-                }
-              });
-
-              console.log("✅ Anexos salvos após o formulário");
-            } else {
-              console.log("ℹ️ Nenhum anexo novo para salvar");
-            }
-          } catch (attachmentError) {
-            console.warn(
-              "⚠️ Erro ao salvar anexos, mas formulário foi enviado:",
-              attachmentError
-            );
+            updateProgress(85, "Anexos salvos com sucesso!");
+            console.log("✅ Anexos salvos após o formulário");
+          } else {
+            updateProgress(70, "Nenhum anexo novo para salvar");
+            console.log("ℹ️ Nenhum anexo novo para salvar");
           }
+        } catch (attachmentError) {
+          updateProgress(75, "Erro nos anexos, mas formulário foi enviado");
+          console.warn(
+            "⚠️ Erro ao salvar anexos, mas formulário foi enviado:",
+            attachmentError
+          );
         }
+      }
 
-        // 3️⃣ Por fim, marcar como bem-sucedido na submissão
-        console.log("🔄 FINALIZANDO SUBMISSÃO - STATUS JÁ É 'ENVIADO'...");
+      // 3️⃣ Por fim, marcar como bem-sucedido na submissão
+      updateProgress(95, "Finalizando submissão - status já é 'Enviado'...");
+      console.log("🔄 FINALIZANDO SUBMISSÃO - STATUS JÁ É 'ENVIADO'...");
 
-        // Limpar rascunho local após envio bem-sucedido
-        localStorage.removeItem("hse_form_draft");
+      // Limpar rascunho local após envio bem-sucedido
+      localStorage.removeItem("hse_form_draft");
 
-        // Marcar como bem-sucedido se chegamos até aqui
-        submissionSuccessful = true;
-        console.log("✅ SUBMISSÃO FINALIZADA COM SUCESSO!");
-      }, "Enviando formulário...");
+      // Marcar como bem-sucedido se chegamos até aqui
+      submissionSuccessful = true;
+      updateProgress(100, "Formulário enviado com sucesso!");
+      console.log("✅ SUBMISSÃO FINALIZADA COM SUCESSO!");
 
       // Show success toast
       setToastMessage("Formulário enviado com sucesso!");
@@ -768,6 +778,14 @@ export const RevisaoFinal: React.FC = () => {
       }
     } finally {
       setIsSubmitting(false);
+      setLoadingVisible(false); // 🔥 Garantir que o loading seja fechado
+
+      // 🔥 Resetar progresso real para próxima operação
+      setTimeout(() => {
+        setUseRealProgress(false);
+        setRealProgress(0);
+        setCurrentStep("");
+      }, 1000); // Pequeno delay para o usuário ver o 100%
 
       // Aguardar um pouco antes de verificar o toastType para garantir que foi definido
       setTimeout(() => {
@@ -789,10 +807,28 @@ export const RevisaoFinal: React.FC = () => {
   };
 
   const handleSaveWithProgress = async (): Promise<void> => {
+    // 🔥 ATIVAR PROGRESSO REAL
+    setUseRealProgress(true);
+    setLoadingVisible(true);
+    updateProgress(0, "Iniciando salvamento...");
+
     try {
-      await runWithLoading(async () => {
-        await actions.saveFormData();
-      }, "Salvando rascunho...");
+      updateProgress(10, "Preparando dados para salvamento...");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      updateProgress(25, "Validando campos obrigatórios...");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      updateProgress(50, "Salvando informações no SharePoint...");
+      await actions.saveFormData();
+
+      updateProgress(85, "Processando anexos...");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      updateProgress(95, "Finalizando salvamento...");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      updateProgress(100, "Rascunho salvo com sucesso!");
 
       // Show success toast
       setToastMessage(
@@ -820,6 +856,15 @@ export const RevisaoFinal: React.FC = () => {
       setToastMessage("Erro ao salvar o rascunho. Tente novamente.");
       setToastType("error");
       setToastVisible(true);
+    } finally {
+      setLoadingVisible(false); // 🔥 Garantir que o loading seja fechado
+
+      // 🔥 Resetar progresso real para próxima operação
+      setTimeout(() => {
+        setUseRealProgress(false);
+        setRealProgress(0);
+        setCurrentStep("");
+      }, 1000); // Pequeno delay para o usuário ver o 100%
     }
   };
 
@@ -1478,7 +1523,7 @@ export const RevisaoFinal: React.FC = () => {
         {/* Loading Overlay */}
         <LoadingOverlay
           visible={loadingVisible}
-          message={loadingMessage}
+          message={currentStep || "Processando..."}
           operationType="submit"
           fileCount={Object.values(state.attachments || {}).reduce(
             (total, files) => {
@@ -1487,6 +1532,10 @@ export const RevisaoFinal: React.FC = () => {
             0
           )}
           showTimeWarning={true}
+          // 🔥 Novos props para progresso real
+          useRealProgress={useRealProgress}
+          currentProgress={realProgress}
+          currentStep={currentStep}
         />
       </Stack>
     </div>

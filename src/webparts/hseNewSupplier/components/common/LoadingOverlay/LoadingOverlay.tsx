@@ -21,6 +21,10 @@ export interface LoadingOverlayProps {
   onCancel?: () => void;
   showEstimatedTime?: boolean;
   operationType?: "save" | "submit";
+  // Novos props para controle de progresso real
+  useRealProgress?: boolean;
+  currentProgress?: number; // 0-100
+  currentStep?: string;
 }
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
@@ -34,16 +38,20 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   onCancel,
   showEstimatedTime = true,
   operationType = "save",
+  // Novos props para progresso real
+  useRealProgress = false,
+  currentProgress = 0,
+  currentStep,
 }) => {
-  // Estados para progresso automático
-  const [currentProgress, setCurrentProgress] = React.useState(0);
-  const [currentMessage, setCurrentMessage] = React.useState(message);
+  // Estados para progresso automático (quando useRealProgress = false)
+  const [autoProgress, setAutoProgress] = React.useState(0);
+  const [autoMessage, setAutoMessage] = React.useState(message);
 
-  // Efeito para simular progresso automático
+  // Efeito para simular progresso automático (apenas quando useRealProgress = false)
   React.useEffect(() => {
-    if (!visible) {
-      setCurrentProgress(0);
-      setCurrentMessage(message);
+    if (!visible || useRealProgress) {
+      setAutoProgress(0);
+      setAutoMessage(message);
       return;
     }
 
@@ -117,15 +125,15 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
             },
           ];
 
-    setCurrentProgress(0);
-    setCurrentMessage(progressSteps[0].label);
+    setAutoProgress(0);
+    setAutoMessage(progressSteps[0].label);
 
     const runProgress = async (): Promise<void> => {
       for (const step of progressSteps) {
         if (!visible) break; // Parar se o componente não estiver mais visível
 
-        setCurrentMessage(step.label);
-        setCurrentProgress(step.percent);
+        setAutoMessage(step.label);
+        setAutoProgress(step.percent);
 
         await new Promise((resolve) => setTimeout(resolve, step.delay));
       }
@@ -136,10 +144,11 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
 
     // Cleanup function
     return () => {
-      setCurrentProgress(0);
-      setCurrentMessage(message);
+      setAutoProgress(0);
+      setAutoMessage(message);
     };
-  }, [visible, message, operationType, fileCount]);
+  }, [visible, message, operationType, fileCount, useRealProgress]);
+
   // Calcular tempo estimado baseado na quantidade de arquivos
   const getEstimatedTime = (files: number): string => {
     if (files <= 5) return "1-2 minutos";
@@ -158,9 +167,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
     return "Por favor, aguarde o processamento finalizar. Não feche esta janela.";
   };
 
-  // Determinar valores a serem exibidos
-  const displayPercent = currentProgress;
-  const displayMessage = currentMessage;
+  // Determinar valores a serem exibidos baseado no modo
+  const displayPercent = useRealProgress ? currentProgress : autoProgress;
+  const displayMessage = useRealProgress ? currentStep || message : autoMessage;
 
   if (!visible) return null;
 
