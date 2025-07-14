@@ -214,7 +214,8 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
               await sharePointFileService.saveFormAttachments(
                 cnpj,
                 empresa,
-                attachmentsToSave
+                attachmentsToSave,
+                formId // Passar o ID do formulário
               );
 
             // Mesclar anexos salvos com existentes
@@ -453,7 +454,8 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
             await sharePointFileService.saveFormAttachments(
               cnpj,
               empresa,
-              attachmentsToSave
+              attachmentsToSave,
+              state.formData.id! // Usar o ID do formulário existente
             );
 
           // Mesclar anexos jÃ¡ existentes com os recÃ©m-salvos

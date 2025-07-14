@@ -646,7 +646,8 @@ export const RevisaoFinal: React.FC = () => {
               await sharePointFileService.saveFormAttachments(
                 cnpj,
                 empresa,
-                attachmentsToSave
+                attachmentsToSave,
+                state.formData.id! // Adicionar ID do formulário obrigatório
               );
 
             // Mesclar anexos existentes com recém-salvos

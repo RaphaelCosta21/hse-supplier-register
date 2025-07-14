@@ -166,13 +166,14 @@ export class SharePointFileService {
     cnpj: string,
     nomeEmpresa: string,
     attachments: { [category: string]: IAttachmentMetadata[] },
-    formularioId?: number,
+    formularioId: number, // Agora obrigatório
     progressCallback?: IProgressCallback
   ): Promise<{ [category: string]: IAttachmentMetadata[] }> {
     try {
       console.log("=== SALVANDO ANEXOS DO FORMULÁRIO ===");
       console.log("CNPJ:", cnpj);
       console.log("Empresa:", nomeEmpresa);
+      console.log("Formulário ID:", formularioId);
       console.log("Anexos recebidos:", Object.keys(attachments));
 
       progressCallback?.onProgress(
@@ -188,15 +189,13 @@ export class SharePointFileService {
         );
       }
 
-      progressCallback?.onProgress("Criando estrutura de pastas...", 10); // Criar nome da pasta principal (remover pontos e barras do CNPJ)
-      const cleanCNPJ = cnpj.replace(/[.\-/]/g, "");
-      const mainFolderName = `${cleanCNPJ}-${this.sanitizeFolderName(
-        nomeEmpresa
-      )}`;
-      console.log("Pasta principal:", mainFolderName);
-
+      progressCallback?.onProgress("Criando estrutura de pastas...", 10); 
+      
       // Garantir que a pasta principal existe e verificar se foi criada agora
-      const folderWasCreated = await this.ensureMainFolder(mainFolderName);
+      const folderResult = await this.ensureMainFolder(cnpj, nomeEmpresa, formularioId);
+      const mainFolderName = folderResult.folderName;
+      const folderWasCreated = folderResult.wasCreated;
+      console.log("Pasta principal com ID:", mainFolderName);
       progressCallback?.onProgress("Pasta principal criada...", 15);
 
       const savedAttachments: { [category: string]: IAttachmentMetadata[] } =
@@ -363,7 +362,17 @@ export class SharePointFileService {
    * Garante que a pasta principal existe
    * Retorna true se a pasta foi criada agora, false se já existia
    */
-  public async ensureMainFolder(mainFolderName: string): Promise<boolean> {
+  public async ensureMainFolder(
+    cnpj: string,
+    nomeEmpresa: string,
+    formularioId: number
+  ): Promise<{ folderName: string; wasCreated: boolean }> {
+    // Criar nome da pasta principal com ID: CNPJ-NomeDaEmpresa-ID
+    const cleanCNPJ = cnpj.replace(/[.\-/]/g, "");
+    const mainFolderName = `${cleanCNPJ}-${this.sanitizeFolderName(
+      nomeEmpresa
+    )}-${formularioId}`;
+
     try {
       console.log(`=== VERIFICANDO PASTA PRINCIPAL: ${mainFolderName} ===`);
 
@@ -374,7 +383,7 @@ export class SharePointFileService {
           .rootFolder.folders.getByUrl(mainFolderName)();
 
         console.log("Pasta principal já existe:", existingFolder.Name);
-        return false; // Pasta já existia
+        return { folderName: mainFolderName, wasCreated: false }; // Pasta já existia
       } catch {
         // Se não existe, criar a pasta principal
         console.log("Pasta principal não existe, criando...");
@@ -384,7 +393,7 @@ export class SharePointFileService {
           .rootFolder.folders.addUsingPath(mainFolderName);
 
         console.log("Pasta principal criada com sucesso:", newFolder.Name);
-        return true; // Pasta foi criada agora
+        return { folderName: mainFolderName, wasCreated: true }; // Pasta foi criada agora
       }
     } catch (error) {
       console.error("Erro ao criar pasta principal:", error);
@@ -394,6 +403,7 @@ export class SharePointFileService {
   /**
    * Garante que uma subpasta existe dentro da pasta principal (via pasta pai)
    * Se já existir, apenas retorna o caminho.
+   * IMPORTANTE: A pasta principal deve já existir antes de chamar este método
    */
   private async ensureSubFolder(
     mainFolderName: string,
@@ -401,9 +411,8 @@ export class SharePointFileService {
   ): Promise<string> {
     console.log(
       `=== CRIANDO/VERIFICANDO SUBPASTA: ${subFolderName} DENTRO DE ${mainFolderName} ===`
-    ); // Garantir que a pasta principal existe
-    await this.ensureMainFolder(mainFolderName);
-
+    ); 
+    
     const subFolderPath = `${mainFolderName}/${subFolderName}`;
     console.log("📁 Caminho completo da subpasta:", subFolderPath);
 

@@ -160,20 +160,19 @@ export class SharePointService {
             this.context,
             "anexos-contratadas"
           );
-          const cleanCNPJ = dados.cnpj.replace(/[./-]/g, "");
-          const mainFolderName = `${cleanCNPJ}-${sharePointFileService.sanitizeFolderName(
-            dados.empresa
-          )}`;
 
-          const folderWasCreated = await sharePointFileService.ensureMainFolder(
-            mainFolderName
+          // Criar pasta com estrutura: CNPJ-NomeDaEmpresa-ID
+          const folderResult = await sharePointFileService.ensureMainFolder(
+            dados.cnpj,
+            dados.empresa,
+            formId
           );
 
           // 3. Criar item na lista secundária (hse-new-register-sup) se pasta foi criada
-          if (folderWasCreated) {
+          if (folderResult.wasCreated) {
             const userEmail = this.context.pageContext.user.email;
             await sharePointFileService.addSupplierRegisterEntry(
-              mainFolderName,
+              folderResult.folderName,
               userEmail
             );
             console.log(
@@ -313,7 +312,7 @@ export class SharePointService {
 
       // 1. Criar item na lista principal (hse-new-register)
       const result = await list.items.add(itemData);
-      const formId = result.data.Id;
+      const formId = result.Id;
 
       // 2. Criar pasta se existem dados básicos (para novos formulários)
       if (dados.cnpj && dados.empresa) {
@@ -322,20 +321,19 @@ export class SharePointService {
             this.context,
             "anexos-contratadas"
           );
-          const cleanCNPJ = dados.cnpj.replace(/[./-]/g, "");
-          const mainFolderName = `${cleanCNPJ}-${sharePointFileService.sanitizeFolderName(
-            dados.empresa
-          )}`;
 
-          const folderWasCreated = await sharePointFileService.ensureMainFolder(
-            mainFolderName
+          // Criar pasta com estrutura: CNPJ-NomeDaEmpresa-ID
+          const folderResult = await sharePointFileService.ensureMainFolder(
+            dados.cnpj,
+            dados.empresa,
+            formId
           );
 
           // 3. Criar item na lista secundária (hse-new-register-sup) se pasta foi criada
-          if (folderWasCreated) {
+          if (folderResult.wasCreated) {
             const userEmail = this.context.pageContext.user.email;
             await sharePointFileService.addSupplierRegisterEntry(
-              mainFolderName,
+              folderResult.folderName,
               userEmail
             );
             console.log(
