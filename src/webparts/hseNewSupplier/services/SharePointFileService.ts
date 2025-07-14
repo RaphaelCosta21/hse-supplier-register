@@ -333,7 +333,7 @@ export class SharePointFileService {
   /**
    * Adiciona um item na lista "hse-new-register-sup" com o nome da pasta e email do usuário
    */
-  private async addSupplierRegisterEntry(
+  public async addSupplierRegisterEntry(
     folderName: string,
     userEmail: string
   ): Promise<void> {
@@ -363,7 +363,7 @@ export class SharePointFileService {
    * Garante que a pasta principal existe
    * Retorna true se a pasta foi criada agora, false se já existia
    */
-  private async ensureMainFolder(mainFolderName: string): Promise<boolean> {
+  public async ensureMainFolder(mainFolderName: string): Promise<boolean> {
     try {
       console.log(`=== VERIFICANDO PASTA PRINCIPAL: ${mainFolderName} ===`);
 
@@ -599,7 +599,7 @@ export class SharePointFileService {
   /**
    * Limpa nome da empresa para usar como nome de pasta
    */
-  private sanitizeFolderName(name: string): string {
+  public sanitizeFolderName(name: string): string {
     return name
       .replace(/[<>:"/\\|?*]/g, "") // Removes invalid characters
       .replace(/\s+/g, "_") // Replaces spaces with underscores

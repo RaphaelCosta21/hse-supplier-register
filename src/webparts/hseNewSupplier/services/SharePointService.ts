@@ -6,6 +6,7 @@ import "@pnp/sp/items";
 import { IHSEFormData } from "../types/IHSEFormData";
 import { IAttachmentMetadata } from "../types/IAttachmentMetadata";
 import { IFormFieldChange, IRevisionEntry } from "../types/IApplicationPhase";
+import { SharePointFileService } from "./SharePointFileService";
 
 export class SharePointService {
   private sp: SPFI;
@@ -146,8 +147,49 @@ export class SharePointService {
         );
       }
 
+      // 1. Criar item na lista principal (hse-new-register)
       const result = await list.items.add(itemData);
-      return result.data.Id;
+      const formId = result.Id;
+      console.log(
+        `🟢 Formulário criado na lista principal (hse-new-register). ID do item: ${formId}`
+      );
+      // 2. Criar pasta se existem dados básicos (para novos formulários)
+      if (dados.cnpj && dados.empresa) {
+        try {
+          const sharePointFileService = new SharePointFileService(
+            this.context,
+            "anexos-contratadas"
+          );
+          const cleanCNPJ = dados.cnpj.replace(/[./-]/g, "");
+          const mainFolderName = `${cleanCNPJ}-${sharePointFileService.sanitizeFolderName(
+            dados.empresa
+          )}`;
+
+          const folderWasCreated = await sharePointFileService.ensureMainFolder(
+            mainFolderName
+          );
+
+          // 3. Criar item na lista secundária (hse-new-register-sup) se pasta foi criada
+          if (folderWasCreated) {
+            const userEmail = this.context.pageContext.user.email;
+            await sharePointFileService.addSupplierRegisterEntry(
+              mainFolderName,
+              userEmail
+            );
+            console.log(
+              "✅ Ordem correta: Lista principal → Pasta → Lista secundária"
+            );
+          }
+        } catch (error) {
+          console.warn(
+            "Erro ao criar pasta/lista secundária, mas formulário foi salvo:",
+            error
+          );
+          // Não falhar o salvamento principal por causa deste erro
+        }
+      }
+
+      return formId;
     } catch (error) {
       console.error("Erro ao salvar formulário:", error);
       throw new Error(`Falha ao salvar formulário: ${error.message}`);
@@ -269,9 +311,48 @@ export class SharePointService {
         );
       }
 
+      // 1. Criar item na lista principal (hse-new-register)
       const result = await list.items.add(itemData);
-      console.log("Formulário HSE enviado com sucesso! ID:", result.data.Id);
-      return result.data.Id;
+      const formId = result.data.Id;
+
+      // 2. Criar pasta se existem dados básicos (para novos formulários)
+      if (dados.cnpj && dados.empresa) {
+        try {
+          const sharePointFileService = new SharePointFileService(
+            this.context,
+            "anexos-contratadas"
+          );
+          const cleanCNPJ = dados.cnpj.replace(/[./-]/g, "");
+          const mainFolderName = `${cleanCNPJ}-${sharePointFileService.sanitizeFolderName(
+            dados.empresa
+          )}`;
+
+          const folderWasCreated = await sharePointFileService.ensureMainFolder(
+            mainFolderName
+          );
+
+          // 3. Criar item na lista secundária (hse-new-register-sup) se pasta foi criada
+          if (folderWasCreated) {
+            const userEmail = this.context.pageContext.user.email;
+            await sharePointFileService.addSupplierRegisterEntry(
+              mainFolderName,
+              userEmail
+            );
+            console.log(
+              "✅ Ordem correta: Lista principal → Pasta → Lista secundária"
+            );
+          }
+        } catch (error) {
+          console.warn(
+            "Erro ao criar pasta/lista secundária, mas formulário foi salvo:",
+            error
+          );
+          // Não falhar o salvamento principal por causa deste erro
+        }
+      }
+
+      console.log("Formulário HSE enviado com sucesso! ID:", formId);
+      return formId;
     } catch (error) {
       console.error("Erro ao enviar formulário:", error);
 
