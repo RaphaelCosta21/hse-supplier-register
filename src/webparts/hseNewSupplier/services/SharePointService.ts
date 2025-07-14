@@ -85,7 +85,18 @@ export class SharePointService {
     const userContext = this.context?.pageContext?.user;
     const now = new Date();
     const normalizedAttachments = normalizeAttachments();
-    const attachmentCount = countAttachments(); // Criar JSON de forma mais segura
+    const attachmentCount = countAttachments(); // Determinar status e campos dinâmicos baseados no statusFormulario
+    // Isso unifica saveFormData e submitFormData em um só método
+    const isSubmission = formData.statusFormulario === "Enviado";
+    const statusAvaliacao = isSubmission ? "Enviado" : "Em Andamento";
+    const percentualConclusao = isSubmission
+      ? 100
+      : calculateCompletionPercentage();
+    const titleFormulario = isSubmission
+      ? dados.empresa || "Formulário HSE"
+      : dados.empresa || "Formulário em Andamento";
+
+    // Criar JSON de forma mais segura
     const createFormDataJSON = (): Record<string, unknown> => {
       const baseJsonData = {
         dadosGerais: formData.dadosGerais || {},
@@ -93,14 +104,15 @@ export class SharePointService {
         servicosEspeciais: formData.servicosEspeciais || {},
         anexos: normalizedAttachments, // Usar anexos normalizados
         metadata: {
-          dataSalvamento: now.toISOString(),
+          [isSubmission ? "dataSubmissao" : "dataSalvamento"]:
+            now.toISOString(),
           usuario: userContext?.displayName || "Usuário Externo",
           email: userContext?.email || "usuario@externo.com",
           temAnexos: attachmentCount > 0,
           totalAnexos: attachmentCount,
           // Adicionar histórico de mudança de status
           historicoStatusChange: {
-            "Em Andamento": {
+            [statusAvaliacao]: {
               dataAlteracao: now.toISOString(),
               usuario: userContext?.displayName || "Usuário Externo",
               email: userContext?.email || "usuario@externo.com",
@@ -110,22 +122,25 @@ export class SharePointService {
       };
 
       // Adicionar rastreamento de revisão
-      return this.addRevisionHistoryToJSON(baseJsonData, "salvo");
+      return this.addRevisionHistoryToJSON(
+        baseJsonData,
+        isSubmission ? "enviado" : "salvo"
+      );
     };
 
     const jsonData = createFormDataJSON();
 
     // Mapear dados para as colunas exatas da lista SharePoint
     const itemData = {
-      Title: (dados.empresa || "Formulário em Andamento").toString(),
+      Title: titleFormulario.toString(),
       CNPJ: (dados.cnpj || "").toString(),
       NumeroContrato: (dados.numeroContrato || "").toString(),
-      StatusAvaliacao: "Em Andamento", // Opções: Em Andamento, Enviado, Aprovado, Rejeitado
+      StatusAvaliacao: statusAvaliacao, // Opções: Em Andamento, Enviado, Aprovado, Rejeitado
       DataEnvio: now.toISOString(),
       DataCriacao: now.toISOString(),
       ResponsavelTecnico: (dados.responsavelTecnico || "").toString(),
       GrauRisco: (dados.grauRisco || "1").toString(), // Choice field
-      PercentualConclusao: calculateCompletionPercentage(),
+      PercentualConclusao: percentualConclusao,
       DadosFormulario: JSON.stringify(jsonData),
       UltimaModificacao: now.toISOString(),
       EmailPreenchimento: (
@@ -1179,6 +1194,69 @@ export class SharePointService {
         };
       }
 
+      // 🔥 DETECTAR MUDANÇA DE STATUS PARA "ENVIADO"
+      const isSubmission = newFormData.statusFormulario === "Enviado";
+      let tipoOperacaoFinal =
+        allChanges.length > 0 ? "Rascunho Atualizado" : "Sem Alterações";
+
+      if (isSubmission) {
+        // Adicionar entrada no histórico de status para "Enviado"
+        historicoStatusExistente.Enviado = {
+          dataAlteracao: now.toISOString(),
+          usuario: userContext?.displayName || "Usuário Externo",
+          email: userContext?.email || "usuario@externo.com",
+        };
+        tipoOperacaoFinal = "Formulário Enviado";
+
+        // Criar nova revisão específica para submissão (se não havia mudanças)
+        if (allChanges.length === 0) {
+          const novaVersao = historicoRevisoes.length + 1;
+          const revisaoSubmissao: IRevisionEntry = {
+            numeroRevisao: novaVersao,
+            data: now.toISOString(),
+            usuario: userContext?.displayName || "Usuário Externo",
+            email: userContext?.email || "usuario@externo.com",
+            tipoOperacao: "Formulário Enviado",
+            alteracoes: [
+              {
+                campo: "StatusFormulario",
+                tipo: "alterado",
+                valorAnterior: "Em Andamento",
+                valorNovo: "Enviado",
+              },
+            ],
+            totalAlteracoes: 1,
+            resumo: `Formulário enviado para análise (Rev. ${novaVersao})`,
+          };
+
+          historicoRevisoes.push(revisaoSubmissao);
+          console.log(`=== REVISÃO DE SUBMISSÃO CRIADA ===`);
+          console.log(
+            `Revisão ${novaVersao} para mudança de status: Em Andamento → Enviado`
+          );
+        } else {
+          // Se já havia mudanças, atualizar a última revisão para refletir a submissão
+          const ultimaRevisao = historicoRevisoes[historicoRevisoes.length - 1];
+          if (ultimaRevisao) {
+            ultimaRevisao.tipoOperacao = "Formulário Enviado";
+            ultimaRevisao.resumo = ultimaRevisao.resumo.replace(
+              "Rascunho atualizado",
+              "Formulário enviado"
+            );
+            // Adicionar mudança de status às alterações
+            ultimaRevisao.alteracoes.push({
+              campo: "StatusFormulario",
+              tipo: "alterado",
+              valorAnterior: "Em Andamento",
+              valorNovo: "Enviado",
+            });
+            ultimaRevisao.totalAlteracoes++;
+          }
+        }
+
+        console.log("✅ Histórico de status atualizado para incluir 'Enviado'");
+      }
+
       const updatedFormData = {
         ...newFormData,
         anexos: newAttachments,
@@ -1193,8 +1271,7 @@ export class SharePointService {
           ),
           historicoRevisoes: historicoRevisoes,
           numeroRevisao: numeroRevisaoAtual,
-          tipoOperacao:
-            allChanges.length > 0 ? "Rascunho Atualizado" : "Sem Alterações",
+          tipoOperacao: tipoOperacaoFinal,
           historicoStatusChange: historicoStatusExistente,
         },
       };
@@ -1233,7 +1310,10 @@ export class SharePointService {
           newFormData.dadosGerais?.responsavelTecnico || ""
         ).toString(),
         GrauRisco: (newFormData.dadosGerais?.grauRisco || "1").toString(),
-        PercentualConclusao: calculateCompletionPercentage(),
+        StatusAvaliacao: isSubmission ? "Enviado" : "Em Andamento", // 🔥 Atualizar status na coluna do SharePoint
+        PercentualConclusao: isSubmission
+          ? 100
+          : calculateCompletionPercentage(), // 🔥 100% quando enviado
         DadosFormulario: JSON.stringify(updatedFormData),
         UltimaModificacao: now.toISOString(),
         AnexosCount: Object.values(newAttachments).reduce(
@@ -1250,10 +1330,8 @@ export class SharePointService {
       console.log("=== ATUALIZAÇÃO CONCLUÍDA COM SUCESSO ===");
       console.log("Número total de revisões salvas:", historicoRevisoes.length);
       console.log("Revisão atual:", numeroRevisaoAtual);
-      console.log(
-        "Última operação:",
-        allChanges.length > 0 ? "Rascunho Atualizado" : "Sem Alterações"
-      );
+      console.log("Última operação:", tipoOperacaoFinal);
+      console.log("Status final:", isSubmission ? "Enviado" : "Em Andamento");
     } catch (error) {
       console.error("Erro na atualização com rastreamento:", error);
       throw new Error(`Falha ao atualizar formulário: ${error.message}`);

@@ -613,91 +613,131 @@ export const RevisaoFinal: React.FC = () => {
 
     try {
       await runWithLoading(async () => {
-        // Save attachments first if needed
-        let savedAttachments = state.attachments;
         const cnpj = state.formData.dadosGerais.cnpj;
         const empresa = state.formData.dadosGerais.empresa;
 
-        if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
-          console.log("=== REVISÃO FINAL: VERIFICANDO ANEXOS ===");
+        console.log("=== INICIANDO SUBMISSÃO DO FORMULÁRIO ===");
+        console.log("Form ID atual:", state.formData.id);
+        console.log("CNPJ:", cnpj);
+        console.log("Empresa:", empresa);
 
-          // Separar anexos que precisam ser salvos vs anexos já salvos
-          const attachmentsToSave: {
-            [category: string]: (typeof state.attachments)[string];
-          } = {};
-          let hasNewAttachments = false;
+        let formId: number;
 
-          Object.keys(state.attachments).forEach((category) => {
-            const files = state.attachments[category];
-            const newFiles = files.filter((file) => file.fileData);
-
-            if (newFiles.length > 0) {
-              attachmentsToSave[category] = newFiles;
-              hasNewAttachments = true;
-              console.log(
-                `Categoria '${category}': ${newFiles.length} novos anexos para submissão`
-              );
-            }
-          });
-
-          if (hasNewAttachments) {
-            console.log("Salvando novos anexos para submissão final...");
-            const newlySavedAttachments =
-              await sharePointFileService.saveFormAttachments(
-                cnpj,
-                empresa,
-                attachmentsToSave,
-                state.formData.id! // Adicionar ID do formulário obrigatório
-              );
-
-            // Mesclar anexos existentes com recém-salvos
-            savedAttachments = { ...state.attachments };
-            Object.keys(newlySavedAttachments).forEach((category) => {
-              if (savedAttachments[category]) {
-                const existingFiles = savedAttachments[category].filter(
-                  (f) => !f.fileData
-                );
-                savedAttachments[category] = [
-                  ...existingFiles,
-                  ...newlySavedAttachments[category],
-                ];
-              } else {
-                savedAttachments[category] = newlySavedAttachments[category];
-              }
-            });
-          } else {
-            console.log("Todos os anexos já estão prontos para submissão");
-          }
-        }
-
-        // Atualizar formulário existente ao invés de criar novo
+        // 🔄 ORDEM CORRETA: 1️⃣ PRIMEIRO salvar/atualizar o formulário na lista principal
         if (state.formData.id) {
-          // Se já existe um ID, atualizar o formulário existente
-          await sharePointService.submitFormWithUpdate(
+          // FORMULÁRIO EXISTENTE - Atualizar primeiro
+          console.log(
+            "Atualizando formulário existente ID:",
+            state.formData.id
+          );
+          await sharePointService.updateFormWithChanges(
             state.formData.id,
             {
               ...state.formData,
-              statusFormulario: "Enviado",
+              statusFormulario: "Enviado", // Status já vai como "Enviado"
             },
-            savedAttachments
+            state.attachments
           );
+          formId = state.formData.id;
+          console.log("✅ Formulário atualizado para 'Enviado' com sucesso");
         } else {
-          // Se não tem ID, usar o método original (criar novo)
-          await sharePointService.submitFormData(
+          // NOVO FORMULÁRIO - Criar primeiro na lista principal COM STATUS "ENVIADO"
+          console.log("🔄 CRIANDO NOVO FORMULÁRIO NA LISTA PRINCIPAL...");
+          formId = await sharePointService.saveFormData(
             {
               ...state.formData,
-              statusFormulario: "Enviado",
+              statusFormulario: "Enviado", // Status já vai como "Enviado"
             },
-            savedAttachments
+            state.attachments
           );
+          console.log(
+            "✅ Formulário criado na lista principal com ID:",
+            formId
+          );
+
+          // Atualizar o estado local com o novo ID
+          dispatch({
+            type: "SET_FORM_DATA",
+            payload: {
+              ...state.formData,
+              id: formId,
+            },
+          });
         }
 
-        // Clear local draft after successful submission
+        // 2️⃣ DEPOIS processar anexos novos (se houver)
+        if (cnpj && empresa && Object.keys(state.attachments).length > 0) {
+          try {
+            console.log("=== PROCESSANDO ANEXOS (APÓS FORMULÁRIO SALVO) ===");
+
+            // Separar anexos que precisam ser salvos vs anexos já salvos
+            const attachmentsToSave: {
+              [category: string]: (typeof state.attachments)[string];
+            } = {};
+            let hasNewAttachments = false;
+
+            Object.keys(state.attachments).forEach((category) => {
+              const files = state.attachments[category];
+              const newFiles = files.filter((file) => file.fileData);
+
+              if (newFiles.length > 0) {
+                attachmentsToSave[category] = newFiles;
+                hasNewAttachments = true;
+                console.log(
+                  `Categoria '${category}': ${newFiles.length} novos anexos para submissão`
+                );
+              }
+            });
+
+            if (hasNewAttachments) {
+              console.log("🔄 SALVANDO ANEXOS (FORMULÁRIO JÁ EXISTE)...");
+              const newlySavedAttachments =
+                await sharePointFileService.saveFormAttachments(
+                  cnpj,
+                  empresa,
+                  attachmentsToSave,
+                  formId // Passar o ID do formulário
+                );
+
+              // Mesclar anexos salvos com existentes
+              const updatedAttachments = { ...state.attachments };
+              Object.keys(newlySavedAttachments).forEach((category) => {
+                if (updatedAttachments[category]) {
+                  const existingFiles = updatedAttachments[category].filter(
+                    (f) => !f.fileData
+                  );
+                  updatedAttachments[category] = [
+                    ...existingFiles,
+                    ...newlySavedAttachments[category],
+                  ];
+                } else {
+                  updatedAttachments[category] =
+                    newlySavedAttachments[category];
+                }
+              });
+
+              console.log("✅ Anexos salvos após o formulário");
+            } else {
+              console.log("ℹ️ Nenhum anexo novo para salvar");
+            }
+          } catch (attachmentError) {
+            console.warn(
+              "⚠️ Erro ao salvar anexos, mas formulário foi enviado:",
+              attachmentError
+            );
+          }
+        }
+
+        // 3️⃣ Por fim, marcar como bem-sucedido na submissão
+        console.log("🔄 FINALIZANDO SUBMISSÃO - STATUS JÁ É 'ENVIADO'...");
+
+        // Limpar rascunho local após envio bem-sucedido
         localStorage.removeItem("hse_form_draft");
 
-        // Mark as successful if we reach this point
+        // Marcar como bem-sucedido se chegamos até aqui
         submissionSuccessful = true;
-      }, "submit");
+        console.log("✅ SUBMISSÃO FINALIZADA COM SUCESSO!");
+      }, "Enviando formulário...");
 
       // Show success toast
       setToastMessage("Formulário enviado com sucesso!");
