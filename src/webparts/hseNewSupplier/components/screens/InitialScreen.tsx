@@ -794,12 +794,18 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                               variant="small"
                               style={{ color: oceaneeringColors.textSecondary }}
                             >
-                              Última modificação: {form.dataModificacaoCompleta || 
-                                new Date(form.dataModificacao).toLocaleDateString("pt-BR") + " às " + 
-                                new Date(form.dataModificacao).toLocaleTimeString("pt-BR", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                              Última modificação:{" "}
+                              {form.dataModificacaoCompleta ||
+                                new Date(
+                                  form.dataModificacao
+                                ).toLocaleDateString("pt-BR") +
+                                  " às " +
+                                  new Date(
+                                    form.dataModificacao
+                                  ).toLocaleTimeString("pt-BR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
                             </Text>
                             <div
                               style={{
