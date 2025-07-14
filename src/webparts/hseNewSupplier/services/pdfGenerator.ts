@@ -386,7 +386,7 @@ export class PDFGeneratorService {
       NR23: "NR 23 - Proteção Contra Incêndios",
       LICENCAS_AMBIENTAIS: "Licenças Ambientais",
       LEGISLACAO_MARITIMA: "Legislação Marítima",
-      TREINAMENTOS: "Treinamentos Obrigatórios",
+      TREINAMENTOS_OBRIGATORIOS: "Treinamentos Obrigatórios",
       GESTAO_SMS: "Gestão de SMS (Saúde, Meio Ambiente e Segurança)",
     };
     return titles[categoryKey] || categoryKey;
@@ -411,7 +411,7 @@ export class PDFGeneratorService {
       NR23: "nr23",
       LICENCAS_AMBIENTAIS: "licencasAmbientais",
       LEGISLACAO_MARITIMA: "legislacaoMaritima",
-      TREINAMENTOS: "treinamentos",
+      TREINAMENTOS_OBRIGATORIOS: "treinamentos",
       GESTAO_SMS: "gestaoSMS",
     };
     return keyMap[categoryKey] || categoryKey.toLowerCase();
@@ -914,58 +914,141 @@ export class PDFGeneratorService {
     `;
 
     // Mapear categorias de anexos com nomes amigáveis
+    // Incluindo todas as chaves possíveis que podem existir nos anexos
     const categorias = {
-      // NRs Obrigatórias
+      // Dados Gerais
+      rem: "REM - Resumo Estatístico Mensal",
+
+      // NRs Obrigatórias - baseado na interface IAnexosFormulario
       sesmt:
         "SESMT - Serviços Especializados em Engenharia de Segurança e Medicina do Trabalho",
       cipa: "CIPA - Comissão Interna de Prevenção de Acidentes",
-      caEpi:
+      caEPI:
         "CA EPI - Certificado de Aprovação de Equipamentos de Proteção Individual",
       pcmso: "PCMSO - Programa de Controle Médico de Saúde Ocupacional",
       aso: "ASO - Atestado de Saúde Ocupacional",
 
-      // NRs Opcionais
-      nr10Certificados: "NR 10 - Certificados de Eletricidade",
-      nr11Documentos: "NR 11 - Documentos de Transporte e Movimentação",
-      nr12Documentos: "NR 12 - Documentos de Máquinas e Equipamentos",
-      nr13Documentos: "NR 13 - Documentos de Caldeiras e Vasos de Pressão",
-      nr15Documentos: "NR 15 - Documentos de Atividades Insalubres",
-      nr16Documentos: "NR 16 - Documentos de Atividades Periculosas",
-      nr23Documentos: "NR 23 - Documentos de Proteção Contra Incêndios",
+      // NRs Opcionais - usando as chaves corretas da interface
+      nr10ProjetoInstalacoes: "NR 10 - Projeto de Instalações Elétricas",
+      nr10CertificacaoProfissionais: "NR 10 - Certificação de Profissionais",
+      nr11CertificadoTreinamento: "NR 11 - Certificado de Treinamento",
+      nr12PlanoInspecao: "NR 12 - Plano de Inspeção de Máquinas",
+      nr12EvidenciaDispositivo:
+        "NR 12 - Evidência de Dispositivos de Segurança",
+      nr13EvidenciaSistematica:
+        "NR 13 - Evidência de Sistemática de Caldeiras e Vasos de Pressão",
+      nr15LaudoInsalubridade: "NR 15 - Laudo de Insalubridade",
+      nr16LaudoPericulosidade: "NR 16 - Laudo de Periculosidade",
+      nr23LaudoManutencao:
+        "NR 23 - Laudo de Manutenção de Proteção Contra Incêndios",
 
-      // Outros itens de conformidade
-      licencasAmbientais: "Licenças Ambientais",
-      legislacaoMaritima: "Legislação Marítima",
-      treinamentos: "Treinamentos Obrigatórios",
-      gestaoSMS: "Gestão de SMS",
+      // Licenças Ambientais
+      licencaOperacao: "Licenças Ambientais - Licença de Operação",
+
+      // Treinamentos Obrigatórios
+      certificadoProgramaTreinamento:
+        "Treinamentos - Certificado de Programa de Treinamento",
+      evidenciaTreinamento: "Treinamentos - Evidência de Treinamento",
+
+      // Gestão de SMS
+      smsProcedimentoAcidentes: "SMS - Procedimento de Acidentes",
+      smsCalendarioInspecoes: "SMS - Calendário de Inspeções",
+      smsProcedimentoResiduos: "SMS - Procedimento de Resíduos",
+      smsMetasObjetivos: "SMS - Metas e Objetivos",
+      smsProgramaAnual: "SMS - Programa Anual",
 
       // Serviços Especializados - Embarcações
       iopp: "IOPP - Certificado Internacional de Prevenção da Poluição por Óleo",
       registroArmador: "Registro de Armador",
-      propriedadeMarítima: "Propriedade Marítima",
-      certificadoArqueacao: "Certificado de Arqueação",
-      tituloInscricaoEmbarcacao: "Título de Inscrição da Embarcação",
-      certificadoSegurancaNavegacao: "Certificado de Segurança da Navegação",
-      certificadoRadio: "Certificado de Rádio",
-      certificadoTripulacao: "Certificados da Tripulação",
-      seguroEmbarcacao: "Seguro da Embarcação",
+      propriedadeMaritima: "Propriedade Marítima",
+      arqueacao: "Certificado de Arqueação",
+      segurancaNavegacao: "Certificado de Segurança da Navegação",
+      classificacaoCasco: "Classificação do Casco",
+      classificacaoMaquinas: "Classificação de Máquinas",
+      bordaLivre: "Borda Livre",
+      seguroDepem: "Seguro DEPEM",
+      autorizacaoAntaq: "Autorização ANTAQ",
+      tripulacaoSeguranca: "Tripulação de Segurança",
+      agulhaMagnetica: "Agulha Magnética",
+      balsaInflavel: "Balsa Inflável",
+      licencaRadio: "Licença de Rádio",
 
       // Serviços Especializados - Içamento
       testeCarga: "Teste de Carga",
       registroCREA: "Registro no CREA",
       art: "ART - Anotação de Responsabilidade Técnica",
-      certificadoOperadores: "Certificados dos Operadores",
-      seguroEquipamento: "Seguro do Equipamento",
+      planoManutencao: "Plano de Manutenção",
+      monitoramentoFumaca: "Monitoramento de Fumaça",
+      certificacaoEquipamentos: "Certificação de Equipamentos",
 
-      // Outros documentos
-      rem: "REM - Resumo Estatístico Mensal",
+      // Outras categorias possíveis (mapeamento adicional)
       outros: "Outros Documentos",
     };
 
     let temAnexos = false;
 
+    // Debug: verificar estrutura dos anexos recebidos
+    console.log("📎 Estrutura dos anexos recebidos:", anexosObj);
+    console.log("📎 Chaves disponíveis:", Object.keys(anexosObj));
+
+    // Verificar se os anexos estão estruturados em subgrupos ou diretos
+    const anexosAchatados: Record<string, unknown[]> = {};
+
+    // Função para achatar a estrutura de anexos
+    const flattenAttachments = (
+      obj: Record<string, unknown>,
+      prefix = ""
+    ): void => {
+      Object.entries(obj).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          // É um array de anexos
+          anexosAchatados[key] = value;
+        } else if (value && typeof value === "object" && value !== null) {
+          // É um objeto, verificar se tem subpropriedades
+          const subObj = value as Record<string, unknown>;
+          if (Object.values(subObj).some((v) => Array.isArray(v))) {
+            // Tem arrays dentro, achatar recursivamente
+            flattenAttachments(subObj, prefix ? `${prefix}.${key}` : key);
+          } else {
+            // Pode ser um objeto de anexo único, converter para array
+            anexosAchatados[key] = [value];
+          }
+        } else if (value) {
+          // Valor único que não é null/undefined, converter para array
+          anexosAchatados[key] = [value];
+        }
+      });
+    };
+
+    // Achatar a estrutura de anexos
+    flattenAttachments(anexosObj);
+
+    console.log("📎 Anexos achatados:", anexosAchatados);
+
     Object.entries(categorias).forEach(([categoria, nomeAmigavel]) => {
-      const anexosCategoria = anexosObj[categoria] as unknown[];
+      // Buscar anexos nesta categoria
+      let anexosCategoria = anexosAchatados[categoria];
+
+      // Se não encontrou com a chave direta, tentar variações
+      if (!anexosCategoria) {
+        // Tentar buscar nas estruturas aninhadas
+        const possiveisChaves = [
+          categoria,
+          `conformidade.${categoria}`,
+          `embarcacoes.${categoria}`,
+          `icamento.${categoria}`,
+          `dadosGerais.${categoria}`,
+        ];
+
+        for (const chave of possiveisChaves) {
+          if (anexosObj[chave]) {
+            anexosCategoria = Array.isArray(anexosObj[chave])
+              ? (anexosObj[chave] as unknown[])
+              : [anexosObj[chave]];
+            break;
+          }
+        }
+      }
 
       if (
         anexosCategoria &&
@@ -973,6 +1056,9 @@ export class PDFGeneratorService {
         anexosCategoria.length > 0
       ) {
         temAnexos = true;
+        console.log(
+          `📎 Encontrados ${anexosCategoria.length} anexos para categoria: ${categoria}`
+        );
 
         content += `
           <div class="anexo-categoria" style="page-break-inside: avoid;">

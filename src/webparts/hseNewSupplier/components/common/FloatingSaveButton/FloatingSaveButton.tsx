@@ -264,10 +264,10 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     if (servicosEspeciais.fornecedorIcamento) {
       const required = [
         "testeCarga",
-        "creaEngenheiro",
+        "registroCREA",
         "art",
         "planoManutencao",
-        "fumacaPreta",
+        "monitoramentoFumaca",
         "certificacaoEquipamentos",
       ];
       for (const doc of required) {

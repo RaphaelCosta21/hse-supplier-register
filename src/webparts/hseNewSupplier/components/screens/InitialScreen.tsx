@@ -741,16 +741,9 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
               <Icon iconName="Warning" className={styles.alertIcon} />
               <div className={styles.alertText}>
                 <strong>IMPORTANTE:</strong> Apenas formulários com o status
-                &quot;Enviado&quot; serão avaliados pela Oceaneering.
-              </div>
-            </div>
-            {/* Mensagem de alerta sobre revisão */}
-            <div className={styles.alertMessageInitial}>
-              <Icon iconName="Warning" className={styles.alertIcon} />
-              <div className={styles.alertText}>
-                <strong>IMPORTANTE:</strong> Caso seja necessária a revisão de
-                qualquer campo de um formulário já enviado, solicite suporte ao
-                time de HSE.
+                &quot;Enviado&quot; serão avaliados pela Oceaneering. Caso seja
+                necessária a revisão de qualquer campo de um formulário já
+                enviado, solicite suporte ao time de HSE.
               </div>
             </div>
 
@@ -801,19 +794,12 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                               variant="small"
                               style={{ color: oceaneeringColors.textSecondary }}
                             >
-                              Última modificação:{" "}
-                              {new Date(
-                                form.dataModificacaoCompleta ||
-                                  form.dataModificacao
-                              ).toLocaleDateString("pt-BR")}{" "}
-                              às{" "}
-                              {new Date(
-                                form.dataModificacaoCompleta ||
-                                  form.dataModificacao
-                              ).toLocaleTimeString("pt-BR", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              Última modificação: {form.dataModificacaoCompleta || 
+                                new Date(form.dataModificacao).toLocaleDateString("pt-BR") + " às " + 
+                                new Date(form.dataModificacao).toLocaleTimeString("pt-BR", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
                             </Text>
                             <div
                               style={{

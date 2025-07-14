@@ -189,10 +189,14 @@ export class SharePointFileService {
         );
       }
 
-      progressCallback?.onProgress("Criando estrutura de pastas...", 10); 
-      
+      progressCallback?.onProgress("Criando estrutura de pastas...", 10);
+
       // Garantir que a pasta principal existe e verificar se foi criada agora
-      const folderResult = await this.ensureMainFolder(cnpj, nomeEmpresa, formularioId);
+      const folderResult = await this.ensureMainFolder(
+        cnpj,
+        nomeEmpresa,
+        formularioId
+      );
       const mainFolderName = folderResult.folderName;
       const folderWasCreated = folderResult.wasCreated;
       console.log("Pasta principal com ID:", mainFolderName);
@@ -411,8 +415,8 @@ export class SharePointFileService {
   ): Promise<string> {
     console.log(
       `=== CRIANDO/VERIFICANDO SUBPASTA: ${subFolderName} DENTRO DE ${mainFolderName} ===`
-    ); 
-    
+    );
+
     const subFolderPath = `${mainFolderName}/${subFolderName}`;
     console.log("📁 Caminho completo da subpasta:", subFolderPath);
 
