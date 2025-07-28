@@ -386,13 +386,9 @@ export const FORM_STEPS = [
     requiredFields: [
       "dadosGerais.empresa",
       "dadosGerais.cnpj",
-      "dadosGerais.numeroContrato",
-      "dadosGerais.dataInicioContrato",
-      "dadosGerais.dataTerminoContrato",
       "dadosGerais.responsavelTecnico",
       "dadosGerais.atividadePrincipalCNAE",
       "dadosGerais.grauRisco",
-      "dadosGerais.gerenteContratoMarine",
     ],
     requiredAttachments: [], // REM é opcional para testes
   },

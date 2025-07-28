@@ -70,10 +70,7 @@ export const RevisaoFinal: React.FC = () => {
   const getDadosGeraisResumo = (): {
     empresa: string;
     cnpj: string;
-    numeroContrato: string;
     responsavelTecnico: string;
-    dataInicioContrato: string;
-    dataTerminoContrato: string;
     anexoREM: string;
     isComplete: boolean;
   } => {
@@ -83,20 +80,7 @@ export const RevisaoFinal: React.FC = () => {
     return {
       empresa: dadosGerais?.empresa || "Não preenchido",
       cnpj: dadosGerais?.cnpj || "Não preenchido",
-      numeroContrato: dadosGerais?.numeroContrato || "Não preenchido",
       responsavelTecnico: dadosGerais?.responsavelTecnico || "Não preenchido",
-      dataInicioContrato: dadosGerais?.dataInicioContrato
-        ? dadosGerais.dataInicioContrato instanceof Date
-          ? dadosGerais.dataInicioContrato.toLocaleDateString("pt-BR")
-          : new Date(dadosGerais.dataInicioContrato).toLocaleDateString("pt-BR")
-        : "Não preenchido",
-      dataTerminoContrato: dadosGerais?.dataTerminoContrato
-        ? dadosGerais.dataTerminoContrato instanceof Date
-          ? dadosGerais.dataTerminoContrato.toLocaleDateString("pt-BR")
-          : new Date(dadosGerais.dataTerminoContrato).toLocaleDateString(
-              "pt-BR"
-            )
-        : "Não preenchido",
       anexoREM:
         attachments.rem?.length > 0
           ? attachments.rem.map((f) => f.fileName || f.originalName).join(", ")
@@ -104,10 +88,7 @@ export const RevisaoFinal: React.FC = () => {
       isComplete: Boolean(
         dadosGerais?.empresa &&
           dadosGerais?.cnpj &&
-          dadosGerais?.numeroContrato &&
           dadosGerais?.responsavelTecnico &&
-          dadosGerais?.dataInicioContrato &&
-          dadosGerais?.dataTerminoContrato &&
           attachments.rem?.length > 0
       ),
     };
@@ -926,34 +907,10 @@ export const RevisaoFinal: React.FC = () => {
               </div>
               <div className={styles.infoItem}>
                 <Text variant="smallPlus" className={styles.infoLabel}>
-                  Contrato:
-                </Text>
-                <Text variant="medium" className={styles.infoValue}>
-                  {dadosGeraisResumo.numeroContrato}
-                </Text>
-              </div>
-              <div className={styles.infoItem}>
-                <Text variant="smallPlus" className={styles.infoLabel}>
                   Responsável Técnico:
                 </Text>
                 <Text variant="medium" className={styles.infoValue}>
                   {dadosGeraisResumo.responsavelTecnico}
-                </Text>
-              </div>
-              <div className={styles.infoItem}>
-                <Text variant="smallPlus" className={styles.infoLabel}>
-                  Início do Contrato:
-                </Text>
-                <Text variant="medium" className={styles.infoValue}>
-                  {dadosGeraisResumo.dataInicioContrato}
-                </Text>
-              </div>
-              <div className={styles.infoItem}>
-                <Text variant="smallPlus" className={styles.infoLabel}>
-                  Término do Contrato:
-                </Text>
-                <Text variant="medium" className={styles.infoValue}>
-                  {dadosGeraisResumo.dataTerminoContrato}
                 </Text>
               </div>
             </div>

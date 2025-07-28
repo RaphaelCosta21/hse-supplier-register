@@ -29,7 +29,7 @@ export class SharePointService {
       let completed = 0;
       const totalSections = 3; // Não contar revisão final no salvamento
 
-      if (dados.empresa && dados.cnpj && dados.numeroContrato) completed++;
+      if (dados.empresa && dados.cnpj) completed++;
       if (
         formData.conformidadeLegal &&
         Object.keys(formData.conformidadeLegal).length > 0
@@ -134,7 +134,6 @@ export class SharePointService {
     const itemData = {
       Title: titleFormulario.toString(),
       CNPJ: (dados.cnpj || "").toString(),
-      NumeroContrato: (dados.numeroContrato || "").toString(),
       StatusAvaliacao: statusAvaliacao, // Opções: Em Andamento, Enviado, Aprovado, Rejeitado
       DataEnvio: now.toISOString(),
       DataCriacao: now.toISOString(),
@@ -296,7 +295,6 @@ export class SharePointService {
     const itemData = {
       Title: (dados.empresa || "Formulário HSE").toString(),
       CNPJ: (dados.cnpj || "").toString(),
-      NumeroContrato: (dados.numeroContrato || "").toString(),
       StatusAvaliacao: "Enviado", // Opções: Em Andamento, Enviado, Aprovado, Rejeitado
       DataEnvio: now.toISOString(),
       DataCriacao: now.toISOString(),
@@ -583,7 +581,6 @@ export class SharePointService {
     const updateData = {
       Title: (dados.empresa || "Formulário HSE").toString(),
       CNPJ: (dados.cnpj || "").toString(),
-      NumeroContrato: (dados.numeroContrato || "").toString(),
       StatusAvaliacao: "Enviado", // Alterar status para Enviado
       DataEnvio: now.toISOString(),
       ResponsavelTecnico: (dados.responsavelTecnico || "").toString(),
@@ -624,7 +621,6 @@ export class SharePointService {
       const dadosGeraisFields: (keyof typeof oldFormData.dadosGerais)[] = [
         "empresa",
         "cnpj",
-        "numeroContrato",
         "responsavelTecnico",
         "grauRisco",
         "escopoServico",
@@ -633,7 +629,6 @@ export class SharePointService {
         "empregadosParaServico",
         "possuiSESMT",
         "numeroComponentesSESMT",
-        "gerenteContratoMarine",
       ];
 
       dadosGeraisFields.forEach((field) => {
@@ -1035,7 +1030,6 @@ export class SharePointService {
         formData.dadosGerais?.empresa || "Formulário Atualizado"
       ).toString(),
       CNPJ: (formData.dadosGerais?.cnpj || "").toString(),
-      NumeroContrato: (formData.dadosGerais?.numeroContrato || "").toString(),
       ResponsavelTecnico: (
         formData.dadosGerais?.responsavelTecnico || ""
       ).toString(),
@@ -1281,11 +1275,7 @@ export class SharePointService {
         let completed = 0;
         const totalSections = 3;
 
-        if (
-          newFormData.dadosGerais?.empresa &&
-          newFormData.dadosGerais?.cnpj &&
-          newFormData.dadosGerais?.numeroContrato
-        )
+        if (newFormData.dadosGerais?.empresa && newFormData.dadosGerais?.cnpj)
           completed++;
         if (
           newFormData.conformidadeLegal &&
@@ -1303,9 +1293,6 @@ export class SharePointService {
           newFormData.dadosGerais?.empresa || "Formulário Atualizado"
         ).toString(),
         CNPJ: (newFormData.dadosGerais?.cnpj || "").toString(),
-        NumeroContrato: (
-          newFormData.dadosGerais?.numeroContrato || ""
-        ).toString(),
         ResponsavelTecnico: (
           newFormData.dadosGerais?.responsavelTecnico || ""
         ).toString(),
@@ -1439,7 +1426,6 @@ export class SharePointService {
           "Id",
           "Title",
           "CNPJ",
-          "NumeroContrato",
           "StatusAvaliacao",
           "PercentualConclusao",
           "DadosFormulario",
@@ -1538,18 +1524,14 @@ export class SharePointService {
         dadosGerais: {
           cnpj: item.CNPJ || "",
           empresa: item.Title || "",
-          numeroContrato: item.NumeroContrato || "",
           responsavelTecnico: item.ResponsavelTecnico || "",
           grauRisco: item.GrauRisco || "1",
-          dataInicioContrato: undefined,
-          dataTerminoContrato: undefined,
           escopoServico: "",
           atividadePrincipalCNAE: "",
           totalEmpregados: undefined,
           empregadosParaServico: undefined,
           possuiSESMT: false,
           numeroComponentesSESMT: undefined,
-          gerenteContratoMarine: "",
           ...((parsedFormData.dadosGerais as Record<string, unknown>) || {}),
         },
         conformidadeLegal: (parsedFormData.conformidadeLegal ||

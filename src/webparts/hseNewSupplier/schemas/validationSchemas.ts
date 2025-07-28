@@ -12,15 +12,6 @@ export const dadosGeraisSchema = yup.object({
     .test("cnpj-valid", "CNPJ inválido", (value) =>
       value ? validators.cnpj(value) : false
     ),
-  numeroContrato: yup.string().required("Número do contrato é obrigatório"),
-  dataInicioContrato: yup.date().required("Data de início é obrigatória"),
-  dataTerminoContrato: yup
-    .date()
-    .required("Data de término é obrigatória")
-    .min(
-      yup.ref("dataInicioContrato"),
-      "Data de término deve ser posterior à data de início"
-    ),
   responsavelTecnico: yup
     .string()
     .required("Responsável técnico é obrigatório"),

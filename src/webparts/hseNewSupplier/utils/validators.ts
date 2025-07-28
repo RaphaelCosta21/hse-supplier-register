@@ -92,15 +92,6 @@ export const validateFormForSave = (
   if (!formData.dadosGerais?.cnpj?.trim()) {
     missingFields.push("CNPJ");
   }
-  if (!formData.dadosGerais?.numeroContrato?.trim()) {
-    missingFields.push("Número do Contrato");
-  }
-  if (!formData.dadosGerais?.dataInicioContrato) {
-    missingFields.push("Data de Início do Contrato");
-  }
-  if (!formData.dadosGerais?.dataTerminoContrato) {
-    missingFields.push("Data de Término do Contrato");
-  }
   if (!formData.dadosGerais?.responsavelTecnico?.trim()) {
     missingFields.push("Responsável Técnico");
   }
@@ -109,9 +100,6 @@ export const validateFormForSave = (
   }
   if (!formData.dadosGerais?.grauRisco) {
     missingFields.push("Grau de Risco (NR-4)");
-  }
-  if (!formData.dadosGerais?.gerenteContratoMarine?.trim()) {
-    missingFields.push("Gerente do Contrato Marine");
   }
 
   // Validar anexo REM obrigatório

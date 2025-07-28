@@ -3,7 +3,6 @@ import {
   Stack,
   Text,
   TextField,
-  DatePicker,
   Dropdown,
   SpinButton,
   Toggle,
@@ -47,18 +46,13 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
   ): boolean => {
     switch (fieldName) {
       case "empresa":
-      case "numeroContrato":
       case "responsavelTecnico":
       case "atividadePrincipalCNAE":
-      case "gerenteContratoMarine":
         return !!(
           fieldValue &&
           typeof fieldValue === "string" &&
           fieldValue.trim() !== ""
         );
-      case "dataInicioContrato":
-      case "dataTerminoContrato":
-        return fieldValue !== null && fieldValue !== undefined;
       case "grauRisco":
         return (
           fieldValue !== null && fieldValue !== undefined && fieldValue !== ""
@@ -145,54 +139,9 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               value={formatCNPJ(value.cnpj || "")}
               disabled
               required
-              className={styles.halfWidth}
+              className={styles.fullWidth}
               placeholder="00.000.000/0000-00"
               maxLength={18}
-            />{" "}
-            <TextField
-              label="Número do Contrato"
-              value={value.numeroContrato || ""}
-              onChange={(_, v) => handleFieldChange("numeroContrato", v)}
-              required
-              className={`${styles.halfWidth} ${
-                showError("numeroContrato") ? styles.fieldError : ""
-              }`}
-              placeholder="Número do contrato com a Oceaneering"
-            />
-          </div>{" "}
-          <div className={styles.gridRow}>
-            {" "}
-            <DatePicker
-              label="Data de Início do Contrato"
-              value={
-                value.dataInicioContrato
-                  ? new Date(value.dataInicioContrato)
-                  : undefined
-              }
-              onSelectDate={(date) =>
-                handleFieldChange("dataInicioContrato", date ?? undefined)
-              }
-              isRequired
-              className={`${styles.halfWidth} ${
-                showError("dataInicioContrato") ? styles.fieldError : ""
-              }`}
-              placeholder="Selecione a data de início"
-            />
-            <DatePicker
-              label="Data de Término do Contrato"
-              value={
-                value.dataTerminoContrato
-                  ? new Date(value.dataTerminoContrato)
-                  : undefined
-              }
-              onSelectDate={(date) =>
-                handleFieldChange("dataTerminoContrato", date ?? undefined)
-              }
-              isRequired
-              className={`${styles.halfWidth} ${
-                showError("dataTerminoContrato") ? styles.fieldError : ""
-              }`}
-              placeholder="Selecione a data de término"
             />
           </div>{" "}
           <div className={styles.gridRow}>
@@ -277,7 +226,7 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               }`}
               placeholder="Selecione"
             />
-          </div>
+          </div>{" "}
           <div className={styles.gridRow}>
             <div className={styles.toggleSection}>
               <div>
@@ -324,18 +273,6 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               )}
             </div>
           </div>{" "}
-          <div className={styles.gridRow}>
-            <TextField
-              label="Gerente do Contrato Marine"
-              value={value.gerenteContratoMarine || ""}
-              onChange={(_, v) => handleFieldChange("gerenteContratoMarine", v)}
-              required
-              className={`${styles.fullWidth} ${
-                showError("gerenteContratoMarine") ? styles.fieldError : ""
-              }`}
-              placeholder="Nome do gerente responsável pelo contrato"
-            />
-          </div>
         </div>{" "}
         <Separator />{" "}
         <div className={styles.attachmentSection}>

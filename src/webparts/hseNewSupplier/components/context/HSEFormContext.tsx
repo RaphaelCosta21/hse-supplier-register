@@ -298,32 +298,6 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           )
             addError("cnpj", "CNPJ invÃ¡lido");
 
-          if (!formData.dadosGerais.numeroContrato)
-            addError("numeroContrato", "O nÃºmero do contrato Ã© obrigatÃ³rio");
-          if (!formData.dadosGerais.dataInicioContrato)
-            addError(
-              "dataInicioContrato",
-              "A data de inÃ­cio do contrato Ã© obrigatÃ³ria"
-            );
-          if (!formData.dadosGerais.dataTerminoContrato)
-            addError(
-              "dataTerminoContrato",
-              "A data de término do contrato é obrigatória"
-            );
-
-          // Validar que data de tÃ©rmino Ã© posterior Ã de inÃ­cio
-          if (
-            formData.dadosGerais.dataInicioContrato &&
-            formData.dadosGerais.dataTerminoContrato &&
-            new Date(formData.dadosGerais.dataInicioContrato) >=
-              new Date(formData.dadosGerais.dataTerminoContrato)
-          ) {
-            addError(
-              "dataTerminoContrato",
-              "A data de tÃ©rmino deve ser posterior Ã  de inÃ­cio"
-            );
-          }
-
           // REM Ã© opcional para testes
           // const remAttachments = attachments.rem || [];
           // if (remAttachments.length === 0) {

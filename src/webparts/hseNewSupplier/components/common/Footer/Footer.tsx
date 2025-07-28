@@ -76,9 +76,12 @@ export const Footer: React.FC<IFooterProps> = ({ className }) => {
                 <div className={styles.badge}>
                   <Text variant="small">ISO 45001</Text>
                 </div>
+                <div className={styles.badge}>
+                  <Text variant="small">ISO 9001</Text>
+                </div>
               </div>
               <Text variant="small" className={styles.systemVersion}>
-                Versão 1.0.0 | Status: Online
+                Versão 1.0.1 | Status: Online
               </Text>
             </div>
           </div>

@@ -122,28 +122,6 @@ export class PDFGeneratorService {
             <span>${dados.cnpj || "N/A"}</span>
           </div>
           <div class="info-item">
-            <label>Número do Contrato:</label>
-            <span>${dados.numeroContrato || "N/A"}</span>
-          </div>
-          <div class="info-item">
-            <label>Data de Início do Contrato:</label>
-            <span>${
-              dados.dataInicioContrato
-                ? new Date(dados.dataInicioContrato).toLocaleDateString("pt-BR")
-                : "N/A"
-            }</span>
-          </div>
-          <div class="info-item">
-            <label>Data de Término do Contrato:</label>
-            <span>${
-              dados.dataTerminoContrato
-                ? new Date(dados.dataTerminoContrato).toLocaleDateString(
-                    "pt-BR"
-                  )
-                : "N/A"
-            }</span>
-          </div>
-          <div class="info-item">
             <label>Escopo do Serviço:</label>
             <span>${dados.escopoServico || "N/A"}</span>
           </div>
@@ -187,10 +165,6 @@ export class PDFGeneratorService {
           `
               : ""
           }
-          <div class="info-item">
-            <label>Gerente do Contrato Marine:</label>
-            <span>${dados.gerenteContratoMarine || "N/A"}</span>
-          </div>
         </div>
       </div>
     `;

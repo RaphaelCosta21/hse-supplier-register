@@ -236,10 +236,18 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
   // Handler para editar formulário do usuário
   const handleEditUserForm = async (form: IUserFormSummary): Promise<void> => {
     try {
-      console.log("Editando formulário do usuário:", form);
+      console.log("=== CLIQUE NO BOTÃO EDITAR ===");
+      console.log("Formulário selecionado:", form);
+      console.log("ID do formulário:", form.id);
+      console.log("Status do formulário:", form.status);
+
+      console.log("Chamando actions.loadExistingForm...");
       await actions.loadExistingForm(form.id);
+      console.log("LoadExistingForm concluído com sucesso");
     } catch (error) {
-      console.error("Erro ao carregar formulário para edição:", error);
+      console.error("=== ERRO AO CARREGAR FORMULÁRIO PARA EDIÇÃO ===");
+      console.error("Erro:", error);
+      console.error("Stack:", error?.stack);
     }
   };
 

@@ -55,12 +55,8 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
     const camposOk = [
       dadosGerais.empresa,
       dadosGerais.cnpj,
-      dadosGerais.numeroContrato,
-      dadosGerais.dataInicioContrato,
-      dadosGerais.dataTerminoContrato,
       dadosGerais.responsavelTecnico,
       dadosGerais.atividadePrincipalCNAE,
-      dadosGerais.gerenteContratoMarine,
     ].every((v) => v !== undefined && v !== null && v !== "");
 
     // Validar grau de risco separadamente (não pode ser string vazia)
@@ -453,19 +449,11 @@ export const FloatingSaveButton: React.FC = (): JSX.Element => {
       // Identificar campos faltantes
       if (!dadosGerais?.empresa) missingFields.push("Empresa");
       if (!dadosGerais?.cnpj) missingFields.push("CNPJ");
-      if (!dadosGerais?.numeroContrato)
-        missingFields.push("Número do Contrato");
-      if (!dadosGerais?.dataInicioContrato)
-        missingFields.push("Data de Início do Contrato");
-      if (!dadosGerais?.dataTerminoContrato)
-        missingFields.push("Data de Término do Contrato");
       if (!dadosGerais?.responsavelTecnico)
         missingFields.push("Responsável Técnico");
       if (!dadosGerais?.atividadePrincipalCNAE)
         missingFields.push("Atividade Principal (CNAE)");
       if (!dadosGerais?.grauRisco) missingFields.push("Grau de Risco");
-      if (!dadosGerais?.gerenteContratoMarine)
-        missingFields.push("Gerente do Contrato");
       if (!attachments.rem || attachments.rem.length === 0)
         missingFields.push("Anexo REM");
     }

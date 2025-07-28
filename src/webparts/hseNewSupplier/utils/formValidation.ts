@@ -37,19 +37,6 @@ export const validateDadosGeraisForSave = (
     missingFields.push("CNPJ");
   }
   if (
-    !data.dadosGerais?.numeroContrato ||
-    (typeof data.dadosGerais.numeroContrato === "string" &&
-      !data.dadosGerais.numeroContrato.trim())
-  ) {
-    missingFields.push("Número do Contrato");
-  }
-  if (!data.dadosGerais?.dataInicioContrato) {
-    missingFields.push("Data de Início do Contrato");
-  }
-  if (!data.dadosGerais?.dataTerminoContrato) {
-    missingFields.push("Data de Término do Contrato");
-  }
-  if (
     !data.dadosGerais?.responsavelTecnico ||
     (typeof data.dadosGerais.responsavelTecnico === "string" &&
       !data.dadosGerais.responsavelTecnico.trim())
@@ -65,13 +52,6 @@ export const validateDadosGeraisForSave = (
   }
   if (!data.dadosGerais?.grauRisco || data.dadosGerais.grauRisco === "") {
     missingFields.push("Grau de Risco");
-  }
-  if (
-    !data.dadosGerais?.gerenteContratoMarine ||
-    (typeof data.dadosGerais.gerenteContratoMarine === "string" &&
-      !data.dadosGerais.gerenteContratoMarine.trim())
-  ) {
-    missingFields.push("Gerente do Contrato");
   }
 
   // Validar anexo REM obrigatório
@@ -118,19 +98,6 @@ export const validateFormForSave = (
     missingFields.push("CNPJ");
   }
   if (
-    !data.dadosGerais?.numeroContrato ||
-    (typeof data.dadosGerais.numeroContrato === "string" &&
-      !data.dadosGerais.numeroContrato.trim())
-  ) {
-    missingFields.push("Número do Contrato");
-  }
-  if (!data.dadosGerais?.dataInicioContrato) {
-    missingFields.push("Data de Início do Contrato");
-  }
-  if (!data.dadosGerais?.dataTerminoContrato) {
-    missingFields.push("Data de Término do Contrato");
-  }
-  if (
     !data.dadosGerais?.responsavelTecnico ||
     (typeof data.dadosGerais.responsavelTecnico === "string" &&
       !data.dadosGerais.responsavelTecnico.trim())
@@ -146,13 +113,6 @@ export const validateFormForSave = (
   }
   if (!data.dadosGerais?.grauRisco || data.dadosGerais.grauRisco === "") {
     missingFields.push("Grau de Risco");
-  }
-  if (
-    !data.dadosGerais?.gerenteContratoMarine ||
-    (typeof data.dadosGerais.gerenteContratoMarine === "string" &&
-      !data.dadosGerais.gerenteContratoMarine.trim())
-  ) {
-    missingFields.push("Gerente do Contrato");
   }
 
   // Validar anexo REM obrigatório
@@ -524,15 +484,10 @@ export const mapMissingFieldsToFormFields = (
     "Nome da Empresa": "empresa",
     Empresa: "empresa", // Alternativa para o mesmo campo
     CNPJ: "cnpj",
-    "Número do Contrato": "numeroContrato",
-    "Data de Início do Contrato": "dataInicioContrato",
-    "Data de Término do Contrato": "dataTerminoContrato",
     "Responsável Técnico": "responsavelTecnico",
     "Atividade Principal (CNAE)": "atividadePrincipalCNAE",
     "Grau de Risco (NR-4)": "grauRisco",
     "Grau de Risco": "grauRisco", // Alternativa para o mesmo campo
-    "Gerente do Contrato Marine": "gerenteContratoMarine",
-    "Gerente do Contrato": "gerenteContratoMarine", // Alternativa para o mesmo campo
   };
 
   const fieldErrors: { [fieldName: string]: string } = {};

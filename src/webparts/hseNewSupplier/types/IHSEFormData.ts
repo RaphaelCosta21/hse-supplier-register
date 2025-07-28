@@ -36,9 +36,6 @@ export interface IHSEFormData {
 export interface IDadosGerais {
   empresa: string;
   cnpj: string;
-  numeroContrato: string;
-  dataInicioContrato: Date | undefined;
-  dataTerminoContrato: Date | undefined;
   escopoServico: string;
   responsavelTecnico: string;
   atividadePrincipalCNAE: string;
@@ -47,7 +44,6 @@ export interface IDadosGerais {
   grauRisco: "1" | "2" | "3" | "4" | "";
   possuiSESMT: boolean;
   numeroComponentesSESMT: number | undefined;
-  gerenteContratoMarine: string;
 }
 
 // Interface para uma questão de conformidade

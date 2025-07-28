@@ -208,12 +208,8 @@ const HseNewSupplierContent: React.FC = () => {
     const camposOk = [
       dadosGerais.empresa,
       dadosGerais.cnpj,
-      dadosGerais.numeroContrato,
-      dadosGerais.dataInicioContrato,
-      dadosGerais.dataTerminoContrato,
       dadosGerais.responsavelTecnico,
       dadosGerais.atividadePrincipalCNAE,
-      dadosGerais.gerenteContratoMarine,
     ].every((v) => v !== undefined && v !== null && v !== "");
 
     // Validar grau de risco separadamente (não pode ser string vazia)

@@ -37,12 +37,10 @@ export type FormAction =
 export const initialFormState: IFormState = {
   currentStep: 1,
   formData: {
+    statusFormulario: "Rascunho",
     dadosGerais: {
       empresa: "",
       cnpj: "",
-      numeroContrato: "",
-      dataInicioContrato: undefined,
-      dataTerminoContrato: undefined,
       escopoServico: "",
       responsavelTecnico: "",
       atividadePrincipalCNAE: "",
@@ -51,7 +49,6 @@ export const initialFormState: IFormState = {
       grauRisco: "",
       possuiSESMT: false,
       numeroComponentesSESMT: undefined,
-      gerenteContratoMarine: "",
     },
     conformidadeLegal: {} as IConformidadeLegal,
     servicosEspeciais: {
@@ -263,12 +260,8 @@ export const formSelectors = {
     const camposOk = [
       dadosGerais.empresa,
       dadosGerais.cnpj,
-      dadosGerais.numeroContrato,
-      dadosGerais.dataInicioContrato,
-      dadosGerais.dataTerminoContrato,
       dadosGerais.responsavelTecnico,
       dadosGerais.atividadePrincipalCNAE,
-      dadosGerais.gerenteContratoMarine,
     ].every((v) => v !== undefined && v !== null && v !== "");
 
     // Validar grau de risco separadamente (não pode ser string vazia)
