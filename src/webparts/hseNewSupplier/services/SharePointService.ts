@@ -104,8 +104,9 @@ export class SharePointService {
         servicosEspeciais: formData.servicosEspeciais || {},
         anexos: normalizedAttachments, // Usar anexos normalizados
         metadata: {
-          [isSubmission ? "dataSubmissao" : "dataSalvamento"]:
-            now.toISOString(),
+          id: formData.id || null, // ID do formulário
+          dataCriacao: now.toISOString(), // Data de criação
+          dataUltimaModificacao: now.toISOString(), // Data de última modificação
           usuario: userContext?.displayName || "Usuário Externo",
           email: userContext?.email || "usuario@externo.com",
           temAnexos: attachmentCount > 0,
@@ -124,7 +125,7 @@ export class SharePointService {
       // Adicionar rastreamento de revisão
       return this.addRevisionHistoryToJSON(
         baseJsonData,
-        isSubmission ? "enviado" : "salvo"
+        isSubmission ? "enviado" : "criado" // Para saveFormData sempre usar "criado"
       );
     };
 
@@ -199,6 +200,125 @@ export class SharePointService {
             error
           );
           // Não falhar o salvamento principal por causa deste erro
+        }
+
+        // 4. Fazer upload de anexos se houver algum com fileData
+        if (Object.keys(attachments).length > 0) {
+          try {
+            console.log(
+              "=== FAZENDO UPLOAD DE ANEXOS PARA NOVO FORMULÁRIO ==="
+            );
+
+            // Separar anexos que precisam ser salvos (têm fileData)
+            const attachmentsToSave: {
+              [category: string]: IAttachmentMetadata[];
+            } = {};
+            let hasNewAttachments = false;
+
+            Object.keys(attachments).forEach((category) => {
+              const files = attachments[category];
+              const newFiles = files.filter(
+                (file: IAttachmentMetadata) => file.fileData
+              );
+
+              if (newFiles.length > 0) {
+                attachmentsToSave[category] = newFiles;
+                hasNewAttachments = true;
+                console.log(
+                  `Categoria '${category}': ${newFiles.length} novos anexos para salvar`
+                );
+              }
+            });
+
+            if (hasNewAttachments) {
+              const sharePointFileService = new SharePointFileService(
+                this.context,
+                "anexos-contratadas"
+              );
+
+              // Fazer upload dos anexos
+              const savedAttachments =
+                await sharePointFileService.saveFormAttachments(
+                  dados.cnpj,
+                  dados.empresa,
+                  attachmentsToSave,
+                  formId
+                );
+
+              // Atualizar o JSON do formulário com anexos corretos
+              const updatedAttachments = { ...attachments };
+              Object.keys(savedAttachments).forEach((category) => {
+                if (updatedAttachments[category]) {
+                  const existingFiles = updatedAttachments[category].filter(
+                    (f: IAttachmentMetadata) => !f.fileData
+                  );
+                  updatedAttachments[category] = [
+                    ...existingFiles,
+                    ...savedAttachments[category],
+                  ];
+                } else {
+                  updatedAttachments[category] = savedAttachments[category];
+                }
+              });
+
+              // Recriar JSON com anexos corretos
+              const updatedJsonData = this.addRevisionHistoryToJSON(
+                {
+                  dadosGerais: formData.dadosGerais || {},
+                  conformidadeLegal: formData.conformidadeLegal || {},
+                  servicosEspeciais: formData.servicosEspeciais || {},
+                  anexos: updatedAttachments,
+                  metadata: {
+                    id: formId,
+                    dataCriacao: new Date().toISOString(),
+                    dataUltimaModificacao: new Date().toISOString(),
+                    usuario:
+                      this.context?.pageContext?.user?.displayName ||
+                      "Usuário Externo",
+                    email:
+                      this.context?.pageContext?.user?.email ||
+                      "usuario@externo.com",
+                    temAnexos: Object.keys(updatedAttachments).length > 0,
+                    totalAnexos: Object.values(updatedAttachments).reduce(
+                      (total, files) => total + files.length,
+                      0
+                    ),
+                    historicoStatusChange: {
+                      "Em Andamento": {
+                        dataAlteracao: new Date().toISOString(),
+                        usuario:
+                          this.context?.pageContext?.user?.displayName ||
+                          "Usuário Externo",
+                        email:
+                          this.context?.pageContext?.user?.email ||
+                          "usuario@externo.com",
+                      },
+                    },
+                  },
+                },
+                "criado"
+              );
+
+              // Atualizar item com anexos
+              await this.sp.web.lists
+                .getByTitle(this.listName)
+                .items.getById(formId)
+                .update({
+                  DadosFormulario: JSON.stringify(updatedJsonData),
+                  AnexosCount: Object.values(updatedAttachments).reduce(
+                    (total, files) => total + files.length,
+                    0
+                  ),
+                });
+
+              console.log("✅ Formulário atualizado com anexos corretos");
+            }
+          } catch (attachmentError) {
+            console.warn(
+              "Erro ao salvar anexos, mas formulário foi criado:",
+              attachmentError
+            );
+          }
         }
       }
 
@@ -1251,11 +1371,34 @@ export class SharePointService {
         console.log("✅ Histórico de status atualizado para incluir 'Enviado'");
       }
 
+      // Obter data de criação original dos dados brutos do SharePoint
+      let dataCriacaoOriginal = now.toISOString();
+      try {
+        const rawItem = await this.sp.web.lists
+          .getByTitle(this.listName)
+          .items.getById(itemId)
+          .select("DadosFormulario")();
+
+        if (rawItem.DadosFormulario) {
+          const rawData = JSON.parse(rawItem.DadosFormulario);
+          if (rawData.metadata?.dataCriacao) {
+            dataCriacaoOriginal = rawData.metadata.dataCriacao;
+          }
+        }
+      } catch (error) {
+        console.log("Erro ao carregar data de criação original:", error);
+      }
+
       const updatedFormData = {
-        ...newFormData,
+        // Remover statusFormulario do JSON - só deve ficar nos metadados do SharePoint
+        dadosGerais: newFormData.dadosGerais || {},
+        conformidadeLegal: newFormData.conformidadeLegal || {},
+        servicosEspeciais: newFormData.servicosEspeciais || {},
         anexos: newAttachments,
         metadata: {
-          dataSalvamento: now.toISOString(),
+          id: itemId, // ID do formulário
+          dataCriacao: dataCriacaoOriginal, // Preservar data de criação original
+          dataUltimaModificacao: now.toISOString(), // Atualizar última modificação
           usuario: userContext?.displayName || "Usuário Externo",
           email: userContext?.email || "usuario@externo.com",
           temAnexos: Object.keys(newAttachments).length > 0,
@@ -1264,7 +1407,7 @@ export class SharePointService {
             0
           ),
           historicoRevisoes: historicoRevisoes,
-          numeroRevisao: numeroRevisaoAtual,
+          numeroRevisao: historicoRevisoes.length, // Sempre refletir o número total de revisões
           tipoOperacao: tipoOperacaoFinal,
           historicoStatusChange: historicoStatusExistente,
         },
@@ -1330,7 +1473,7 @@ export class SharePointService {
   private createSimpleRevisionEntry(
     action: "criado" | "salvo" | "enviado",
     changeCount: number = 1,
-    versionNumber: number = 1
+    versionNumber: number = 0
   ): IRevisionEntry {
     const userContext = this.context?.pageContext?.user;
     const now = new Date();
@@ -1340,7 +1483,7 @@ export class SharePointService {
     switch (action) {
       case "criado":
         tipoOperacao = "Rascunho Criado";
-        resumo = "Rascunho inicial criado";
+        resumo = `Formulário criado (Rev. ${versionNumber})`;
         break;
       case "salvo":
         tipoOperacao = "Rascunho Atualizado";
@@ -1348,7 +1491,7 @@ export class SharePointService {
         break;
       case "enviado":
         tipoOperacao = "Formulário Enviado";
-        resumo = "Formulário enviado para análise";
+        resumo = `Formulário enviado (Rev. ${versionNumber})`;
         break;
       default:
         tipoOperacao = "Operação Desconhecida";
@@ -1382,7 +1525,13 @@ export class SharePointService {
     jsonData: Record<string, unknown>,
     action: "criado" | "salvo" | "enviado"
   ): Record<string, unknown> {
-    const revisao = this.createSimpleRevisionEntry(action, 1, 1); // Para novo formulário sempre Rev. 1
+    // Para novo formulário SEMPRE começar na Revisão 1 (criação inicial)
+    const numeroRevisaoInicial = 1;
+    const revisao = this.createSimpleRevisionEntry(
+      action,
+      1,
+      numeroRevisaoInicial
+    );
 
     const tipoOperacao =
       action === "criado"
@@ -1393,13 +1542,14 @@ export class SharePointService {
 
     console.log(`=== CRIANDO PRIMEIRO HISTÓRICO DE REVISÃO ===`);
     console.log(`Ação: ${action}, Tipo Operação: ${tipoOperacao}`);
+    console.log(`Número da Revisão: ${numeroRevisaoInicial}`);
 
     return {
       ...jsonData,
       metadata: {
         ...((jsonData.metadata as Record<string, unknown>) || {}),
         historicoRevisoes: [revisao],
-        numeroRevisao: 1,
+        numeroRevisao: numeroRevisaoInicial, // Sempre reflete o número total de revisões
         tipoOperacao: tipoOperacao,
       },
     };
