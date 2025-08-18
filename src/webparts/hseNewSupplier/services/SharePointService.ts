@@ -511,28 +511,6 @@ export class SharePointService {
 
     console.log("=== INICIANDO SUBMISSÃO COM VERIFICAÇÃO DE ALTERAÇÕES ===");
 
-    // Contar anexos de forma segura
-    const countAttachments = (): number => {
-      if (!attachments || typeof attachments !== "object") {
-        return 0;
-      }
-
-      const keys = Object.keys(attachments);
-      if (keys.length === 0) {
-        return 0;
-      }
-
-      const count = keys.reduce((total, category) => {
-        const categoryFiles = attachments[category];
-        const categoryCount = Array.isArray(categoryFiles)
-          ? categoryFiles.length
-          : 0;
-        return total + categoryCount;
-      }, 0);
-
-      return count;
-    };
-
     // Normalizar anexos
     const normalizeAttachments = (): {
       [category: string]: IAttachmentMetadata[];
@@ -554,7 +532,75 @@ export class SharePointService {
     };
 
     const normalizedAttachments = normalizeAttachments();
-    const attachmentCount = countAttachments();
+
+    // UPLOAD DE ANEXOS PRIMEIRO (se houver anexos com fileData)
+    let processedAttachments = normalizedAttachments;
+
+    if (dados.cnpj && dados.empresa && Object.keys(attachments).length > 0) {
+      try {
+        console.log("=== VERIFICANDO ANEXOS PARA UPLOAD NA SUBMISSÃO ===");
+
+        // Separar anexos que precisam ser salvos (têm fileData)
+        const attachmentsToSave: {
+          [category: string]: IAttachmentMetadata[];
+        } = {};
+        let hasNewAttachments = false;
+
+        Object.keys(attachments).forEach((category) => {
+          const files = attachments[category];
+          const newFiles = files.filter(
+            (file: IAttachmentMetadata) => file.fileData
+          );
+
+          if (newFiles.length > 0) {
+            attachmentsToSave[category] = newFiles;
+            hasNewAttachments = true;
+            console.log(
+              `Categoria '${category}': ${newFiles.length} novos anexos para salvar na submissão`
+            );
+          }
+        });
+
+        if (hasNewAttachments) {
+          console.log("🔄 FAZENDO UPLOAD DE ANEXOS ANTES DA SUBMISSÃO...");
+
+          const sharePointFileService = new SharePointFileService(
+            this.context,
+            "anexos-contratadas"
+          );
+
+          // Fazer upload dos anexos
+          const savedAttachments =
+            await sharePointFileService.saveFormAttachments(
+              dados.cnpj,
+              dados.empresa,
+              attachmentsToSave,
+              itemId
+            );
+
+          // Mesclar anexos salvos com existentes
+          processedAttachments = { ...attachments };
+          Object.keys(savedAttachments).forEach((category) => {
+            if (processedAttachments[category]) {
+              const existingFiles = processedAttachments[category].filter(
+                (f: IAttachmentMetadata) => !f.fileData
+              );
+              processedAttachments[category] = [
+                ...existingFiles,
+                ...savedAttachments[category],
+              ];
+            } else {
+              processedAttachments[category] = savedAttachments[category];
+            }
+          });
+
+          console.log("✅ Anexos salvos com URLs corretas para submissão");
+        }
+      } catch (attachmentError) {
+        console.warn("Erro ao salvar anexos na submissão:", attachmentError);
+        // Continuar com anexos originais em caso de erro
+      }
+    }
 
     // PRIMEIRO: Verificar se há alterações no formulário
     const currentFormData = await this.getFormById(itemId);
@@ -569,7 +615,7 @@ export class SharePointService {
       }) || {};
     const attachmentChanges = this.detectAttachmentChanges(
       currentAttachments,
-      normalizedAttachments
+      processedAttachments // Usar anexos processados
     );
     const hasChanges = formChanges.length > 0 || attachmentChanges.length > 0;
 
@@ -584,7 +630,7 @@ export class SharePointService {
       console.log(
         "🔄 Detectadas alterações. Criando nova revisão antes de submeter..."
       );
-      await this.updateFormWithChanges(itemId, formData, normalizedAttachments);
+      await this.updateFormWithChanges(itemId, formData, processedAttachments); // Usar anexos processados
     }
 
     // TERCEIRO: Carregar dados atuais COMPLETOS (após possível nova revisão)
@@ -671,7 +717,7 @@ export class SharePointService {
         dadosGerais: formDataAtual.dadosGerais || {},
         conformidadeLegal: formDataAtual.conformidadeLegal || {},
         servicosEspeciais: formDataAtual.servicosEspeciais || {},
-        anexos: normalizedAttachments,
+        anexos: processedAttachments, // Usar anexos processados com URLs corretas
         metadata: {
           // Preservar metadata existente (EXCETO dataSubmissao que é redundante)
           ...metadataExistente,
@@ -681,8 +727,11 @@ export class SharePointService {
           dataUltimaModificacao: now.toISOString(),
           usuario: userContext?.displayName || "Usuário Externo",
           email: userContext?.email || "usuario@externo.com",
-          temAnexos: attachmentCount > 0,
-          totalAnexos: attachmentCount,
+          temAnexos: Object.keys(processedAttachments).length > 0,
+          totalAnexos: Object.values(processedAttachments).reduce(
+            (total, files) => total + files.length,
+            0
+          ),
           // PRESERVAR histórico de revisões existente
           historicoRevisoes: historicoRevisoesExistente,
           // ATUALIZAR apenas histórico de status
@@ -708,7 +757,10 @@ export class SharePointService {
       PercentualConclusao: 100,
       DadosFormulario: JSON.stringify(jsonData),
       UltimaModificacao: now.toISOString(),
-      AnexosCount: attachmentCount,
+      AnexosCount: Object.values(processedAttachments).reduce(
+        (total, files) => total + files.length,
+        0
+      ),
     };
 
     try {
@@ -1176,6 +1228,83 @@ export class SharePointService {
       console.log("=== INICIANDO ATUALIZAÇÃO COM RASTREAMENTO DE MUDANÇAS ===");
       console.log("Item ID:", itemId);
 
+      // UPLOAD DE ANEXOS PRIMEIRO (se houver anexos com fileData)
+      let processedAttachments = newAttachments;
+      const dados = newFormData.dadosGerais;
+
+      if (
+        dados.cnpj &&
+        dados.empresa &&
+        Object.keys(newAttachments).length > 0
+      ) {
+        try {
+          console.log("=== VERIFICANDO ANEXOS PARA UPLOAD NA ATUALIZAÇÃO ===");
+
+          // Separar anexos que precisam ser salvos (têm fileData)
+          const attachmentsToSave: {
+            [category: string]: IAttachmentMetadata[];
+          } = {};
+          let hasNewAttachments = false;
+
+          Object.keys(newAttachments).forEach((category) => {
+            const files = newAttachments[category];
+            const newFiles = files.filter(
+              (file: IAttachmentMetadata) => file.fileData
+            );
+
+            if (newFiles.length > 0) {
+              attachmentsToSave[category] = newFiles;
+              hasNewAttachments = true;
+              console.log(
+                `Categoria '${category}': ${newFiles.length} novos anexos para salvar na atualização`
+              );
+            }
+          });
+
+          if (hasNewAttachments) {
+            console.log("🔄 FAZENDO UPLOAD DE ANEXOS ANTES DA ATUALIZAÇÃO...");
+
+            const sharePointFileService = new SharePointFileService(
+              this.context,
+              "anexos-contratadas"
+            );
+
+            // Fazer upload dos anexos
+            const savedAttachments =
+              await sharePointFileService.saveFormAttachments(
+                dados.cnpj,
+                dados.empresa,
+                attachmentsToSave,
+                itemId
+              );
+
+            // Mesclar anexos salvos com existentes
+            processedAttachments = { ...newAttachments };
+            Object.keys(savedAttachments).forEach((category) => {
+              if (processedAttachments[category]) {
+                const existingFiles = processedAttachments[category].filter(
+                  (f: IAttachmentMetadata) => !f.fileData
+                );
+                processedAttachments[category] = [
+                  ...existingFiles,
+                  ...savedAttachments[category],
+                ];
+              } else {
+                processedAttachments[category] = savedAttachments[category];
+              }
+            });
+
+            console.log("✅ Anexos salvos com URLs corretas para atualização");
+          }
+        } catch (attachmentError) {
+          console.warn(
+            "Erro ao salvar anexos na atualização:",
+            attachmentError
+          );
+          // Continuar com anexos originais em caso de erro
+        }
+      }
+
       // 1. Obter dados atuais do formulário
       const currentFormData = await this.getFormById(itemId);
       if (!currentFormData) {
@@ -1192,14 +1321,14 @@ export class SharePointService {
       // 2. Detectar mudanças no formulário
       const formChanges = this.detectChanges(currentFormData, newFormData);
 
-      // 3. Detectar mudanças nos anexos
+      // 3. Detectar mudanças nos anexos (usar anexos processados)
       const currentAttachments =
         (currentFormData.anexos as unknown as {
           [category: string]: IAttachmentMetadata[];
         }) || {};
       const attachmentChanges = this.detectAttachmentChanges(
         currentAttachments,
-        newAttachments
+        processedAttachments // Usar anexos processados com URLs
       );
 
       // 4. Combinar todas as mudanças
@@ -1394,15 +1523,15 @@ export class SharePointService {
         dadosGerais: newFormData.dadosGerais || {},
         conformidadeLegal: newFormData.conformidadeLegal || {},
         servicosEspeciais: newFormData.servicosEspeciais || {},
-        anexos: newAttachments,
+        anexos: processedAttachments, // Usar anexos processados com URLs corretas
         metadata: {
           id: itemId, // ID do formulário
           dataCriacao: dataCriacaoOriginal, // Preservar data de criação original
           dataUltimaModificacao: now.toISOString(), // Atualizar última modificação
           usuario: userContext?.displayName || "Usuário Externo",
           email: userContext?.email || "usuario@externo.com",
-          temAnexos: Object.keys(newAttachments).length > 0,
-          totalAnexos: Object.values(newAttachments).reduce(
+          temAnexos: Object.keys(processedAttachments).length > 0,
+          totalAnexos: Object.values(processedAttachments).reduce(
             (total, files) => total + files.length,
             0
           ),
@@ -1446,7 +1575,7 @@ export class SharePointService {
           : calculateCompletionPercentage(), // 🔥 100% quando enviado
         DadosFormulario: JSON.stringify(updatedFormData),
         UltimaModificacao: now.toISOString(),
-        AnexosCount: Object.values(newAttachments).reduce(
+        AnexosCount: Object.values(processedAttachments).reduce(
           (total, files) => total + files.length,
           0
         ),

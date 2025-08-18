@@ -112,16 +112,13 @@ export const formReducer = (
                 uploadDate: anexo.uploadDate
                   ? new Date(anexo.uploadDate as string).toISOString()
                   : new Date().toISOString(),
-                sharePointPath: (anexo.sharePointPath ||
-                  anexo.url ||
-                  "") as string,
                 category: category,
                 subcategory: (anexo.subcategory || "") as string,
                 originalName: (anexo.fileName ||
                   anexo.name ||
                   "arquivo.pdf") as string,
                 fileType: (anexo.fileType || ".pdf") as string,
-                url: (anexo.url || anexo.sharePointPath || "") as string,
+                url: (anexo.url || "") as string,
               })
             );
           }
