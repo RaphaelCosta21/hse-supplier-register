@@ -22,6 +22,13 @@ export class SharePointService {
     formData: IHSEFormData,
     attachments: { [category: string]: IAttachmentMetadata[] }
   ): Promise<number> {
+    console.log("🟢 ========== SAVEFORMDATA INICIADO ==========");
+    console.log("📋 Dados recebidos:", {
+      statusFormulario: formData.statusFormulario,
+      hasId: !!formData.id,
+      attachmentCategories: Object.keys(attachments),
+    });
+
     const dados = formData.dadosGerais;
 
     // Calcular percentual de conclusão
@@ -112,13 +119,36 @@ export class SharePointService {
           temAnexos: attachmentCount > 0,
           totalAnexos: attachmentCount,
           // Adicionar histórico de mudança de status
-          historicoStatusChange: {
-            [statusAvaliacao]: {
+          historicoStatusChange: (() => {
+            const historico: Record<
+              string,
+              { dataAlteracao: string; usuario: string; email: string }
+            > = {};
+
+            // Sempre criar "Em Andamento"
+            historico["Em Andamento"] = {
               dataAlteracao: now.toISOString(),
               usuario: userContext?.displayName || "Usuário Externo",
               email: userContext?.email || "usuario@externo.com",
-            },
-          },
+            };
+
+            // Se for submissão, adicionar também "Enviado"
+            if (isSubmission) {
+              console.log(
+                "🔥 SAVEFORMDATA: Adicionando status 'Enviado' ao histórico!"
+              );
+              historico.Enviado = {
+                dataAlteracao: now.toISOString(),
+                usuario: userContext?.displayName || "Usuário Externo",
+                email: userContext?.email || "usuario@externo.com",
+              };
+              console.log(
+                "✅ SAVEFORMDATA: Status 'Enviado' adicionado ao histórico"
+              );
+            }
+
+            return historico;
+          })(),
         },
       };
 
@@ -262,6 +292,10 @@ export class SharePointService {
               });
 
               // Recriar JSON com anexos corretos
+              console.log(
+                "🔄 RECREANDO JSON após upload de anexos - isSubmission:",
+                isSubmission
+              );
               const updatedJsonData = this.addRevisionHistoryToJSON(
                 {
                   dadosGerais: formData.dadosGerais || {},
@@ -283,8 +317,18 @@ export class SharePointService {
                       (total, files) => total + files.length,
                       0
                     ),
-                    historicoStatusChange: {
-                      "Em Andamento": {
+                    historicoStatusChange: (() => {
+                      const historico: Record<
+                        string,
+                        {
+                          dataAlteracao: string;
+                          usuario: string;
+                          email: string;
+                        }
+                      > = {};
+
+                      // Sempre criar "Em Andamento"
+                      historico["Em Andamento"] = {
                         dataAlteracao: new Date().toISOString(),
                         usuario:
                           this.context?.pageContext?.user?.displayName ||
@@ -292,11 +336,32 @@ export class SharePointService {
                         email:
                           this.context?.pageContext?.user?.email ||
                           "usuario@externo.com",
-                      },
-                    },
+                      };
+
+                      // 🔥 PRESERVAR status "Enviado" se for submissão
+                      if (isSubmission) {
+                        console.log(
+                          "🔄 UPLOAD ANEXOS: Preservando status 'Enviado' ao atualizar!"
+                        );
+                        historico.Enviado = {
+                          dataAlteracao: new Date().toISOString(),
+                          usuario:
+                            this.context?.pageContext?.user?.displayName ||
+                            "Usuário Externo",
+                          email:
+                            this.context?.pageContext?.user?.email ||
+                            "usuario@externo.com",
+                        };
+                        console.log(
+                          "✅ UPLOAD ANEXOS: Status 'Enviado' preservado no histórico"
+                        );
+                      }
+
+                      return historico;
+                    })(),
                   },
                 },
-                "criado"
+                isSubmission ? "enviado" : "criado" // ✅ CORRIGIDO: usar valor correto baseado em isSubmission
               );
 
               // Atualizar item com anexos
@@ -332,6 +397,13 @@ export class SharePointService {
     formData: IHSEFormData,
     attachments: { [category: string]: IAttachmentMetadata[] }
   ): Promise<number> {
+    console.log("🔵 ========== SUBMITFORMDATA INICIADO ==========");
+    console.log("📋 Dados recebidos:", {
+      statusFormulario: formData.statusFormulario,
+      hasId: !!formData.id,
+      attachmentCategories: Object.keys(attachments),
+    });
+
     const dados = formData.dadosGerais;
 
     // Contar anexos de forma mais segura
@@ -394,14 +466,37 @@ export class SharePointService {
           email: userContext?.email || "usuario@externo.com",
           temAnexos: attachmentCount > 0,
           totalAnexos: attachmentCount,
-          // Adicionar histórico de mudança de status (para novos formulários que vão direto para Enviado)
-          historicoStatusChange: {
-            Enviado: {
+          // Adicionar histórico de mudança de status
+          // submitFormData é SEMPRE primeira submissão (novo formulário)
+          // Por isso criamos AMBOS: Em Andamento (criação) e Enviado (submissão)
+          historicoStatusChange: (() => {
+            const historico: Record<
+              string,
+              { dataAlteracao: string; usuario: string; email: string }
+            > = {};
+
+            // Sempre criar "Em Andamento" primeiro
+            historico["Em Andamento"] = {
               dataAlteracao: now.toISOString(),
               usuario: userContext?.displayName || "Usuário Externo",
               email: userContext?.email || "usuario@externo.com",
-            },
-          },
+            };
+
+            // Depois adicionar "Enviado"
+            console.log(
+              "🔥 SUBMITFORMDATA: Adicionando status 'Enviado' ao histórico!"
+            );
+            historico.Enviado = {
+              dataAlteracao: now.toISOString(),
+              usuario: userContext?.displayName || "Usuário Externo",
+              email: userContext?.email || "usuario@externo.com",
+            };
+            console.log(
+              "✅ SUBMITFORMDATA: Status 'Enviado' adicionado ao histórico"
+            );
+
+            return historico;
+          })(),
         },
       };
 
@@ -505,6 +600,13 @@ export class SharePointService {
     formData: IHSEFormData,
     attachments: { [category: string]: IAttachmentMetadata[] }
   ): Promise<void> {
+    console.log("🟠 ========== SUBMITFORMWITHUPDATE INICIADO ==========");
+    console.log("📋 Dados recebidos:", {
+      itemId: itemId,
+      statusFormulario: formData.statusFormulario,
+      attachmentCategories: Object.keys(attachments),
+    });
+
     const dados = formData.dadosGerais;
     const userContext = this.context?.pageContext?.user;
     const now = new Date();
@@ -695,11 +797,17 @@ export class SharePointService {
     }
 
     // QUARTO: Adicionar entrada para status "Enviado" (APENAS isso, sem criar nova revisão)
+    console.log(
+      "🔥 SUBMITFORMWITHUPDATE: Adicionando status 'Enviado' ao histórico!"
+    );
     historicoStatusChange.Enviado = {
       dataAlteracao: now.toISOString(),
       usuario: userContext?.displayName || "Usuário Externo",
       email: userContext?.email || "usuario@externo.com",
     };
+    console.log(
+      "✅ SUBMITFORMWITHUPDATE: Status 'Enviado' adicionado ao histórico"
+    );
 
     console.log(
       "🔄 Atualizando status para 'Enviado' - SEM criar nova revisão"
@@ -1224,6 +1332,13 @@ export class SharePointService {
     newFormData: IHSEFormData,
     newAttachments: { [category: string]: IAttachmentMetadata[] }
   ): Promise<void> {
+    console.log("🟡 ========== UPDATEFORMWITHCHANGES INICIADO ==========");
+    console.log("📋 Dados recebidos:", {
+      itemId: itemId,
+      statusFormulario: newFormData.statusFormulario,
+      attachmentCategories: Object.keys(newAttachments),
+    });
+
     try {
       console.log("=== INICIANDO ATUALIZAÇÃO COM RASTREAMENTO DE MUDANÇAS ===");
       console.log("Item ID:", itemId);
@@ -1409,7 +1524,7 @@ export class SharePointService {
       const numeroRevisaoAtual = historicoRevisoes.length;
 
       // Manter ou criar histórico de status (se não existir)
-      let historicoStatusExistente: Record<
+      let historicoStatusChange: Record<
         string,
         { dataAlteracao: string; usuario: string; email: string }
       > = {};
@@ -1421,16 +1536,15 @@ export class SharePointService {
 
         if (rawItem.DadosFormulario) {
           const rawData = JSON.parse(rawItem.DadosFormulario);
-          historicoStatusExistente =
-            rawData.metadata?.historicoStatusChange || {};
+          historicoStatusChange = rawData.metadata?.historicoStatusChange || {};
         }
       } catch (error) {
         console.log("Erro ao carregar histórico de status:", error);
       }
 
       // Se não existe histórico de "Em Andamento", criar
-      if (!historicoStatusExistente["Em Andamento"]) {
-        historicoStatusExistente["Em Andamento"] = {
+      if (!historicoStatusChange["Em Andamento"]) {
+        historicoStatusChange["Em Andamento"] = {
           dataAlteracao: now.toISOString(),
           usuario: userContext?.displayName || "Usuário Externo",
           email: userContext?.email || "usuario@externo.com",
@@ -1439,16 +1553,27 @@ export class SharePointService {
 
       // 🔥 DETECTAR MUDANÇA DE STATUS PARA "ENVIADO"
       const isSubmission = newFormData.statusFormulario === "Enviado";
+      console.log("🔍 VERIFICAÇÃO DE STATUS:", {
+        "newFormData.statusFormulario": newFormData.statusFormulario,
+        isSubmission: isSubmission,
+        "historicoStatusChange atual": Object.keys(historicoStatusChange),
+      });
+
       let tipoOperacaoFinal =
         allChanges.length > 0 ? "Rascunho Atualizado" : "Sem Alterações";
 
       if (isSubmission) {
+        console.log("🚀 ADICIONANDO STATUS 'ENVIADO' AO HISTÓRICO!");
         // Adicionar entrada no histórico de status para "Enviado"
-        historicoStatusExistente.Enviado = {
+        historicoStatusChange.Enviado = {
           dataAlteracao: now.toISOString(),
           usuario: userContext?.displayName || "Usuário Externo",
           email: userContext?.email || "usuario@externo.com",
         };
+        console.log(
+          "✅ Status 'Enviado' adicionado:",
+          historicoStatusChange.Enviado
+        );
         tipoOperacaoFinal = "Formulário Enviado";
 
         // Criar nova revisão específica para submissão (se não havia mudanças)
@@ -1538,9 +1663,24 @@ export class SharePointService {
           historicoRevisoes: historicoRevisoes,
           numeroRevisao: historicoRevisoes.length, // Sempre refletir o número total de revisões
           tipoOperacao: tipoOperacaoFinal,
-          historicoStatusChange: historicoStatusExistente,
+          historicoStatusChange: historicoStatusChange,
         },
       };
+
+      console.log("📝 DADOS FINAIS ANTES DE SALVAR:");
+      console.log(
+        "- Histórico de Status Final:",
+        Object.keys(historicoStatusChange)
+      );
+      console.log(
+        "- Status 'Enviado' presente?",
+        !!historicoStatusChange.Enviado
+      );
+      console.log(
+        "- Dados do status 'Enviado':",
+        historicoStatusChange.Enviado
+      );
+      console.log("- Tipo de operação:", tipoOperacaoFinal);
 
       // 8. Calcular percentual de conclusão
       const calculateCompletionPercentage = (): number => {
@@ -1585,6 +1725,15 @@ export class SharePointService {
         .getByTitle(this.listName)
         .items.getById(itemId)
         .update(updateData);
+
+      console.log(
+        "💾 UPDATEFORMWITHCHANGES: Dados salvos no SharePoint com sucesso!"
+      );
+      console.log(
+        "- Histórico final salvo:",
+        Object.keys(historicoStatusChange)
+      );
+      console.log("=== UPDATEFORMWITHCHANGES CONCLUÍDO ===");
 
       console.log("=== ATUALIZAÇÃO CONCLUÍDA COM SUCESSO ===");
       console.log("Número total de revisões salvas:", historicoRevisoes.length);
