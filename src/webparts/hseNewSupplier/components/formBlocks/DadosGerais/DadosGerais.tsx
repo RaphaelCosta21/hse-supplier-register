@@ -127,10 +127,20 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               value={value.empresa || ""}
               onChange={(_, v) => handleFieldChange("empresa", v)}
               required
+              disabled={!!state.formData?.id} // Desabilita se o formulário já foi criado (tem ID)
               className={`${styles.fullWidth} ${
                 showError("empresa") ? styles.fieldError : ""
               }`}
-              placeholder="Razão Social da empresa"
+              placeholder={
+                state.formData?.id 
+                  ? "Nome da empresa não pode ser alterado após a criação do formulário"
+                  : "Razão Social da empresa"
+              }
+              description={
+                state.formData?.id 
+                  ? "⚠️ O nome da empresa não pode ser alterado após o formulário ter sido criado."
+                  : undefined
+              }
             />
           </div>{" "}
           <div className={styles.gridRow}>
