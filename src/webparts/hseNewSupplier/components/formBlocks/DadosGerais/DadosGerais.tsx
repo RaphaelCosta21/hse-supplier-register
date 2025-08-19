@@ -132,12 +132,12 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
                 showError("empresa") ? styles.fieldError : ""
               }`}
               placeholder={
-                state.formData?.id 
+                state.formData?.id
                   ? "Nome da empresa não pode ser alterado após a criação do formulário"
                   : "Razão Social da empresa"
               }
               description={
-                state.formData?.id 
+                state.formData?.id
                   ? "⚠️ O nome da empresa não pode ser alterado após o formulário ter sido criado."
                   : undefined
               }
