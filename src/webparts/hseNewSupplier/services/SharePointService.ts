@@ -1625,8 +1625,9 @@ export class SharePointService {
         console.log("✅ Histórico de status atualizado para incluir 'Enviado'");
       }
 
-      // Obter data de criação original dos dados brutos do SharePoint
+      // Obter data de criação original e campo Avaliacao dos dados brutos do SharePoint
       let dataCriacaoOriginal = now.toISOString();
+      let avaliacaoExistente: any = null;
       try {
         const rawItem = await this.sp.web.lists
           .getByTitle(this.listName)
@@ -1638,9 +1639,17 @@ export class SharePointService {
           if (rawData.metadata?.dataCriacao) {
             dataCriacaoOriginal = rawData.metadata.dataCriacao;
           }
+          // 🔥 PRESERVAR CAMPO AVALIACAO SE EXISTIR
+          if (rawData.metadata?.Avaliacao) {
+            avaliacaoExistente = rawData.metadata.Avaliacao;
+            console.log(
+              "✅ Campo 'Avaliacao' encontrado e será preservado:",
+              avaliacaoExistente
+            );
+          }
         }
       } catch (error) {
-        console.log("Erro ao carregar data de criação original:", error);
+        console.log("Erro ao carregar dados originais:", error);
       }
 
       const updatedFormData = {
@@ -1664,6 +1673,8 @@ export class SharePointService {
           numeroRevisao: historicoRevisoes.length, // Sempre refletir o número total de revisões
           tipoOperacao: tipoOperacaoFinal,
           historicoStatusChange: historicoStatusChange,
+          // 🔥 PRESERVAR CAMPO AVALIACAO SE EXISTIR
+          ...(avaliacaoExistente && { Avaliacao: avaliacaoExistente }),
         },
       };
 
@@ -1681,6 +1692,10 @@ export class SharePointService {
         historicoStatusChange.Enviado
       );
       console.log("- Tipo de operação:", tipoOperacaoFinal);
+      console.log("- Campo 'Avaliacao' preservado?", !!avaliacaoExistente);
+      if (avaliacaoExistente) {
+        console.log("- Dados da 'Avaliacao':", avaliacaoExistente);
+      }
 
       // 8. Calcular percentual de conclusão
       const calculateCompletionPercentage = (): number => {
