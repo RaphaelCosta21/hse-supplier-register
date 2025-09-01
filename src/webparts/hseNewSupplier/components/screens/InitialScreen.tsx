@@ -276,14 +276,15 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
   // Render status badge
   const renderStatusBadge = (status: string): JSX.Element => {
     const statusConfig: Record<string, { color: string; icon: string }> = {
-      Rascunho: { color: oceaneeringColors.textSecondary, icon: "Edit" },
       "Em Andamento": { color: "#ff8c00", icon: "Clock" },
       Enviado: { color: oceaneeringColors.lightBlue, icon: "Send" },
       Aprovado: { color: "#107c10", icon: "CheckMark" },
       Rejeitado: { color: "#d13438", icon: "Cancel" },
+      "Em Análise": { color: "#0078d4", icon: "Search" },
+      "Pendente Info.": { color: "#ca5010", icon: "Info" },
     };
 
-    const config = statusConfig[status] || statusConfig.Rascunho;
+    const config = statusConfig[status] || statusConfig["Em Andamento"];
 
     return (
       <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 4 }}>
@@ -481,8 +482,16 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                 variant="medium"
                 style={{ color: oceaneeringColors.textSecondary }}
               >
-                • Formulários com status &quot;Aprovado&quot; tornam-se
-                bloqueados para edição.
+                • Formulários com status &quot;Aprovado&quot;,
+                &quot;Rejeitado&quot;, &quot;Em Análise&quot; ou
+                &quot;Enviado&quot; permitem apenas download em PDF.
+              </Text>
+              <Text
+                variant="medium"
+                style={{ color: oceaneeringColors.textSecondary }}
+              >
+                • Formulários com status &quot;Em Andamento&quot; ou
+                &quot;Pendente Info.&quot; podem ser editados.
               </Text>
               <Text
                 variant="medium"
@@ -856,8 +865,12 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                           tokens={{ childrenGap: 8 }}
                         >
                           {renderStatusBadge(form.status)}
-                          {/* Mostrar botão Download PDF se o status for "Enviado" */}
-                          {form.status === "Enviado" ? (
+                          {/* Lógica dos botões baseada no status do formulário */}
+                          {form.status === "Enviado" ||
+                          form.status === "Aprovado" ||
+                          form.status === "Em Análise" ||
+                          form.status === "Rejeitado" ? (
+                            // Mostrar botão Download PDF para estes status
                             <DefaultButton
                               text="Download PDF"
                               iconProps={{ iconName: "Download" }}
@@ -875,7 +888,7 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                               }}
                             />
                           ) : (
-                            /* Só mostrar botão Editar se o status não for "Enviado" */
+                            // Mostrar botão Editar para Em Andamento e Pendente Info.
                             <DefaultButton
                               text="Editar"
                               iconProps={{ iconName: "Edit" }}

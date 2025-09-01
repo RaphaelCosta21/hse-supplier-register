@@ -37,7 +37,7 @@ export type FormAction =
 export const initialFormState: IFormState = {
   currentStep: 1,
   formData: {
-    statusFormulario: "Rascunho",
+    statusFormulario: "Em Andamento",
     dadosGerais: {
       empresa: "",
       cnpj: "",

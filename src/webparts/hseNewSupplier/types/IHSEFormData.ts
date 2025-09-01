@@ -6,11 +6,12 @@ export interface IHSEFormData {
   // Metadados do formulário
   id?: number;
   statusFormulario:
-    | "Rascunho"
+    | "Em Andamento"
     | "Enviado"
     | "Em Análise"
     | "Aprovado"
-    | "Rejeitado";
+    | "Rejeitado"
+    | "Pendente Info.";
   usuarioPreenchimento?: string;
   dataCriacao?: Date;
   dataUltimaModificacao?: Date;

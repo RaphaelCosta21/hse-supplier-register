@@ -1948,7 +1948,7 @@ export class SharePointService {
       // Construir objeto IHSEFormData
       const formData: IHSEFormData = {
         id: item.Id,
-        statusFormulario: item.StatusAvaliacao || "Rascunho",
+        statusFormulario: item.StatusAvaliacao || "Em Andamento",
         dadosGerais: {
           cnpj: item.CNPJ || "",
           empresa: item.Title || "",
@@ -2063,7 +2063,7 @@ export class SharePointService {
           // Construir objeto IHSEFormData completo
           formData = {
             id: item.Id,
-            statusFormulario: item.StatusAvaliacao || "Rascunho",
+            statusFormulario: item.StatusAvaliacao || "Em Andamento",
             dadosGerais: parsedData.dadosGerais || {},
             conformidadeLegal: parsedData.conformidadeLegal || {},
             servicosEspeciais: parsedData.servicosEspeciais || {},
@@ -2085,7 +2085,7 @@ export class SharePointService {
         );
         // Não throw aqui para permitir que o sistema continue
       } // Determinar status final (usar apenas StatusAvaliacao)
-      const finalStatus = item.StatusAvaliacao || "Rascunho";
+      const finalStatus = item.StatusAvaliacao || "Em Andamento";
 
       return {
         exists: true,
@@ -2221,7 +2221,7 @@ export class SharePointService {
           id: item.Id,
           cnpj: item.CNPJ || "",
           empresa: item.Title || "",
-          status: item.StatusAvaliacao || "Rascunho",
+          status: item.StatusAvaliacao || "Em Andamento",
           dataModificacao: item.Modified,
           dataModificacaoCompleta: formatDataCompleta(dataModificacaoCompleta),
           userEmail: item.EmailPreenchimento || "",
@@ -2281,7 +2281,11 @@ export class SharePointService {
           "NomePreenchimento"
         )();
       const isOwner = item.EmailPreenchimento === currentUserEmail;
-      const allowEdit = isOwner && item.StatusAvaliacao !== "Aprovado";
+      // Permitir edição apenas para status "Em Andamento" e "Pendente Info."
+      const allowEdit =
+        isOwner &&
+        (item.StatusAvaliacao === "Em Andamento" ||
+          item.StatusAvaliacao === "Pendente Info.");
 
       console.log("Proprietário do formulário:", item.EmailPreenchimento);
       console.log("Usuário é o proprietário?", isOwner);

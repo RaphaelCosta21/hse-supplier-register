@@ -41,11 +41,12 @@ export const GRAU_RISCO_OPTIONS: IDropdownOption[] = [
 
 // Status do formulário
 export const STATUS_FORMULARIO_OPTIONS: IDropdownOption[] = [
-  { key: "Rascunho", text: "Rascunho" },
+  { key: "Em Andamento", text: "Em Andamento" },
   { key: "Enviado", text: "Enviado" },
   { key: "Em Análise", text: "Em Análise" },
   { key: "Aprovado", text: "Aprovado" },
-  { key: "Reprovado", text: "Reprovado" },
+  { key: "Rejeitado", text: "Rejeitado" },
+  { key: "Pendente Info.", text: "Pendente Info." },
 ];
 
 // Opções de resposta para questões de conformidade

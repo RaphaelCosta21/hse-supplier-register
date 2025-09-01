@@ -123,7 +123,7 @@ const HseNewSupplierContent: React.FC = () => {
         } else {
           // Formulário existe mas não pode ser editado
           setError(
-            "Você não tem permissão para editar este formulário ou ele já foi aprovado."
+            "Você não tem permissão para editar este formulário ou ele não está mais disponível para edição."
           );
         }
       } catch (error) {
