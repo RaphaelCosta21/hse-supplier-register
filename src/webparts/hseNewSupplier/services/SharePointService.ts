@@ -105,6 +105,9 @@ export class SharePointService {
 
     // Criar JSON de forma mais segura
     const createFormDataJSON = (): Record<string, unknown> => {
+      // Para saveFormData, o campo "Avaliacao" será preservado pelo updateFormWithChanges quando necessário
+      // Este método é usado principalmente para novos formulários
+
       const baseJsonData = {
         dadosGerais: formData.dadosGerais || {},
         conformidadeLegal: formData.conformidadeLegal || {},
@@ -118,30 +121,34 @@ export class SharePointService {
           email: userContext?.email || "usuario@externo.com",
           temAnexos: attachmentCount > 0,
           totalAnexos: attachmentCount,
-          // Adicionar histórico de mudança de status
+          // Adicionar histórico de mudança de status usando formato ARRAY
           historicoStatusChange: (() => {
-            const historico: Record<
-              string,
-              { dataAlteracao: string; usuario: string; email: string }
-            > = {};
+            const historico: Array<{
+              status: string;
+              dataAlteracao: string;
+              usuario: string;
+              email: string;
+            }> = [];
 
-            // Sempre criar "Em Andamento"
-            historico["Em Andamento"] = {
+            // Sempre adicionar "Em Andamento" primeiro (apenas para NOVOS formulários)
+            historico.push({
+              status: "Em Andamento",
               dataAlteracao: now.toISOString(),
               usuario: userContext?.displayName || "Usuário Externo",
               email: userContext?.email || "usuario@externo.com",
-            };
+            });
 
             // Se for submissão, adicionar também "Enviado"
             if (isSubmission) {
               console.log(
                 "🔥 SAVEFORMDATA: Adicionando status 'Enviado' ao histórico!"
               );
-              historico.Enviado = {
+              historico.push({
+                status: "Enviado",
                 dataAlteracao: now.toISOString(),
                 usuario: userContext?.displayName || "Usuário Externo",
                 email: userContext?.email || "usuario@externo.com",
-              };
+              });
               console.log(
                 "✅ SAVEFORMDATA: Status 'Enviado' adicionado ao histórico"
               );
@@ -149,6 +156,8 @@ export class SharePointService {
 
             return historico;
           })(),
+          // 🔥 PRESERVAÇÃO DE AVALIACAO: Para saveFormData (novos formulários), não há Avaliacao prévia
+          // A preservação do campo Avaliacao é feita pelo updateFormWithChanges para formulários existentes
         },
       };
 
@@ -466,31 +475,35 @@ export class SharePointService {
           email: userContext?.email || "usuario@externo.com",
           temAnexos: attachmentCount > 0,
           totalAnexos: attachmentCount,
-          // Adicionar histórico de mudança de status
+          // Adicionar histórico de mudança de status usando formato ARRAY
           // submitFormData é SEMPRE primeira submissão (novo formulário)
           // Por isso criamos AMBOS: Em Andamento (criação) e Enviado (submissão)
           historicoStatusChange: (() => {
-            const historico: Record<
-              string,
-              { dataAlteracao: string; usuario: string; email: string }
-            > = {};
+            const historico: Array<{
+              status: string;
+              dataAlteracao: string;
+              usuario: string;
+              email: string;
+            }> = [];
 
-            // Sempre criar "Em Andamento" primeiro
-            historico["Em Andamento"] = {
+            // Sempre adicionar "Em Andamento" primeiro
+            historico.push({
+              status: "Em Andamento",
               dataAlteracao: now.toISOString(),
               usuario: userContext?.displayName || "Usuário Externo",
               email: userContext?.email || "usuario@externo.com",
-            };
+            });
 
             // Depois adicionar "Enviado"
             console.log(
               "🔥 SUBMITFORMDATA: Adicionando status 'Enviado' ao histórico!"
             );
-            historico.Enviado = {
+            historico.push({
+              status: "Enviado",
               dataAlteracao: now.toISOString(),
               usuario: userContext?.displayName || "Usuário Externo",
               email: userContext?.email || "usuario@externo.com",
-            };
+            });
             console.log(
               "✅ SUBMITFORMDATA: Status 'Enviado' adicionado ao histórico"
             );
@@ -736,14 +749,17 @@ export class SharePointService {
     }
 
     // TERCEIRO: Carregar dados atuais COMPLETOS (após possível nova revisão)
-    let historicoStatusChange: Record<
-      string,
-      { dataAlteracao: string; usuario: string; email: string }
-    > = {};
+    let historicoStatusChange: Array<{
+      status: string;
+      dataAlteracao: string;
+      usuario: string;
+      email: string;
+    }> = [];
     let historicoRevisoesExistente: IRevisionEntry[] = [];
     let metadataExistente: Record<string, unknown> = {};
     let formDataAtual: IHSEFormData;
     let dataCriacaoOriginal: string; // Data de criação original do item
+    let avaliacaoExistente: Record<string, unknown> | null = null; // Campo Avaliacao preservado
 
     try {
       const currentItem = await this.sp.web.lists
@@ -757,9 +773,57 @@ export class SharePointService {
       if (currentItem.DadosFormulario) {
         const currentData = JSON.parse(currentItem.DadosFormulario);
 
+        // 🔥 PRESERVAR CAMPO AVALIACAO SE EXISTIR
+        if (currentData.metadata?.Avaliacao) {
+          avaliacaoExistente = currentData.metadata.Avaliacao;
+          console.log(
+            "✅ Campo 'Avaliacao' encontrado em submitFormWithUpdate e será preservado:",
+            avaliacaoExistente
+          );
+        }
+
         // Preservar TUDO que já existia
-        historicoStatusChange =
-          currentData.metadata?.historicoStatusChange || {};
+        const historicoExistente = currentData.metadata?.historicoStatusChange;
+
+        // Verificar se é array (novo formato) ou objeto (formato antigo)
+        if (Array.isArray(historicoExistente)) {
+          historicoStatusChange = historicoExistente;
+        } else if (
+          historicoExistente &&
+          typeof historicoExistente === "object"
+        ) {
+          // Converter formato antigo (objeto) para novo formato (array)
+          historicoStatusChange = Object.entries(historicoExistente).map(
+            ([status, data]) => ({
+              status: status,
+              dataAlteracao: (
+                data as {
+                  dataAlteracao: string;
+                  usuario: string;
+                  email: string;
+                }
+              ).dataAlteracao,
+              usuario: (
+                data as {
+                  dataAlteracao: string;
+                  usuario: string;
+                  email: string;
+                }
+              ).usuario,
+              email: (
+                data as {
+                  dataAlteracao: string;
+                  usuario: string;
+                  email: string;
+                }
+              ).email,
+            })
+          );
+          console.log(
+            "🔄 Convertido histórico do formato antigo (objeto) para novo (array)"
+          );
+        }
+
         historicoRevisoesExistente =
           currentData.metadata?.historicoRevisoes || [];
         metadataExistente = currentData.metadata || {};
@@ -768,7 +832,7 @@ export class SharePointService {
         console.log("📋 Dados preservados após possível revisão:");
         console.log(
           "- Histórico de Status:",
-          Object.keys(historicoStatusChange)
+          historicoStatusChange.map((h) => h.status)
         );
         console.log(
           "- Revisões existentes:",
@@ -777,12 +841,16 @@ export class SharePointService {
         console.log("- Data de criação original:", dataCriacaoOriginal);
 
         // Adicionar entrada de quando o status "Em Andamento" foi criado (se não existir)
-        if (!historicoStatusChange["Em Andamento"] && currentItem.Created) {
-          historicoStatusChange["Em Andamento"] = {
+        const hasEmAndamento = historicoStatusChange.some(
+          (entry) => entry.status === "Em Andamento"
+        );
+        if (!hasEmAndamento && currentItem.Created) {
+          historicoStatusChange.unshift({
+            status: "Em Andamento",
             dataAlteracao: currentItem.Created,
             usuario: userContext?.displayName || "Sistema",
             email: userContext?.email || "sistema@oceaneering.com",
-          };
+          });
         }
       } else {
         formDataAtual = formData;
@@ -800,11 +868,12 @@ export class SharePointService {
     console.log(
       "🔥 SUBMITFORMWITHUPDATE: Adicionando status 'Enviado' ao histórico!"
     );
-    historicoStatusChange.Enviado = {
+    historicoStatusChange.push({
+      status: "Enviado",
       dataAlteracao: now.toISOString(),
       usuario: userContext?.displayName || "Usuário Externo",
       email: userContext?.email || "usuario@externo.com",
-    };
+    });
     console.log(
       "✅ SUBMITFORMWITHUPDATE: Status 'Enviado' adicionado ao histórico"
     );
@@ -829,6 +898,8 @@ export class SharePointService {
         metadata: {
           // Preservar metadata existente (EXCETO dataSubmissao que é redundante)
           ...metadataExistente,
+          // 🔥 PRESERVAR CAMPO AVALIACAO SE EXISTIR
+          ...(avaliacaoExistente && { Avaliacao: avaliacaoExistente }),
           // Remover campo duplicado se existir
           dataSubmissao: undefined,
           // Atualizar apenas campos necessários
@@ -1523,11 +1594,13 @@ export class SharePointService {
       // 7. Preparar dados finais para salvamento
       const numeroRevisaoAtual = historicoRevisoes.length;
 
-      // Manter ou criar histórico de status (se não existir)
-      let historicoStatusChange: Record<
-        string,
-        { dataAlteracao: string; usuario: string; email: string }
-      > = {};
+      // Manter ou criar histórico de status (se não existir) - USANDO ARRAY para permitir status duplicados
+      let historicoStatusChange: Array<{
+        status: string;
+        dataAlteracao: string;
+        usuario: string;
+        email: string;
+      }> = [];
       try {
         const rawItem = await this.sp.web.lists
           .getByTitle(this.listName)
@@ -1536,19 +1609,76 @@ export class SharePointService {
 
         if (rawItem.DadosFormulario) {
           const rawData = JSON.parse(rawItem.DadosFormulario);
-          historicoStatusChange = rawData.metadata?.historicoStatusChange || {};
+          const historicoExistente = rawData.metadata?.historicoStatusChange;
+
+          // Verificar se é array (novo formato) ou objeto (formato antigo)
+          if (Array.isArray(historicoExistente)) {
+            historicoStatusChange = historicoExistente;
+          } else if (
+            historicoExistente &&
+            typeof historicoExistente === "object"
+          ) {
+            // Converter formato antigo (objeto) para novo formato (array)
+            historicoStatusChange = Object.entries(historicoExistente).map(
+              ([status, data]) => ({
+                status: status,
+                dataAlteracao: (
+                  data as {
+                    dataAlteracao: string;
+                    usuario: string;
+                    email: string;
+                  }
+                ).dataAlteracao,
+                usuario: (
+                  data as {
+                    dataAlteracao: string;
+                    usuario: string;
+                    email: string;
+                  }
+                ).usuario,
+                email: (
+                  data as {
+                    dataAlteracao: string;
+                    usuario: string;
+                    email: string;
+                  }
+                ).email,
+              })
+            );
+            console.log(
+              "🔄 Convertido histórico do formato antigo (objeto) para novo (array)"
+            );
+          }
         }
       } catch (error) {
         console.log("Erro ao carregar histórico de status:", error);
       }
 
-      // Se não existe histórico de "Em Andamento", criar
-      if (!historicoStatusChange["Em Andamento"]) {
-        historicoStatusChange["Em Andamento"] = {
+      // Não adicionar "Em Andamento" se já existe no histórico
+      // (Evitar duplicação desnecessária em salvamentos de rascunho)
+      const hasEmAndamento = historicoStatusChange.some(
+        (entry) => entry.status === "Em Andamento"
+      );
+      console.log(
+        "🔍 Verificando status 'Em Andamento' existente:",
+        hasEmAndamento
+      );
+
+      // APENAS adicionar "Em Andamento" se realmente não existir e for um formulário novo
+      if (!hasEmAndamento) {
+        console.log(
+          "➕ Adicionando status 'Em Andamento' (não existia no histórico)"
+        );
+        historicoStatusChange.unshift({
+          status: "Em Andamento",
           dataAlteracao: now.toISOString(),
           usuario: userContext?.displayName || "Usuário Externo",
           email: userContext?.email || "usuario@externo.com",
-        };
+        });
+      } else {
+        console.log(
+          "✅ Status 'Em Andamento' já existe - preservando histórico"
+        );
       }
 
       // 🔥 DETECTAR MUDANÇA DE STATUS PARA "ENVIADO"
@@ -1556,7 +1686,9 @@ export class SharePointService {
       console.log("🔍 VERIFICAÇÃO DE STATUS:", {
         "newFormData.statusFormulario": newFormData.statusFormulario,
         isSubmission: isSubmission,
-        "historicoStatusChange atual": Object.keys(historicoStatusChange),
+        "historicoStatusChange atual": historicoStatusChange.map(
+          (h) => h.status
+        ),
       });
 
       let tipoOperacaoFinal =
@@ -1564,15 +1696,16 @@ export class SharePointService {
 
       if (isSubmission) {
         console.log("🚀 ADICIONANDO STATUS 'ENVIADO' AO HISTÓRICO!");
-        // Adicionar entrada no histórico de status para "Enviado"
-        historicoStatusChange.Enviado = {
+        // ADICIONAR (não sobrescrever) entrada no histórico de status para "Enviado"
+        historicoStatusChange.push({
+          status: "Enviado",
           dataAlteracao: now.toISOString(),
           usuario: userContext?.displayName || "Usuário Externo",
           email: userContext?.email || "usuario@externo.com",
-        };
+        });
         console.log(
-          "✅ Status 'Enviado' adicionado:",
-          historicoStatusChange.Enviado
+          "✅ Status 'Enviado' adicionado ao histórico:",
+          historicoStatusChange[historicoStatusChange.length - 1]
         );
         tipoOperacaoFinal = "Formulário Enviado";
 
@@ -1627,7 +1760,7 @@ export class SharePointService {
 
       // Obter data de criação original e campo Avaliacao dos dados brutos do SharePoint
       let dataCriacaoOriginal = now.toISOString();
-      let avaliacaoExistente: any = null;
+      let avaliacaoExistente: Record<string, unknown> | null = null;
       try {
         const rawItem = await this.sp.web.lists
           .getByTitle(this.listName)
@@ -1681,16 +1814,16 @@ export class SharePointService {
       console.log("📝 DADOS FINAIS ANTES DE SALVAR:");
       console.log(
         "- Histórico de Status Final:",
-        Object.keys(historicoStatusChange)
+        historicoStatusChange.map((h) => `${h.status} (${h.dataAlteracao})`)
       );
       console.log(
         "- Status 'Enviado' presente?",
-        !!historicoStatusChange.Enviado
+        historicoStatusChange.some((h) => h.status === "Enviado")
       );
-      console.log(
-        "- Dados do status 'Enviado':",
-        historicoStatusChange.Enviado
-      );
+      const ultimoEnviado = historicoStatusChange
+        .filter((h) => h.status === "Enviado")
+        .pop();
+      console.log("- Dados do último status 'Enviado':", ultimoEnviado);
       console.log("- Tipo de operação:", tipoOperacaoFinal);
       console.log("- Campo 'Avaliacao' preservado?", !!avaliacaoExistente);
       if (avaliacaoExistente) {
@@ -1746,7 +1879,7 @@ export class SharePointService {
       );
       console.log(
         "- Histórico final salvo:",
-        Object.keys(historicoStatusChange)
+        historicoStatusChange.map((h) => `${h.status} (${h.dataAlteracao})`)
       );
       console.log("=== UPDATEFORMWITHCHANGES CONCLUÍDO ===");
 
