@@ -327,17 +327,16 @@ export class SharePointService {
                       0
                     ),
                     historicoStatusChange: (() => {
-                      const historico: Record<
-                        string,
-                        {
-                          dataAlteracao: string;
-                          usuario: string;
-                          email: string;
-                        }
-                      > = {};
+                      const historico: Array<{
+                        status: string;
+                        dataAlteracao: string;
+                        usuario: string;
+                        email: string;
+                      }> = [];
 
                       // Sempre criar "Em Andamento"
-                      historico["Em Andamento"] = {
+                      historico.push({
+                        status: "Em Andamento",
                         dataAlteracao: new Date().toISOString(),
                         usuario:
                           this.context?.pageContext?.user?.displayName ||
@@ -345,14 +344,15 @@ export class SharePointService {
                         email:
                           this.context?.pageContext?.user?.email ||
                           "usuario@externo.com",
-                      };
+                      });
 
                       // 🔥 PRESERVAR status "Enviado" se for submissão
                       if (isSubmission) {
                         console.log(
                           "🔄 UPLOAD ANEXOS: Preservando status 'Enviado' ao atualizar!"
                         );
-                        historico.Enviado = {
+                        historico.push({
+                          status: "Enviado",
                           dataAlteracao: new Date().toISOString(),
                           usuario:
                             this.context?.pageContext?.user?.displayName ||
@@ -360,7 +360,7 @@ export class SharePointService {
                           email:
                             this.context?.pageContext?.user?.email ||
                             "usuario@externo.com",
-                        };
+                        });
                         console.log(
                           "✅ UPLOAD ANEXOS: Status 'Enviado' preservado no histórico"
                         );
@@ -1970,10 +1970,28 @@ export class SharePointService {
     console.log(`Ação: ${action}, Tipo Operação: ${tipoOperacao}`);
     console.log(`Número da Revisão: ${numeroRevisaoInicial}`);
 
+    // 🔥 PRESERVAR historicoStatusChange como ARRAY (criado no saveFormData)
+    const metadataExistente =
+      (jsonData.metadata as Record<string, unknown>) || {};
+    const historicoStatusExistente = metadataExistente.historicoStatusChange;
+
+    console.log(
+      "🔍 Verificando historicoStatusChange no addRevisionHistoryToJSON:"
+    );
+    console.log(
+      "- Tipo existente:",
+      Array.isArray(historicoStatusExistente)
+        ? "ARRAY"
+        : typeof historicoStatusExistente
+    );
+    console.log("- Conteúdo:", historicoStatusExistente);
+
     return {
       ...jsonData,
       metadata: {
-        ...((jsonData.metadata as Record<string, unknown>) || {}),
+        ...metadataExistente,
+        // 🔥 PRESERVAR historicoStatusChange como foi criado (array)
+        historicoStatusChange: historicoStatusExistente || [],
         historicoRevisoes: [revisao],
         numeroRevisao: numeroRevisaoInicial, // Sempre reflete o número total de revisões
         tipoOperacao: tipoOperacao,
