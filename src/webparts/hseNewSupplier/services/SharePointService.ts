@@ -207,6 +207,12 @@ export class SharePointService {
       console.log(
         `🟢 Formulário criado na lista principal (hse-new-register). ID do item: ${formId}`
       );
+
+      // 1.1. Se status for "Enviado", adicionar entrada na lista de controle
+      if (isSubmission) {
+        await this.addStatusEmailSupEntry(formId);
+      }
+
       // 2. Criar pasta se existem dados básicos (para novos formulários)
       if (dados.cnpj && dados.empresa) {
         try {
@@ -554,6 +560,9 @@ export class SharePointService {
       // 1. Criar item na lista principal (hse-new-register)
       const result = await list.items.add(itemData);
       const formId = result.Id;
+
+      // 1.1. Adicionar entrada na lista de controle (submitFormData sempre é "Enviado")
+      await this.addStatusEmailSupEntry(formId);
 
       // 2. Criar pasta se existem dados básicos (para novos formulários)
       if (dados.cnpj && dados.empresa) {
@@ -947,6 +956,9 @@ export class SharePointService {
 
       // Atualizar item existente ao invés de criar novo
       await list.items.getById(itemId).update(updateData);
+
+      // Adicionar entrada na lista de controle (submitFormWithUpdate sempre altera para "Enviado")
+      await this.addStatusEmailSupEntry(itemId);
 
       console.log("✅ Formulário HSE submetido com sucesso! ID:", itemId);
       console.log("- Status alterado para: Enviado");
@@ -1874,6 +1886,11 @@ export class SharePointService {
         .items.getById(itemId)
         .update(updateData);
 
+      // Se foi submissão (status alterado para "Enviado"), adicionar entrada na lista de controle
+      if (isSubmission) {
+        await this.addStatusEmailSupEntry(itemId);
+      }
+
       console.log(
         "💾 UPDATEFORMWITHCHANGES: Dados salvos no SharePoint com sucesso!"
       );
@@ -1893,6 +1910,37 @@ export class SharePointService {
       throw new Error(`Falha ao atualizar formulário: ${error.message}`);
     }
   }
+  /**
+   * Adiciona item na lista de controle de status quando alterado para "Enviado"
+   */
+  private async addStatusEmailSupEntry(itemId: number): Promise<void> {
+    try {
+      console.log(
+        `🔄 Adicionando entrada na lista hse-new-register-status-email-sup para item ${itemId}`
+      );
+
+      const statusEmailSupData = {
+        Title: "Alteracao_Status_Enviado",
+        Status: "Enviado",
+        IdForm: itemId,
+      };
+
+      await this.sp.web.lists
+        .getByTitle("hse-new-register-status-email-sup")
+        .items.add(statusEmailSupData);
+
+      console.log(
+        `✅ Entrada adicionada na lista hse-new-register-status-email-sup para item ${itemId}`
+      );
+    } catch (error) {
+      console.error(
+        `❌ Erro ao adicionar entrada na lista hse-new-register-status-email-sup para item ${itemId}:`,
+        error
+      );
+      // Não falhar o processo principal por causa deste erro
+    }
+  }
+
   /**
    * Cria uma entrada de histórico simplificada para salvamentos
    */
