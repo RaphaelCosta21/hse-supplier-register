@@ -81,7 +81,7 @@ export const Footer: React.FC<IFooterProps> = ({ className }) => {
                 </div>
               </div>
               <Text variant="small" className={styles.systemVersion}>
-                Versão 1.0.3 | Status: Online
+                Versão 1.0.4 | Status: Online
               </Text>
             </div>
           </div>

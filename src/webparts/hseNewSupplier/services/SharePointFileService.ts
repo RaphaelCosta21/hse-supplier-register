@@ -476,15 +476,20 @@ export class SharePointFileService {
         .rootFolder.folders.getByUrl(mainFolderName);
       const targetFolder = parentFolder.folders.getByUrl(subFolderName);
 
-      // Deletar todos os arquivos existentes na subpasta antes de salvar o novo
+      // Verificar se já existe um arquivo com o mesmo nome e deletar apenas esse
       try {
         const files = await targetFolder.files();
         if (files && files.length > 0) {
-          for (const f of files) {
+          const existingFile = files.find((f) => f.Name === fileName);
+          if (existingFile) {
             console.log(
-              `🗑️ Deletando arquivo existente (${f.Name}) antes de salvar novo.`
+              `🗑️ Deletando arquivo existente com mesmo nome (${existingFile.Name}) antes de salvar novo.`
             );
-            await targetFolder.files.getByUrl(f.Name).delete();
+            await targetFolder.files.getByUrl(existingFile.Name).delete();
+          } else {
+            console.log(
+              `📝 Arquivo ${fileName} não existe na pasta, será adicionado como novo arquivo.`
+            );
           }
         }
       } catch {

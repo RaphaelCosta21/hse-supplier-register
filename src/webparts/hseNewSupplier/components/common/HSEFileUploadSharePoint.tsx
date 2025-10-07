@@ -42,7 +42,7 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
   onFileUploaded,
   onFileRemoved,
   disabled = false,
-  allowMultiple = false, // Manter por compatibilidade, mas forçar para false
+  allowMultiple = false,
 }) => {
   const { actions, state } = useHSEForm();
   const [uploading, setUploading] = React.useState(false);
@@ -51,8 +51,8 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
   const [errors, setErrors] = React.useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Sempre forçar allowMultiple para false - cada campo deve ter apenas um arquivo
-  const actualAllowMultiple = false;
+  // Usar o valor passado para allowMultiple para permitir múltiplos arquivos quando necessário
+  const actualAllowMultiple = allowMultiple;
 
   // Buscar arquivos existentes para esta categoria específica
   const categoryFiles = React.useMemo(() => {
@@ -127,9 +127,22 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
         setUploading(true);
         setUploadProgress(0);
 
-        // Se já existe um arquivo nesta categoria, remover primeiro
-        if (categoryFiles.length > 0) {
-          console.log(`Removendo arquivo anterior da categoria ${category}...`);
+        // Verificar se já existe um arquivo com o mesmo nome
+        const existingFileWithSameName = categoryFiles.find(
+          (existingFile) => existingFile.fileName === file.name
+        );
+
+        // Se encontrou arquivo com mesmo nome, remover apenas esse arquivo
+        if (existingFileWithSameName) {
+          console.log(
+            `Substituindo arquivo existente: ${file.name} na categoria ${category}...`
+          );
+          await actions.removeAttachment(category, existingFileWithSameName.id);
+        } else if (!actualAllowMultiple && categoryFiles.length > 0) {
+          // Se não permite múltiplos e já há arquivos, remover todos (comportamento original para campos de arquivo único)
+          console.log(
+            `Removendo arquivos anteriores da categoria ${category} (campo de arquivo único)...`
+          );
           for (const existingFile of categoryFiles) {
             await actions.removeAttachment(category, existingFile.id);
           }
@@ -144,7 +157,9 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
             }
             return prev + 10;
           });
-        }, 100); // Fazer upload usando o contexto HSE - usar subcategory correta para criar subpasta
+        }, 100);
+
+        // Fazer upload usando o contexto HSE - usar subcategory correta para criar subpasta
         const uploadedFile = await actions.uploadAttachment(
           file,
           category, // categoria principal (nome da pasta específica)

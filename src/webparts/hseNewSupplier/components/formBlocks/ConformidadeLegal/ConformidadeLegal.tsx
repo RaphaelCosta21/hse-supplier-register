@@ -693,6 +693,7 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                                       accept={
                                         ".pdf,.docx,.xlsx,.jpg,.png,.txt,.zip"
                                       }
+                                      allowMultiple={true}
                                       maxFileSize={50}
                                       helpText="Anexe o documento solicitado para comprovação."
                                     />
@@ -943,6 +944,7 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                                     accept={
                                       ".pdf,.docx,.xlsx,.jpg,.png,.txt,.zip"
                                     }
+                                    allowMultiple={true}
                                     maxFileSize={50}
                                     helpText="Anexe o documento solicitado para comprovação."
                                   />
@@ -1206,6 +1208,7 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                                           ".pdf,.docx,.xlsx,.jpg,.png,.txt,.zip"
                                         }
                                         maxFileSize={50}
+                                        allowMultiple={true}
                                         helpText="Anexe o documento solicitado para comprovação."
                                       />
                                     </div>

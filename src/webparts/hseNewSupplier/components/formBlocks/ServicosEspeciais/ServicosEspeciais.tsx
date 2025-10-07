@@ -78,6 +78,7 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
                 accept=".pdf,.jpg,.png,.txt,.zip"
                 maxFileSize={50}
                 helpText="Anexar certificado válido"
+                allowMultiple={true}
               />
             </div>
           ))}
@@ -118,6 +119,7 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
                 accept=".pdf,.docx,.xlsx,.txt,.zip"
                 maxFileSize={50}
                 helpText="Anexar documento técnico"
+                allowMultiple={true}
               />
             </div>
           ))}

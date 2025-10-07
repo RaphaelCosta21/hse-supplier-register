@@ -296,6 +296,7 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
             accept=".pdf,.xlsx,.xls,.docx,.doc,.txt,.zip"
             maxFileSize={50}
             helpText="Anexe o Resumo Estatístico Mensal de Acidentes de trabalho do ano corrente e do ano anterior (NBR14280)."
+            allowMultiple={true}
           />
         </div>
         <MessageBar messageBarType={MessageBarType.warning}>
