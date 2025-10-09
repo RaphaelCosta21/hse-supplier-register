@@ -280,6 +280,7 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
       Enviado: { color: oceaneeringColors.lightBlue, icon: "Send" },
       Aprovado: { color: "#107c10", icon: "CheckMark" },
       Rejeitado: { color: "#d13438", icon: "Cancel" },
+      Cancelado: { color: "#605e5c", icon: "StatusCircleBlock" },
       "Em Análise": { color: "#0078d4", icon: "Search" },
       "Pendente Info.": { color: "#ca5010", icon: "Info" },
     };
@@ -483,8 +484,9 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                 style={{ color: oceaneeringColors.textSecondary }}
               >
                 • Formulários com status &quot;Aprovado&quot;,
-                &quot;Rejeitado&quot;, &quot;Em Análise&quot; ou
-                &quot;Enviado&quot; permitem apenas download em PDF.
+                &quot;Rejeitado&quot;, &quot;Cancelado&quot;, &quot;Em
+                Análise&quot; ou &quot;Enviado&quot; permitem apenas download em
+                PDF.
               </Text>
               <Text
                 variant="medium"
@@ -869,7 +871,8 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                           {form.status === "Enviado" ||
                           form.status === "Aprovado" ||
                           form.status === "Em Análise" ||
-                          form.status === "Rejeitado" ? (
+                          form.status === "Rejeitado" ||
+                          form.status === "Cancelado" ? (
                             // Mostrar botão Download PDF para estes status
                             <DefaultButton
                               text="Download PDF"

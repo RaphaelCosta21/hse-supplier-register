@@ -46,6 +46,7 @@ export const STATUS_FORMULARIO_OPTIONS: IDropdownOption[] = [
   { key: "Em Análise", text: "Em Análise" },
   { key: "Aprovado", text: "Aprovado" },
   { key: "Rejeitado", text: "Rejeitado" },
+  { key: "Cancelado", text: "Cancelado" },
   { key: "Pendente Info.", text: "Pendente Info." },
 ];
 
