@@ -138,3 +138,21 @@
     min-height: 22px; // Altura consistente para labels
   }
 }
+
+.restrictedField {
+  // Estilo para campos que precisam ser corrigidos devido a restrições
+  :global(.ms-TextField-wrapper) {
+    border: 2px solid #ff8c00 !important;
+    border-radius: 4px;
+    background-color: #fff4e6 !important;
+  }
+
+  :global(.ms-TextField-field) {
+    background-color: transparent !important;
+  }
+
+  :global(.ms-Label) {
+    color: #ff8c00 !important;
+    font-weight: 600 !important;
+  }
+}

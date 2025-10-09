@@ -13,16 +13,28 @@ import {
 import { IDadosGeraisProps } from "./IDadosGeraisProps";
 import { GRAU_RISCO_OPTIONS } from "../../../utils/formConstants";
 import styles from "./DadosGerais.module.scss";
+import "../../../styles/field-restrictions.scss";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
 import { useHSEForm } from "../../context/HSEFormContext";
 import { SectionTitle } from "../../common/SectionTitle";
+import { getFieldControlProps } from "../../../utils/fieldRestrictionHelpers";
 
 export const DadosGerais: React.FC<IDadosGeraisProps> = ({
   value,
   onChange,
   errors,
 }) => {
-  const { state, dispatch } = useHSEForm();
+  const context = useHSEForm();
+  const { state, dispatch } = context;
+
+  // Log de debug para verificar estado do componente
+  console.log("[DADOS GERAIS DEBUG] Renderizando com estado:", {
+    correctionMode: state.correctionMode,
+    restrictedFields: state.restrictedFields,
+    formId: state.formData?.id,
+    sessionModoCorrecao: sessionStorage.getItem("modoCorrecao"),
+    sessionCamposRestricao: sessionStorage.getItem("camposRestricao"),
+  });
 
   const formatCNPJ = (val: string): string => {
     const cleanValue = val.replace(/\D/g, "");
@@ -32,6 +44,7 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
       .replace(/(\d{3})(\d)/, "$1/$2")
       .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
   };
+
   // Função utilitária para mostrar erro visual - combina erros do prop e do contexto
   const showError = (field: string): boolean => {
     // Verificar erros do prop (validação normal)
@@ -127,20 +140,22 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               value={value.empresa || ""}
               onChange={(_, v) => handleFieldChange("empresa", v)}
               required
-              disabled={!!state.formData?.id} // Desabilita se o formulário já foi criado (tem ID)
-              className={`${styles.fullWidth} ${
-                showError("empresa") ? styles.fieldError : ""
-              }`}
-              placeholder={
-                state.formData?.id
-                  ? "Nome da empresa não pode ser alterado após a criação do formulário"
-                  : "Razão Social da empresa"
-              }
-              description={
-                state.formData?.id
-                  ? "⚠️ O nome da empresa não pode ser alterado após o formulário ter sido criado."
-                  : undefined
-              }
+              {...(() => {
+                const fieldProps = getFieldControlProps(
+                  "dadosGerais.empresa",
+                  context
+                );
+                return {
+                  disabled: fieldProps.disabled,
+                  description: fieldProps.description,
+                  className: `${styles.fullWidth} ${
+                    showError("empresa") ? styles.fieldError : ""
+                  } ${fieldProps.className}`,
+                  placeholder: fieldProps.disabled
+                    ? "Nome da empresa não pode ser alterado após a criação do formulário"
+                    : "Razão Social da empresa",
+                };
+              })()}
             />
           </div>{" "}
           <div className={styles.gridRow}>
@@ -161,8 +176,18 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               onChange={(_, v) => onChange("escopoServico", v)}
               multiline
               rows={3}
-              className={styles.fullWidth}
               placeholder="Descreva detalhadamente o escopo dos serviços contratados"
+              {...(() => {
+                const fieldProps = getFieldControlProps(
+                  "dadosGerais.escopoServico",
+                  context
+                );
+                return {
+                  disabled: fieldProps.disabled,
+                  description: fieldProps.description,
+                  className: `${styles.fullWidth} ${fieldProps.className}`,
+                };
+              })()}
             />
           </div>{" "}
           <div className={styles.gridRow}>
@@ -171,10 +196,20 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               value={value.responsavelTecnico || ""}
               onChange={(_, v) => handleFieldChange("responsavelTecnico", v)}
               required
-              className={`${styles.halfWidth} ${
-                showError("responsavelTecnico") ? styles.fieldError : ""
-              }`}
               placeholder="Nome completo do responsável técnico ou representante legal"
+              {...(() => {
+                const fieldProps = getFieldControlProps(
+                  "dadosGerais.responsavelTecnico",
+                  context
+                );
+                return {
+                  disabled: fieldProps.disabled,
+                  description: fieldProps.description,
+                  className: `${styles.halfWidth} ${
+                    showError("responsavelTecnico") ? styles.fieldError : ""
+                  } ${fieldProps.className}`,
+                };
+              })()}
             />
             <TextField
               label="Atividade Principal (CNAE)"
@@ -183,10 +218,20 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
                 handleFieldChange("atividadePrincipalCNAE", v)
               }
               required
-              className={`${styles.halfWidth} ${
-                showError("atividadePrincipalCNAE") ? styles.fieldError : ""
-              }`}
               placeholder="Código CNAE da atividade principal"
+              {...(() => {
+                const fieldProps = getFieldControlProps(
+                  "dadosGerais.atividadePrincipalCNAE",
+                  context
+                );
+                return {
+                  disabled: fieldProps.disabled,
+                  description: fieldProps.description,
+                  className: `${styles.halfWidth} ${
+                    showError("atividadePrincipalCNAE") ? styles.fieldError : ""
+                  } ${fieldProps.className}`,
+                };
+              })()}
             />
           </div>
           <div className={styles.gridRow}>
@@ -202,7 +247,19 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               }
               min={0}
               step={1}
-              className={styles.quarterWidth}
+              className={`${styles.quarterWidth} ${
+                getFieldControlProps("dadosGerais.totalEmpregados", context)
+                  .className
+              }`}
+              {...(() => {
+                const fieldProps = getFieldControlProps(
+                  "dadosGerais.totalEmpregados",
+                  context
+                );
+                return {
+                  disabled: fieldProps.disabled,
+                };
+              })()}
             />
             <SpinButton
               label="Empregados para este Serviço"
@@ -221,7 +278,21 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
               }
               min={0}
               step={1}
-              className={styles.quarterWidth}
+              className={`${styles.quarterWidth} ${
+                getFieldControlProps(
+                  "dadosGerais.empregadosParaServico",
+                  context
+                ).className
+              }`}
+              {...(() => {
+                const fieldProps = getFieldControlProps(
+                  "dadosGerais.empregadosParaServico",
+                  context
+                );
+                return {
+                  disabled: fieldProps.disabled,
+                };
+              })()}
             />{" "}
             <Dropdown
               label="Grau de Risco (NR-4)"
@@ -231,10 +302,19 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
                 handleFieldChange("grauRisco", option?.key)
               }
               required
-              className={`${styles.quarterWidth} ${
-                showError("grauRisco") ? styles.fieldError : ""
-              }`}
               placeholder="Selecione"
+              {...(() => {
+                const fieldProps = getFieldControlProps(
+                  "dadosGerais.grauRisco",
+                  context
+                );
+                return {
+                  disabled: fieldProps.disabled,
+                  className: `${styles.quarterWidth} ${
+                    showError("grauRisco") ? styles.fieldError : ""
+                  } ${fieldProps.className}`,
+                };
+              })()}
             />
           </div>{" "}
           <div className={styles.gridRow}>
@@ -245,6 +325,15 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
                   checked={value.possuiSESMT || false}
                   onChange={(_, checked) => onChange("possuiSESMT", checked)}
                   inlineLabel
+                  {...(() => {
+                    const fieldProps = getFieldControlProps(
+                      "dadosGerais.possuiSESMT",
+                      context
+                    );
+                    return {
+                      disabled: fieldProps.disabled,
+                    };
+                  })()}
                 />
                 <Text
                   variant="small"
@@ -297,6 +386,16 @@ export const DadosGerais: React.FC<IDadosGeraisProps> = ({
             maxFileSize={50}
             helpText="Anexe o Resumo Estatístico Mensal de Acidentes de trabalho do ano corrente e do ano anterior (NBR14280)."
             allowMultiple={true}
+            {...(() => {
+              const fieldProps = getFieldControlProps(
+                "dadosGerais.rem",
+                context
+              );
+              return {
+                disabled: fieldProps.disabled,
+                isRestricted: fieldProps.isRestricted,
+              };
+            })()}
           />
         </div>
         <MessageBar messageBarType={MessageBarType.warning}>

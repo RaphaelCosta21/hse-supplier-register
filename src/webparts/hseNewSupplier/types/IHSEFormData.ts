@@ -310,6 +310,9 @@ export interface IFormState {
   lastSaved?: Date;
   errors: { [key: string]: string };
   isDirty: boolean;
+  // Novos campos para modo de correção
+  correctionMode: boolean;
+  restrictedFields: string[];
 }
 
 // Interface para validação de erros

@@ -23,16 +23,19 @@ import {
   ATTACHMENT_CATEGORY_LABELS,
 } from "../../../utils/formConstants";
 import styles from "./ConformidadeLegal.module.scss";
+import "../../../styles/field-restrictions.scss";
 import { HSEFileUpload } from "../../common/HSEFileUploadSharePoint";
 import { SectionTitle } from "../../common/SectionTitle";
 import { useHSEForm } from "../../context/HSEFormContext";
+import { getBlockControlProps } from "../../../utils/fieldRestrictionHelpers";
 
 export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
   value,
   onChange,
   errors,
 }) => {
-  const { state } = useHSEForm();
+  const context = useHSEForm();
+  const { state } = context;
 
   // Estados para controlar blocos aplicáveis e expandidos
   const [applicableBlocks, setApplicableBlocks] = React.useState<{
@@ -489,13 +492,26 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                 const isComplete = isBlockComplete(block.key, block.questions);
                 const isApplicable = applicableBlocks[block.key] || false;
                 const isExpanded = expandedBlocks[block.key] || false;
+                const blockProps = getBlockControlProps(
+                  `conformidadeLegal.${block.key}`,
+                  context
+                );
 
                 return (
                   <div
                     key={block.key}
                     className={`${styles.nrSection} ${
                       isApplicable ? styles.applicable : styles.notApplicable
-                    }`}
+                    } ${blockProps.className}`}
+                    style={{
+                      opacity: blockProps.disabled ? 0.6 : 1,
+                      pointerEvents: blockProps.disabled ? "none" : "auto",
+                      ...(blockProps.isRestricted && {
+                        border: "2px solid #ff8c00",
+                        backgroundColor: "#fff4e6",
+                        borderRadius: "8px",
+                      }),
+                    }}
                   >
                     {" "}
                     <div className={styles.blockHeader}>
@@ -747,12 +763,26 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
               const isApplicable = applicableBlocks[block.key] || false;
               const isExpanded = expandedBlocks[block.key] || false;
 
+              const blockProps = getBlockControlProps(
+                `conformidadeLegal.${block.key}`,
+                context
+              );
+
               return (
                 <div
                   key={block.key}
                   className={`${styles.nrSection} ${
                     isApplicable ? styles.applicable : styles.notApplicable
-                  }`}
+                  } ${blockProps.className}`}
+                  style={{
+                    opacity: blockProps.disabled ? 0.6 : 1,
+                    pointerEvents: blockProps.disabled ? "none" : "auto",
+                    ...(blockProps.isRestricted && {
+                      border: "2px solid #ff8c00",
+                      backgroundColor: "#fff4e6",
+                      borderRadius: "8px",
+                    }),
+                  }}
                 >
                   {" "}
                   <div className={styles.blockHeader}>
@@ -1025,13 +1055,26 @@ export const ConformidadeLegal: React.FC<IConformidadeLegalProps> = ({
                   );
                   const isApplicable = applicableBlocks[block.key] || false;
                   const isExpanded = expandedBlocks[block.key] || false;
+                  const blockProps = getBlockControlProps(
+                    `conformidadeLegal.${block.key}`,
+                    context
+                  );
 
                   return (
                     <div
                       key={block.key}
                       className={`${styles.nrSection} ${
                         isApplicable ? styles.applicable : styles.notApplicable
-                      }`}
+                      } ${blockProps.className}`}
+                      style={{
+                        opacity: blockProps.disabled ? 0.6 : 1,
+                        pointerEvents: blockProps.disabled ? "none" : "auto",
+                        ...(blockProps.isRestricted && {
+                          border: "2px solid #ff8c00",
+                          backgroundColor: "#fff4e6",
+                          borderRadius: "8px",
+                        }),
+                      }}
                     >
                       <div className={styles.blockHeader}>
                         <div className={styles.blockTitleSection}>

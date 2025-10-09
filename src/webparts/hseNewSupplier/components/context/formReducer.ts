@@ -32,7 +32,12 @@ export type FormAction =
   | { type: "CLEAR_VALIDATION_ERRORS" }
   | { type: "SET_FIELD_ERRORS"; payload: { [fieldName: string]: string } }
   | { type: "CLEAR_FIELD_ERRORS" }
-  | { type: "RESET_FORM" };
+  | { type: "RESET_FORM" }
+  | {
+      type: "SET_CORRECTION_MODE";
+      payload: { enabled: boolean; restrictedFields: string[] };
+    }
+  | { type: "CLEAR_CORRECTION_MODE" };
 
 export const initialFormState: IFormState = {
   currentStep: 1,
@@ -66,6 +71,8 @@ export const initialFormState: IFormState = {
   lastSaved: undefined,
   errors: {},
   isDirty: false,
+  correctionMode: false,
+  restrictedFields: [],
 };
 
 export const formReducer = (
@@ -222,6 +229,20 @@ export const formReducer = (
     }
     case "RESET_FORM": {
       return initialFormState;
+    }
+    case "SET_CORRECTION_MODE": {
+      return {
+        ...state,
+        correctionMode: action.payload.enabled,
+        restrictedFields: action.payload.restrictedFields,
+      };
+    }
+    case "CLEAR_CORRECTION_MODE": {
+      return {
+        ...state,
+        correctionMode: false,
+        restrictedFields: [],
+      };
     }
     default:
       return state;

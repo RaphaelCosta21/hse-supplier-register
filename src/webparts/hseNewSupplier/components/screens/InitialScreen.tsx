@@ -11,11 +11,16 @@ import {
   Spinner,
   SpinnerSize,
   Icon,
+  Dialog,
+  DialogType,
+  DialogFooter,
 } from "@fluentui/react";
 import { useHSEForm } from "../context/HSEFormContext";
 import {
   ICNPJVerificationResult,
   IUserFormSummary,
+  IFormAvaliacao,
+  ICampoRestricao,
 } from "../../types/IApplicationPhase";
 import { validators } from "../../utils/validators";
 import { formatters } from "../../utils/formatters";
@@ -97,6 +102,13 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
   const [userForms, setUserForms] = React.useState<IUserFormSummary[]>([]);
   const [loadingUserForms, setLoadingUserForms] = React.useState<boolean>(true);
   const [searchingCNPJ, setSearchingCNPJ] = React.useState<boolean>(false);
+  const [restrictionModalOpen, setRestrictionModalOpen] =
+    React.useState<boolean>(false);
+  const [selectedFormRestrictions, setSelectedFormRestrictions] =
+    React.useState<{
+      form: IUserFormSummary;
+      restrictions: ICampoRestricao[];
+    } | null>(null);
 
   // Carregar formulários do usuário ao montar o componente
   React.useEffect(() => {
@@ -249,6 +261,107 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
       console.error("Erro:", error);
       console.error("Stack:", error?.stack);
     }
+  };
+
+  // Função utilitária para buscar a avaliação mais recente
+  const getLatestEvaluation = (
+    form: IUserFormSummary
+  ): { key: string; data: IFormAvaliacao } | null => {
+    const avaliacoes = form.metadata?.Avaliacao;
+    if (!avaliacoes) return null;
+
+    const avaliacaoKeys = Object.keys(avaliacoes);
+    if (avaliacaoKeys.length === 0) return null;
+
+    // Ordenar as chaves numericamente e pegar a maior (mais recente)
+    const ultimaAvaliacaoKey = avaliacaoKeys
+      .map((key) => parseInt(key))
+      .sort((a, b) => b - a)[0]
+      .toString();
+
+    return {
+      key: ultimaAvaliacaoKey,
+      data: avaliacoes[ultimaAvaliacaoKey],
+    };
+  };
+
+  // Handler para corrigir restrições de formulário aprovado
+  const handleCorrectRestrictions = async (
+    form: IUserFormSummary
+  ): Promise<void> => {
+    try {
+      console.log("=== INICIANDO CORREÇÃO DE RESTRIÇÕES ===");
+      console.log("Formulário selecionado:", form);
+
+      // Buscar a avaliação mais recente
+      const latestEvaluation = getLatestEvaluation(form);
+      if (!latestEvaluation) {
+        console.error("Nenhuma avaliação encontrada para este formulário");
+        return;
+      }
+
+      const { key: ultimaAvaliacaoKey, data: ultimaAvaliacao } =
+        latestEvaluation;
+      console.log(
+        `Usando avaliação mais recente (${ultimaAvaliacaoKey}):`,
+        ultimaAvaliacao
+      );
+
+      if (
+        ultimaAvaliacao?.Restricao === "Sim" &&
+        ultimaAvaliacao.CamposRestricao
+      ) {
+        console.log("Restrições encontradas:", ultimaAvaliacao.CamposRestricao);
+
+        // Abrir modal de correção de restrições
+        setSelectedFormRestrictions({
+          form,
+          restrictions: ultimaAvaliacao.CamposRestricao,
+        });
+        setRestrictionModalOpen(true);
+        console.log("Modal de correção de restrições aberto");
+      } else {
+        console.log("Nenhuma restrição encontrada nesta avaliação");
+      }
+    } catch (error) {
+      console.error("=== ERRO AO INICIAR CORREÇÃO DE RESTRIÇÕES ===");
+      console.error("Erro:", error);
+    }
+  };
+
+  // Função para verificar se um formulário aprovado tem restrições
+  const hasRestrictions = (form: IUserFormSummary): boolean => {
+    console.log("=== VERIFICANDO RESTRIÇÕES ===");
+    console.log("Form status:", form.status);
+    console.log("Form metadata:", form.metadata);
+
+    if (form.status !== "Aprovado") {
+      console.log("Status não é Aprovado, retornando false");
+      return false;
+    }
+
+    const latestEvaluation = getLatestEvaluation(form);
+    console.log("Latest evaluation:", latestEvaluation);
+
+    if (!latestEvaluation) {
+      console.log("Nenhuma avaliação encontrada, retornando false");
+      return false;
+    }
+
+    const ultimaAvaliacao = latestEvaluation.data;
+    console.log("Última avaliação:", ultimaAvaliacao);
+    console.log("Restricao:", ultimaAvaliacao?.Restricao);
+    console.log(
+      "CamposRestricao length:",
+      ultimaAvaliacao?.CamposRestricao?.length
+    );
+
+    const hasRestr =
+      ultimaAvaliacao?.Restricao === "Sim" &&
+      Boolean(ultimaAvaliacao.CamposRestricao?.length);
+
+    console.log("Resultado hasRestrictions:", hasRestr);
+    return hasRestr;
   };
 
   // Handler para download do formulário em PDF
@@ -868,11 +981,28 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                         >
                           {renderStatusBadge(form.status)}
                           {/* Lógica dos botões baseada no status do formulário */}
-                          {form.status === "Enviado" ||
-                          form.status === "Aprovado" ||
-                          form.status === "Em Análise" ||
-                          form.status === "Rejeitado" ||
-                          form.status === "Cancelado" ? (
+                          {hasRestrictions(form) ? (
+                            // Mostrar botão "Corrigir Restrições" para formulários aprovados com restrições
+                            <DefaultButton
+                              text="Corrigir Restrições"
+                              iconProps={{ iconName: "EditNote" }}
+                              onClick={() => handleCorrectRestrictions(form)}
+                              styles={{
+                                root: {
+                                  borderColor: "#ca5010",
+                                  color: "#ca5010",
+                                  ":hover": {
+                                    backgroundColor: "#ca5010",
+                                    color: oceaneeringColors.white,
+                                  },
+                                },
+                              }}
+                            />
+                          ) : form.status === "Enviado" ||
+                            form.status === "Aprovado" ||
+                            form.status === "Em Análise" ||
+                            form.status === "Rejeitado" ||
+                            form.status === "Cancelado" ? (
                             // Mostrar botão Download PDF para estes status
                             <DefaultButton
                               text="Download PDF"
@@ -927,6 +1057,131 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
 
       {/* Rodapé do sistema */}
       <Footer />
+
+      {/* Modal de Correção de Restrições */}
+      <Dialog
+        hidden={!restrictionModalOpen}
+        onDismiss={() => setRestrictionModalOpen(false)}
+        dialogContentProps={{
+          type: DialogType.normal,
+          title: "Corrigir Restrições",
+          subText: selectedFormRestrictions
+            ? `Formulário: ${selectedFormRestrictions.form.empresa} (${selectedFormRestrictions.form.cnpj})`
+            : "",
+        }}
+        modalProps={{
+          isBlocking: true,
+          styles: { main: { maxWidth: 800, width: "90%" } },
+        }}
+      >
+        {selectedFormRestrictions && (
+          <Stack tokens={{ childrenGap: 20 }}>
+            <MessageBar messageBarType={MessageBarType.warning}>
+              Os seguintes campos precisam ser corrigidos conforme as restrições
+              identificadas na avaliação:
+            </MessageBar>
+
+            <Stack tokens={{ childrenGap: 15 }}>
+              {selectedFormRestrictions.restrictions.map((restricao, index) => (
+                <Stack key={index} tokens={{ childrenGap: 8 }}>
+                  <Text
+                    variant="mediumPlus"
+                    style={{
+                      fontWeight: 600,
+                      color: oceaneeringColors.primaryBlue,
+                    }}
+                  >
+                    {restricao.nomeExibicao}
+                  </Text>
+                  <Stack
+                    style={{
+                      padding: 12,
+                      backgroundColor: "#fef2f2",
+                      border: "1px solid #fecaca",
+                      borderRadius: 4,
+                    }}
+                  >
+                    <Text
+                      variant="small"
+                      style={{ fontWeight: 600, color: "#dc2626" }}
+                    >
+                      Motivo da Restrição:
+                    </Text>
+                    <Text variant="small" style={{ color: "#dc2626" }}>
+                      {restricao.motivo}
+                    </Text>
+                  </Stack>
+
+                  <Text
+                    variant="small"
+                    style={{
+                      fontStyle: "italic",
+                      color: oceaneeringColors.textSecondary,
+                    }}
+                  >
+                    Seção: {restricao.secao} | Campo: {restricao.campo}
+                  </Text>
+                </Stack>
+              ))}
+            </Stack>
+
+            <MessageBar messageBarType={MessageBarType.info}>
+              Para corrigir estas restrições, clique em &quot;Editar
+              Formulário&quot; para acessar a versão completa do formulário com
+              os campos restritos destacados.
+            </MessageBar>
+          </Stack>
+        )}
+
+        <DialogFooter>
+          <PrimaryButton
+            text="Editar Formulário"
+            onClick={async () => {
+              if (selectedFormRestrictions) {
+                console.log("=== INICIANDO CARREGAMENTO EM MODO CORREÇÃO ===");
+                console.log(
+                  "Restrições a serem aplicadas:",
+                  selectedFormRestrictions.restrictions
+                );
+
+                // Armazenar as restrições no sessionStorage para uso no contexto
+                sessionStorage.setItem(
+                  "camposRestricao",
+                  JSON.stringify(selectedFormRestrictions.restrictions)
+                );
+                sessionStorage.setItem("modoCorrecao", "true");
+
+                console.log("SessionStorage definido:");
+                console.log(
+                  "- modoCorrecao:",
+                  sessionStorage.getItem("modoCorrecao")
+                );
+                console.log(
+                  "- camposRestricao:",
+                  sessionStorage.getItem("camposRestricao")
+                );
+
+                // Carregar o formulário para edição
+                console.log(
+                  "Chamando loadExistingForm para o ID:",
+                  selectedFormRestrictions.form.id
+                );
+                await actions.loadExistingForm(
+                  selectedFormRestrictions.form.id
+                );
+                setRestrictionModalOpen(false);
+                console.log(
+                  "Modal fechado, formulário deve estar carregando..."
+                );
+              }
+            }}
+          />
+          <DefaultButton
+            text="Cancelar"
+            onClick={() => setRestrictionModalOpen(false)}
+          />
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 };

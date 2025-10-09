@@ -1,0 +1,245 @@
+// =================================================================================
+// Field Restrictions Styles
+// =================================================================================
+// Estilos universais para campos e blocos com restrições de edição
+// Usado por todo o sistema de restrições implementado no HSE Supplier Forms
+
+// =================================================================================
+// Variables
+// =================================================================================
+
+$restriction-color: #ff8c00; // Orange for restriction indication
+$restriction-background: #fff4e6; // Light orange background
+$restriction-border-width: 2px;
+$restriction-border-radius: 4px;
+
+// =================================================================================
+// Field-Level Restrictions
+// =================================================================================
+
+.restrictedField {
+  // TextField restrictions
+  :global(.ms-TextField-wrapper) {
+    border: $restriction-border-width solid $restriction-color !important;
+    border-radius: $restriction-border-radius;
+    background-color: $restriction-background !important;
+  }
+
+  :global(.ms-TextField-field) {
+    background-color: transparent !important;
+  }
+
+  :global(.ms-Label) {
+    color: $restriction-color !important;
+    font-weight: 600 !important;
+  }
+
+  // Dropdown restrictions
+  :global(.ms-Dropdown) {
+    .ms-Dropdown-title {
+      border: $restriction-border-width solid $restriction-color !important;
+      border-radius: $restriction-border-radius;
+      background-color: $restriction-background !important;
+    }
+  }
+
+  // SpinButton restrictions
+  :global(.ms-SpinButton) {
+    .ms-SpinButton-input {
+      border: $restriction-border-width solid $restriction-color !important;
+      border-radius: $restriction-border-radius;
+      background-color: $restriction-background !important;
+    }
+
+    .ms-Label {
+      color: $restriction-color !important;
+      font-weight: 600 !important;
+    }
+  }
+
+  // Toggle restrictions
+  :global(.ms-Toggle) {
+    .ms-Toggle-background {
+      border: $restriction-border-width solid $restriction-color !important;
+      border-radius: $restriction-border-radius;
+    }
+
+    .ms-Toggle-label {
+      color: $restriction-color !important;
+      font-weight: 600 !important;
+    }
+  }
+
+  // Checkbox restrictions
+  :global(.ms-Checkbox) {
+    .ms-Checkbox-checkbox {
+      border: $restriction-border-width solid $restriction-color !important;
+      border-radius: $restriction-border-radius;
+    }
+
+    .ms-Checkbox-text {
+      color: $restriction-color !important;
+      font-weight: 600 !important;
+    }
+  }
+
+  // File Upload restrictions (HSEFileUpload component)
+  :global(.hse-file-upload) {
+    border: $restriction-border-width solid $restriction-color !important;
+    border-radius: $restriction-border-radius;
+    background-color: $restriction-background !important;
+
+    .ms-Label {
+      color: $restriction-color !important;
+      font-weight: 600 !important;
+    }
+  }
+}
+
+// =================================================================================
+// Block-Level Restrictions
+// =================================================================================
+
+.restrictedBlock {
+  border: $restriction-border-width solid $restriction-color !important;
+  border-radius: $restriction-border-radius;
+  background-color: $restriction-background !important;
+  padding: 16px;
+  margin: 8px 0;
+  position: relative;
+
+  // Add visual indicator for restricted blocks
+  &::before {
+    content: "🔒 Área com Restrições";
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    background-color: $restriction-color;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    z-index: 1;
+  }
+
+  // Apply restrictions to all child elements
+  * {
+    color: $restriction-color !important;
+  }
+
+  // Style headers and titles within restricted blocks
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  :global(.ms-Text--xxLarge),
+  :global(.ms-Text--xLarge),
+  :global(.ms-Text--large),
+  :global(.ms-Text--mediumPlus),
+  :global(.ms-Text--medium) {
+    color: $restriction-color !important;
+    font-weight: 600 !important;
+  }
+
+  // Ensure proper contrast for input fields within blocks
+  :global(.ms-TextField-wrapper),
+  :global(.ms-Dropdown-title),
+  :global(.ms-Toggle-background),
+  :global(.ms-Checkbox-checkbox) {
+    border: $restriction-border-width solid darken($restriction-color, 10%) !important;
+    background-color: lighten($restriction-background, 5%) !important;
+  }
+}
+
+// =================================================================================
+// Specific Component Overrides
+// =================================================================================
+
+// ConformidadeLegal NR Section restrictions
+.restrictedNRSection {
+  @extend .restrictedBlock;
+
+  &::before {
+    content: "🔒 Seção NR com Restrições";
+  }
+}
+
+// ServicosEspeciais service selection restrictions
+.restrictedServiceSelection {
+  @extend .restrictedBlock;
+
+  &::before {
+    content: "🔒 Seleção de Serviços Restrita";
+  }
+}
+
+// ServicosEspeciais maritime certificates restrictions
+.restrictedMaritimeCertificates {
+  @extend .restrictedBlock;
+
+  &::before {
+    content: "🔒 Certificados Marítimos Restritos";
+  }
+}
+
+// ServicosEspeciais lifting documents restrictions
+.restrictedLiftingDocuments {
+  @extend .restrictedBlock;
+
+  &::before {
+    content: "🔒 Documentos de Içamento Restritos";
+  }
+}
+
+// =================================================================================
+// Utility Classes
+// =================================================================================
+
+// For inline restrictions (when you need to apply to individual elements)
+.inlineRestricted {
+  border: 1px solid $restriction-color !important;
+  background-color: lighten($restriction-background, 10%) !important;
+  color: $restriction-color !important;
+  font-weight: 500 !important;
+}
+
+// For subtle restrictions (less intrusive visual indication)
+.subtleRestricted {
+  border-left: 4px solid $restriction-color !important;
+  padding-left: 12px !important;
+  background-color: lighten($restriction-background, 15%) !important;
+}
+
+// =================================================================================
+// Animation Effects
+// =================================================================================
+
+// Subtle animation to draw attention to restricted fields
+.restrictedField,
+.restrictedBlock {
+  transition: all 0.3s ease-in-out;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2);
+  }
+}
+
+// =================================================================================
+// Responsive Design
+// =================================================================================
+
+@media (max-width: 768px) {
+  .restrictedBlock {
+    margin: 4px 0;
+    padding: 12px;
+
+    &::before {
+      font-size: 10px;
+      padding: 1px 6px;
+    }
+  }
+}

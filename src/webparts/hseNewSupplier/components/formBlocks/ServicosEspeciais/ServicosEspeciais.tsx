@@ -15,12 +15,19 @@ import {
 } from "../../../utils/formConstants";
 import { IServicosEspeciaisProps } from "./IServicosEspeciaisProps";
 import styles from "./ServicosEspeciais.module.scss";
+import "../../../styles/field-restrictions.scss";
+import { useHSEForm } from "../../context/HSEFormContext";
+import {
+  getBlockControlProps,
+  getFieldControlProps,
+} from "../../../utils/fieldRestrictionHelpers";
 
 export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
   value,
   onChange,
   errors = {},
 }) => {
+  const context = useHSEForm();
   const handleServiceToggle = (
     service: "fornecedorEmbarcacoes" | "fornecedorIcamento",
     checked: boolean
@@ -49,7 +56,18 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
     if (!value?.fornecedorEmbarcacoes) return null;
 
     return (
-      <div className={styles.serviceSection}>
+      <div
+        {...getBlockControlProps(
+          "ServicosEspeciais.maritimeCertificates",
+          context
+        )}
+        className={`${styles.serviceSection} ${
+          getBlockControlProps(
+            "ServicosEspeciais.maritimeCertificates",
+            context
+          ).className || ""
+        }`}
+      >
         <Text variant="large" className={styles.serviceTitle}>
           Certificados Marítimos Obrigatórios
         </Text>
@@ -79,6 +97,10 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
                 maxFileSize={50}
                 helpText="Anexar certificado válido"
                 allowMultiple={true}
+                {...getFieldControlProps(
+                  `ServicosEspeciais.maritimeCertificates.${certificate.id}`,
+                  context
+                )}
               />
             </div>
           ))}
@@ -90,7 +112,13 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
     if (!value?.fornecedorIcamento) return null;
 
     return (
-      <div className={styles.serviceSection}>
+      <div
+        {...getBlockControlProps("ServicosEspeciais.liftingDocuments", context)}
+        className={`${styles.serviceSection} ${
+          getBlockControlProps("ServicosEspeciais.liftingDocuments", context)
+            .className || ""
+        }`}
+      >
         <Text variant="large" className={styles.serviceTitle}>
           Documentos para Içamento de Carga
         </Text>
@@ -120,6 +148,10 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
                 maxFileSize={50}
                 helpText="Anexar documento técnico"
                 allowMultiple={true}
+                {...getFieldControlProps(
+                  `ServicosEspeciais.liftingDocuments.${document.id}`,
+                  context
+                )}
               />
             </div>
           ))}
@@ -141,7 +173,16 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
           Indique quais tipos de serviços especializados sua empresa fornece.
           Documentos adicionais serão solicitados conforme aplicável.
         </MessageBar>{" "}
-        <div className={styles.serviceToggles}>
+        <div
+          {...getBlockControlProps(
+            "ServicosEspeciais.serviceSelection",
+            context
+          )}
+          className={`${styles.serviceToggles} ${
+            getBlockControlProps("ServicosEspeciais.serviceSelection", context)
+              .className || ""
+          }`}
+        >
           <Toggle
             label="Fornecedor de Serviços Envolvendo Embarcações"
             checked={value?.fornecedorEmbarcacoes || false}
@@ -149,8 +190,20 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
               handleServiceToggle("fornecedorEmbarcacoes", checked || false)
             }
             inlineLabel
-            className={styles.serviceToggle}
-            disabled={value?.naoFornecedorServicos || false}
+            className={`${styles.serviceToggle} ${
+              getFieldControlProps(
+                "ServicosEspeciais.serviceSelection.fornecedorEmbarcacoes",
+                context
+              ).className || ""
+            }`}
+            disabled={
+              value?.naoFornecedorServicos ||
+              false ||
+              getFieldControlProps(
+                "ServicosEspeciais.serviceSelection.fornecedorEmbarcacoes",
+                context
+              ).disabled
+            }
           />
           <Toggle
             label="Fornecedor de Serviços Envolvendo Içamento de Carga"
@@ -159,8 +212,20 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
               handleServiceToggle("fornecedorIcamento", checked || false)
             }
             inlineLabel
-            className={styles.serviceToggle}
-            disabled={value?.naoFornecedorServicos || false}
+            className={`${styles.serviceToggle} ${
+              getFieldControlProps(
+                "ServicosEspeciais.serviceSelection.fornecedorIcamento",
+                context
+              ).className || ""
+            }`}
+            disabled={
+              value?.naoFornecedorServicos ||
+              false ||
+              getFieldControlProps(
+                "ServicosEspeciais.serviceSelection.fornecedorIcamento",
+                context
+              ).disabled
+            }
           />
 
           <Separator />
@@ -172,7 +237,18 @@ export const ServicosEspeciais: React.FC<IServicosEspeciaisProps> = ({
               handleNaoFornecedorToggle(checked || false)
             }
             inlineLabel
-            className={styles.serviceToggle}
+            className={`${styles.serviceToggle} ${
+              getFieldControlProps(
+                "ServicosEspeciais.serviceSelection.naoFornecedorServicos",
+                context
+              ).className || ""
+            }`}
+            disabled={
+              getFieldControlProps(
+                "ServicosEspeciais.serviceSelection.naoFornecedorServicos",
+                context
+              ).disabled
+            }
             styles={{
               root: { marginTop: 16 },
               label: { fontWeight: 600, color: "#0078d4" },

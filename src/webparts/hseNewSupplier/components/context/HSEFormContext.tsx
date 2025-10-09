@@ -16,6 +16,7 @@ import {
   ICNPJVerificationResult,
   IApplicationPhase,
   IUserFormSummary,
+  ICampoRestricao,
 } from "../../types/IApplicationPhase";
 
 export interface IHSEFormContext {
@@ -61,6 +62,8 @@ export interface IHSEFormContext {
       formData: IHSEFormData,
       fileName: string
     ) => Promise<void>;
+    // Função para verificar se um campo pode ser editado (modo de correção)
+    canEditField: (fieldPath: string) => boolean;
   };
 }
 
@@ -725,7 +728,39 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
           console.log("=== ENVIANDO DADOS PARA O REDUCER ===");
           console.log("Form Data completo:", formData);
 
+          // Verificar se estamos em modo de correção ANTES de definir os dados
+          const modoCorrecao = sessionStorage.getItem("modoCorrecao");
+          const camposRestricaoJson = sessionStorage.getItem("camposRestricao");
+
+          if (modoCorrecao === "true" && camposRestricaoJson) {
+            console.log("=== ATIVANDO MODO DE CORREÇÃO ===");
+            const camposRestricao = JSON.parse(camposRestricaoJson);
+
+            // Converter restrições para paths de campos
+            const restrictedFields = camposRestricao.map(
+              (restricao: ICampoRestricao) =>
+                `${restricao.secao}.${restricao.campo}`
+            );
+
+            console.log("Campos restritos:", restrictedFields);
+
+            // Ativar modo de correção PRIMEIRO
+            dispatch({
+              type: "SET_CORRECTION_MODE",
+              payload: {
+                enabled: true,
+                restrictedFields: restrictedFields,
+              },
+            });
+
+            // Não limpar session storage imediatamente para debug
+            // sessionStorage.removeItem("modoCorrecao");
+            // sessionStorage.removeItem("camposRestricao");
+          }
+
+          // AGORA definir os dados do formulário
           dispatch({ type: "SET_FORM_DATA", payload: formData });
+
           console.log("FormulÃ¡rio carregado e enviado para o reducer"); // Mudar para a fase do formulÃ¡rio apÃ³s carregar os dados
           setApplicationPhase({
             phase: "FORMULARIO",
@@ -925,6 +960,19 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         searchCNPJWithSecurity,
         loadFormDataForPDF,
         downloadFormAsPDF,
+        // Nova função para verificar se um campo pode ser editado
+        canEditField: (fieldPath: string): boolean => {
+          // Se não estiver no modo de correção, todos os campos podem ser editados
+          if (!state.correctionMode) return true;
+
+          // No modo de correção, apenas campos com restrições podem ser editados
+          return state.restrictedFields.some(
+            (restrictedPath) =>
+              restrictedPath === fieldPath ||
+              fieldPath.startsWith(restrictedPath + ".") ||
+              restrictedPath.includes(fieldPath)
+          );
+        },
       },
     }),
     [

@@ -55,6 +55,52 @@ export interface IUserFormSummary {
   userName: string;
   isOwner: boolean;
   numeroRevisoes: number; // Número total de revisões do formulário
+  metadata?: IFormMetadata; // Metadados completos incluindo avaliação
+}
+
+// Interface para restrições aplicadas na avaliação
+export interface ICampoRestricao {
+  id: number;
+  secao: string;
+  campo: string;
+  nomeExibicao: string;
+  motivo: string;
+}
+
+// Interface para avaliação do formulário
+export interface IFormAvaliacao {
+  HSEResponsavel: string;
+  DataInicio: string;
+  DataFim: string;
+  Comentarios: string;
+  StatusAvaliacao: string;
+  Restricao: "Sim" | "Nao";
+  CamposRestricao?: ICampoRestricao[];
+}
+
+// Interface para metadata do formulário (inclui avaliação)
+export interface IFormMetadata {
+  id?: number;
+  dataCriacao?: string;
+  dataUltimaModificacao?: string;
+  usuario?: string;
+  email?: string;
+  temAnexos?: boolean;
+  totalAnexos?: number;
+  historicoStatusChange?: IStatusChangeEntry[];
+  historicoRevisoes?: IRevisionEntry[];
+  numeroRevisao?: number;
+  tipoOperacao?: string;
+  Avaliacao?: { [key: string]: IFormAvaliacao };
+  QuantidadeAvaliacao?: number;
+}
+
+// Interface para histórico de mudanças de status
+export interface IStatusChangeEntry {
+  status: string;
+  dataAlteracao: string;
+  usuario: string;
+  email: string;
 }
 
 export interface IOverwriteConfirmation {

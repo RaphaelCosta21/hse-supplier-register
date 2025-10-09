@@ -5,7 +5,11 @@ import "@pnp/sp/lists";
 import "@pnp/sp/items";
 import { IHSEFormData } from "../types/IHSEFormData";
 import { IAttachmentMetadata } from "../types/IAttachmentMetadata";
-import { IFormFieldChange, IRevisionEntry } from "../types/IApplicationPhase";
+import {
+  IFormFieldChange,
+  IRevisionEntry,
+  IFormMetadata,
+} from "../types/IApplicationPhase";
 import { SharePointFileService } from "./SharePointFileService";
 
 export class SharePointService {
@@ -2338,6 +2342,7 @@ export class SharePointService {
       userName: string;
       isOwner: boolean;
       numeroRevisoes: number;
+      metadata?: IFormMetadata; // Incluir metadata para verificação de restrições
     }>
   > {
     try {
@@ -2364,13 +2369,14 @@ export class SharePointService {
         // Extrair informações do histórico de revisões
         let numeroRevisoes = 0;
         let dataModificacaoCompleta = item.Modified;
+        let metadata = null;
 
         console.log(`=== PROCESSANDO FORMULÁRIO ${item.Id} ===`);
 
         try {
           if (item.DadosFormulario) {
             const parsedData = JSON.parse(item.DadosFormulario);
-            const metadata = parsedData.metadata;
+            metadata = parsedData.metadata;
 
             console.log(
               `Formulário ${item.Id} - Metadata encontrado:`,
@@ -2442,6 +2448,7 @@ export class SharePointService {
           userName: item.NomePreenchimento || "",
           isOwner: true, // Sempre true pois filtramos pelo email do usuário
           numeroRevisoes: numeroRevisoes,
+          metadata: metadata, // ← INCLUIR METADATA PARA VERIFICAÇÃO DE RESTRIÇÕES
         };
       });
     } catch (error) {
