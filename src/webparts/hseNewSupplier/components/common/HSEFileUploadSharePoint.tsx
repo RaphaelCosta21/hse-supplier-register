@@ -28,6 +28,7 @@ interface IHSEFileUploadProps {
   onFileRemoved?: (metadata: IAttachmentMetadata) => void;
   disabled?: boolean;
   allowMultiple?: boolean;
+  isRestricted?: boolean;
 }
 
 export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
@@ -43,6 +44,7 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
   onFileRemoved,
   disabled = false,
   allowMultiple = false,
+  isRestricted = false,
 }) => {
   const { actions, state } = useHSEForm();
   const [uploading, setUploading] = React.useState(false);
@@ -62,7 +64,9 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
   const theme = getTheme();
 
   const dropAreaStyles = mergeStyles({
-    border: `2px dashed ${theme.palette.neutralQuaternary}`,
+    border: `2px dashed ${
+      isRestricted ? "#ff6a00" : theme.palette.neutralQuaternary
+    }`,
     borderRadius: "4px",
     padding: "20px",
     textAlign: "center",
@@ -71,12 +75,16 @@ export const HSEFileUpload: React.FC<IHSEFileUploadProps> = ({
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.palette.neutralLighterAlt,
+    backgroundColor: isRestricted
+      ? "rgba(255, 106, 0, 0.05)"
+      : theme.palette.neutralLighterAlt,
     cursor: "pointer",
     transition: "all 0.2s ease",
     ":hover": {
-      borderColor: theme.palette.themePrimary,
-      backgroundColor: theme.palette.neutralLighter,
+      borderColor: isRestricted ? "#ff6a00" : theme.palette.themePrimary,
+      backgroundColor: isRestricted
+        ? "rgba(255, 106, 0, 0.08)"
+        : theme.palette.neutralLighter,
     },
   });
 

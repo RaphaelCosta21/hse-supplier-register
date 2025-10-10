@@ -22,6 +22,7 @@ import styles from "./HseNewSupplier.module.scss";
 import { ProgressIndicator as CustomProgressIndicator } from "./common/ProgressIndicator/ProgressIndicator";
 import { LoadingSpinner } from "./common/LoadingSpinner/LoadingSpinner";
 import { FloatingSaveButton } from "./common/FloatingSaveButton/FloatingSaveButton";
+import { CorrectionProgressPanel } from "./common/CorrectionProgressPanel/CorrectionProgressPanel";
 import { formSelectors } from "./context/formReducer";
 import { BackToHomeButton } from "./common/BackToHomeButton/BackToHomeButton";
 import { Footer } from "./common/Footer/Footer";
@@ -607,6 +608,38 @@ const HseNewSupplierContent: React.FC = () => {
     return FORM_STEPS.find((step) => step.id === currentStep) || FORM_STEPS[0];
   }, [currentStep]);
 
+  // Função para obter mensagem de bloqueio da Revisão Final
+  const getRevisaoFinalBlockMessage = React.useCallback((): string => {
+    // Se não está em modo de correção, usar mensagem padrão
+    if (!state.correctionMode) {
+      return "Para liberar a revisão final e submissão do formulário, necessário completar as etapas de Dados Gerais, Conformidade Legal e Serviços Especializados.";
+    }
+
+    // Se está em modo de correção, verificar se todas as correções foram marcadas
+    const basicRequirementsOk =
+      formSelectors.isDadosGeraisValid(state) &&
+      formSelectors.isConformidadeLegalValid(state) &&
+      formSelectors.isServicosEspeciaisValid(state);
+
+    const totalCorrections = state.restrictedFields.length;
+    const completedCorrections = state.manualCorrectedFields.length;
+
+    if (!basicRequirementsOk) {
+      return "Para liberar a revisão final, necessário completar as etapas de Dados Gerais, Conformidade Legal e Serviços Especializados.";
+    }
+
+    if (totalCorrections > 0 && completedCorrections < totalCorrections) {
+      const remaining = totalCorrections - completedCorrections;
+      return `Para liberar a revisão final, você precisa marcar todas as correções como concluídas. Restam ${remaining} de ${totalCorrections} correções pendentes.`;
+    }
+
+    return "Para liberar a revisão final e submissão do formulário, necessário completar as etapas de Dados Gerais, Conformidade Legal e Serviços Especializados.";
+  }, [
+    state.correctionMode,
+    state.restrictedFields,
+    state.manualCorrectedFields,
+  ]);
+
   // Links de navegação com status de etapa
   const navLinks: INavLink[] = React.useMemo(() => {
     return FORM_STEPS.map((step) => {
@@ -829,11 +862,7 @@ const HseNewSupplierContent: React.FC = () => {
           {!formSelectors.canProceedToStep(state, 4) && (
             <div className={styles.stepBlockedMessage}>
               <Icon iconName="Info" className={styles.stepBlockedIcon} />
-              <span>
-                Para liberar a revisão final e submissão do formulário,
-                necessário completar as etapas de Dados Gerais, Conformidade
-                Legal e Serviços Especializados.
-              </span>
+              <span>{getRevisaoFinalBlockMessage()}</span>
             </div>
           )}
 
@@ -916,13 +945,20 @@ const HseNewSupplierContent: React.FC = () => {
           </div>
         </div>
 
-        <div className={styles.content}>
+        <div
+          className={`${styles.content} ${
+            state.correctionMode ? styles.contentWithPanel : ""
+          }`}
+        >
           <div className={styles.stepContainer}>{renderCurrentStep()}</div>
         </div>
       </div>
 
-      {/* Botão flutuante de salvar para as três primeiras etapas */}
-      <FloatingSaveButton />
+      {/* Botão flutuante de salvar - oculto no modo de correção */}
+      {!state.correctionMode && <FloatingSaveButton />}
+
+      {/* Painel de progresso das correções - visível apenas no modo de correção */}
+      <CorrectionProgressPanel isOpen={state.correctionMode} />
 
       {/* Rodapé do sistema */}
       <Footer />

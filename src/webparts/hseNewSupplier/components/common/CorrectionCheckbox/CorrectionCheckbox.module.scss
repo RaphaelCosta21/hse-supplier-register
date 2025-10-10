@@ -1,0 +1,201 @@
+// =================================================================================
+// CorrectionCheckbox Component Styles
+// =================================================================================
+
+.checkboxContainer {
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  gap: 12px;
+
+  &:hover {
+    background-color: rgba(0, 120, 212, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 120, 212, 0.1);
+  }
+
+  &.animating {
+    transform: scale(1.05);
+    background-color: rgba(16, 124, 16, 0.1);
+  }
+}
+
+.checkboxWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.correctionCheckbox {
+  :global(.ms-Checkbox-checkbox) {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 2px solid #605e5c;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      border-color: #0078d4;
+      box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+    }
+  }
+
+  :global(.ms-Checkbox-checkmark) {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  &:global(.is-checked) {
+    :global(.ms-Checkbox-checkbox) {
+      background-color: #107c10;
+      border-color: #107c10;
+      animation: checkboxPulse 0.3s ease-out;
+    }
+  }
+
+  &:global(.is-disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+
+    :global(.ms-Checkbox-checkbox) {
+      background-color: #f3f2f1;
+      border-color: #d2d0ce;
+    }
+  }
+}
+
+.checkIcon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  animation: checkIconFadeIn 0.3s ease-out forwards;
+  animation-delay: 0.1s;
+}
+
+.checkMarkIcon {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.labelContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  color: #323130;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.correctedBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background-color: rgba(16, 124, 16, 0.1);
+  border: 1px solid rgba(16, 124, 16, 0.3);
+  border-radius: 12px;
+  align-self: flex-start;
+  animation: badgeFadeIn 0.3s ease-out;
+}
+
+.badgeIcon {
+  color: #107c10;
+  font-size: 10px;
+}
+
+.badgeText {
+  color: #107c10;
+  font-weight: 600;
+  line-height: 1;
+}
+
+// =================================================================================
+// Animations
+// =================================================================================
+
+@keyframes checkboxPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes checkIconFadeIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes badgeFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// =================================================================================
+// States and Variants
+// =================================================================================
+
+.checkboxContainer {
+  &.pending {
+    border-left: 3px solid #ff8c00;
+
+    .fieldLabel {
+      color: #d83b01;
+    }
+  }
+
+  &.corrected {
+    border-left: 3px solid #107c10;
+    background-color: rgba(16, 124, 16, 0.02);
+
+    .fieldLabel {
+      color: #107c10;
+    }
+  }
+}
+
+// =================================================================================
+// Responsive Design
+// =================================================================================
+
+@media (max-width: 768px) {
+  .checkboxContainer {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .fieldLabel {
+    font-size: 14px;
+  }
+
+  .correctedBadge {
+    padding: 3px 8px;
+  }
+}

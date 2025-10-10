@@ -374,6 +374,21 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         overflow: hidden;
       }
+
+      // Ajuste do conteúdo quando o painel de correção está aberto
+      &.contentWithPanel {
+        margin-right: 400px; // Espaço para o painel (medium = ~400px)
+        transition: margin-right 0.3s ease-in-out;
+
+        .stepContainer {
+          max-width: 100%; // Usar toda a largura disponível reduzida
+        }
+
+        // Em dispositivos menores, remover a margem e sobrepor o painel
+        @media (max-width: 1200px) {
+          margin-right: 0;
+        }
+      }
     }
   }
 }

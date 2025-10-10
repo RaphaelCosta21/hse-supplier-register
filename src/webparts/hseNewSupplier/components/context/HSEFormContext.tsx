@@ -64,6 +64,9 @@ export interface IHSEFormContext {
     ) => Promise<void>;
     // Função para verificar se um campo pode ser editado (modo de correção)
     canEditField: (fieldPath: string) => boolean;
+    // Funções para gerenciar correções manuais
+    setFieldCorrected: (fieldPath: string, isCorrected: boolean) => void;
+    clearManualCorrections: () => void;
   };
 }
 
@@ -972,6 +975,16 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
               fieldPath.startsWith(restrictedPath + ".") ||
               restrictedPath.includes(fieldPath)
           );
+        },
+        // Funções para gerenciar correções manuais
+        setFieldCorrected: (fieldPath: string, isCorrected: boolean): void => {
+          dispatch({
+            type: "SET_FIELD_CORRECTED",
+            payload: { fieldPath, isCorrected },
+          });
+        },
+        clearManualCorrections: (): void => {
+          dispatch({ type: "CLEAR_MANUAL_CORRECTIONS" });
         },
       },
     }),

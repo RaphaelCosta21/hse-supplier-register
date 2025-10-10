@@ -1,0 +1,556 @@
+// =================================================================================
+// Correction Progress Panel Styles
+// =================================================================================
+
+// =================================================================================
+// Minimized Panel Styles
+// =================================================================================
+
+.minimizedPanel {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 80px;
+  background: linear-gradient(135deg, #ff8c00 0%, #ffa500 100%);
+  border-radius: 40px 10px 10px 40px;
+  box-shadow: 0 8px 32px rgba(255, 140, 0, 0.3);
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 12px 40px rgba(255, 140, 0, 0.4);
+
+    .minimizedTooltip {
+      opacity: 1;
+      transform: translateX(-10px);
+    }
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+
+  // Estado quando todas as correções estão concluídas
+  &.completed {
+    background: linear-gradient(135deg, #17e317 0%, #185518 100%);
+    box-shadow: 0 8px 32px rgba(144, 238, 144, 0.3);
+
+    &:hover {
+      box-shadow: 0 12px 40px rgba(144, 238, 144, 0.4);
+    }
+  }
+}
+
+.minimizedContent {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.minimizedHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.expandIcon {
+  color: white;
+  font-size: 14px;
+  animation: pulse 2s infinite;
+}
+
+.minimizedIcon {
+  color: white;
+  font-size: 18px;
+}
+
+.minimizedProgress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.minimizedStats {
+  text-align: center;
+}
+
+.minimizedText {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.minimizedProgressBar {
+  width: 6px;
+  height: 40px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.minimizedProgressFill {
+  width: 100%;
+  border-radius: 3px;
+  transition: all 0.3s ease-in-out;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+.minimizedComplete {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background-color: #107c10;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bounce 1s infinite;
+}
+
+.minimizedCompleteIcon {
+  color: white;
+  font-size: 12px;
+}
+
+.minimizedTooltip {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.3s ease-in-out;
+  white-space: nowrap;
+  pointer-events: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-left-color: rgba(0, 0, 0, 0.8);
+  }
+
+  span {
+    color: white !important;
+  }
+}
+
+// =================================================================================
+// Expanded Panel Styles
+// =================================================================================
+
+.correctionPanel {
+  :global(.ms-Panel-main) {
+    top: 0 !important;
+    margin-top: 0 !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+.panelHeader {
+  padding: 16px 20px;
+  border-bottom: 1px solid #edebe9;
+  background: linear-gradient(135deg, #ff8c00 0%, #ffa500 100%);
+  color: white;
+  position: relative;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  justify-content: space-between;
+}
+
+.minimizeButton {
+  color: white !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  transition: all 0.3s ease-in-out !important;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: scale(1.1);
+  }
+
+  :global(.ms-Button-icon) {
+    color: white !important;
+  }
+}
+
+.headerIcon {
+  font-size: 20px;
+  color: white;
+}
+
+.headerTitle {
+  color: white;
+  font-weight: 600;
+}
+
+.progressSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progressText {
+  color: white;
+  font-weight: 500;
+}
+
+.progressBar {
+  :global(.ms-ProgressIndicator-itemProgress) {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+
+  :global(.ms-ProgressIndicator-progressBar) {
+    background-color: white;
+  }
+}
+
+.panelContent {
+  padding: 0;
+  height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+// =================================================================================
+// Status Section
+// =================================================================================
+
+.statusSection {
+  padding: 20px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #edebe9;
+}
+
+.completedStatus {
+  text-align: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #107c10 0%, #16c60c 100%);
+  border-radius: 8px;
+  color: white;
+}
+
+.completedIcon {
+  font-size: 24px;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.completedText {
+  color: white;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.completedSubtext {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pendingStatus {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: #fff4e6;
+  border: 1px solid #ffb300;
+  border-radius: 8px;
+}
+
+.pendingIcon {
+  font-size: 18px;
+  color: #ff8c00;
+  margin-top: 2px;
+}
+
+.pendingText {
+  color: #323130;
+  line-height: 1.4;
+}
+
+// =================================================================================
+// Restrictions Section
+// =================================================================================
+
+.restrictionsSection {
+  padding: 20px;
+}
+
+.sectionTitle {
+  color: #323130;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.restrictionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.restrictionItem {
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid;
+  transition: all 0.2s ease-in-out;
+
+  &.corrected {
+    background-color: #f3f9f3;
+    border-color: #107c10;
+
+    &:hover {
+      background-color: #e8f5e8;
+    }
+  }
+
+  &.pending {
+    background-color: #fff4e6;
+    border-color: #ff8c00;
+
+    &:hover {
+      background-color: #ffebcc;
+    }
+  }
+}
+
+.restrictionHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.restrictionIcon {
+  font-size: 16px;
+  margin-top: 2px;
+
+  &.correctedIcon {
+    color: #107c10;
+  }
+
+  &.pendingIcon {
+    color: #ff8c00;
+  }
+}
+
+.restrictionInfo {
+  flex: 1;
+}
+
+.restrictionName {
+  color: #323130;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.restrictionPath {
+  color: #605e5c;
+  font-family: "Segoe UI Mono", monospace;
+}
+
+.correctedBadge {
+  background-color: #107c10;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+
+  span {
+    color: white;
+    font-weight: 500;
+  }
+}
+
+.restrictionReason {
+  margin-left: 28px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.reasonText {
+  color: #605e5c;
+  line-height: 1.4;
+
+  strong {
+    color: #323130;
+  }
+}
+
+// =================================================================================
+// Instructions Section
+// =================================================================================
+
+.instructionsSection {
+  padding: 20px;
+  background-color: #f8f9fa;
+}
+
+.instructionsTitle {
+  color: #323130;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.instructionsList {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-left: 16px;
+    position: relative;
+
+    &:before {
+      content: "•";
+      color: #605e5c;
+      position: absolute;
+      left: 0;
+    }
+
+    span {
+      color: #605e5c;
+      line-height: 1.4;
+    }
+  }
+}
+
+.warningInline {
+  color: #ff8c00;
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+.checkInline {
+  color: #107c10;
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+// =================================================================================
+// Separator
+// =================================================================================
+
+.separator {
+  margin: 0;
+
+  :global(.ms-Separator-content) {
+    background-color: #edebe9;
+  }
+}
+
+// =================================================================================
+// Responsive Design
+// =================================================================================
+
+@media (max-width: 768px) {
+  .panelHeader {
+    padding: 12px 16px;
+  }
+
+  .statusSection,
+  .restrictionsSection,
+  .instructionsSection {
+    padding: 16px;
+  }
+
+  .restrictionItem {
+    padding: 12px;
+  }
+
+  .restrictionHeader {
+    gap: 8px;
+  }
+}
+
+// =================================================================================
+// Animation Effects & Keyframes
+// =================================================================================
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+// Subtle animation to draw attention to restricted fields
+.restrictedField,
+.restrictedBlock {
+  transition: all 0.3s ease-in-out;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2);
+  }
+}

@@ -37,7 +37,12 @@ export type FormAction =
       type: "SET_CORRECTION_MODE";
       payload: { enabled: boolean; restrictedFields: string[] };
     }
-  | { type: "CLEAR_CORRECTION_MODE" };
+  | { type: "CLEAR_CORRECTION_MODE" }
+  | {
+      type: "SET_FIELD_CORRECTED";
+      payload: { fieldPath: string; isCorrected: boolean };
+    }
+  | { type: "CLEAR_MANUAL_CORRECTIONS" };
 
 export const initialFormState: IFormState = {
   currentStep: 1,
@@ -73,6 +78,7 @@ export const initialFormState: IFormState = {
   isDirty: false,
   correctionMode: false,
   restrictedFields: [],
+  manualCorrectedFields: [],
 };
 
 export const formReducer = (
@@ -242,6 +248,36 @@ export const formReducer = (
         ...state,
         correctionMode: false,
         restrictedFields: [],
+        manualCorrectedFields: [], // Limpar correções manuais também
+      };
+    }
+    case "SET_FIELD_CORRECTED": {
+      const { fieldPath, isCorrected } = action.payload;
+      let newManualCorrectedFields = [...state.manualCorrectedFields];
+
+      if (isCorrected) {
+        // Adicionar campo à lista se não estiver presente
+        if (!newManualCorrectedFields.includes(fieldPath)) {
+          newManualCorrectedFields.push(fieldPath);
+        }
+      } else {
+        // Remover campo da lista
+        newManualCorrectedFields = newManualCorrectedFields.filter(
+          (field) => field !== fieldPath
+        );
+      }
+
+      return {
+        ...state,
+        manualCorrectedFields: newManualCorrectedFields,
+        isDirty: true,
+      };
+    }
+    case "CLEAR_MANUAL_CORRECTIONS": {
+      return {
+        ...state,
+        manualCorrectedFields: [],
+        isDirty: true,
       };
     }
     default:
@@ -576,12 +612,27 @@ export const formSelectors = {
     }
 
     // Etapa 4 (Revisão Final): só permitir se todas as etapas anteriores estiverem completas
+    // E se todas as correções manuais estiverem marcadas (quando em modo de correção)
     if (targetStep === 4) {
-      return (
+      const basicRequirementsOk =
         formSelectors.isDadosGeraisValid(state) &&
         formSelectors.isConformidadeLegalValid(state) &&
-        formSelectors.isServicosEspeciaisValid(state)
-      );
+        formSelectors.isServicosEspeciaisValid(state);
+
+      // Se não está em modo de correção, apenas verificar requisitos básicos
+      if (!state.correctionMode) {
+        return basicRequirementsOk;
+      }
+
+      // Se está em modo de correção, verificar se todas as correções foram marcadas
+      const allCorrectionsMade =
+        state.restrictedFields.length > 0
+          ? state.restrictedFields.every((fieldPath) =>
+              state.manualCorrectedFields.includes(fieldPath)
+            )
+          : true; // Se não há campos restritos, permitir acesso
+
+      return basicRequirementsOk && allCorrectionsMade;
     }
 
     return false;

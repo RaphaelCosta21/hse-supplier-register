@@ -313,6 +313,8 @@ export interface IFormState {
   // Novos campos para modo de correção
   correctionMode: boolean;
   restrictedFields: string[];
+  // Campo para rastreamento manual de correções
+  manualCorrectedFields: string[];
 }
 
 // Interface para validação de erros

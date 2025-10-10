@@ -583,6 +583,23 @@ export const RevisaoFinal: React.FC = () => {
     };
   };
   const handleSubmit = async (): Promise<void> => {
+    // 🔍 VALIDAÇÃO: Se estiver em modo de correção, verificar se todos os checkboxes manuais estão marcados
+    if (state.correctionMode && state.restrictedFields) {
+      const requiredManualCorrections = state.restrictedFields.length;
+      const completedManualCorrections =
+        state.manualCorrectedFields?.length || 0;
+
+      if (completedManualCorrections < requiredManualCorrections) {
+        setShowSubmitDialog(false); // Fecha o dialog
+        setToastMessage(
+          `Você deve marcar todos os ${requiredManualCorrections} checkboxes de correção antes de submeter o formulário.`
+        );
+        setToastType("error");
+        setToastVisible(true);
+        return; // ❌ BLOQUEIA A SUBMISSÃO
+      }
+    }
+
     setShowSubmitDialog(false); // Fecha o dialog imediatamente
     setIsSubmitting(true);
 
