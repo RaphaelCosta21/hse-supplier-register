@@ -39,6 +39,11 @@ export type FormAction =
     }
   | { type: "CLEAR_CORRECTION_MODE" }
   | {
+      type: "SET_PENDING_MODE";
+      payload: { enabled: boolean; motivo: string };
+    }
+  | { type: "CLEAR_PENDING_MODE" }
+  | {
       type: "SET_FIELD_CORRECTED";
       payload: { fieldPath: string; isCorrected: boolean };
     }
@@ -79,6 +84,8 @@ export const initialFormState: IFormState = {
   correctionMode: false,
   restrictedFields: [],
   manualCorrectedFields: [],
+  pendingMode: false,
+  pendingReason: "",
 };
 
 export const formReducer = (
@@ -249,6 +256,20 @@ export const formReducer = (
         correctionMode: false,
         restrictedFields: [],
         manualCorrectedFields: [], // Limpar correções manuais também
+      };
+    }
+    case "SET_PENDING_MODE": {
+      return {
+        ...state,
+        pendingMode: action.payload.enabled,
+        pendingReason: action.payload.motivo,
+      };
+    }
+    case "CLEAR_PENDING_MODE": {
+      return {
+        ...state,
+        pendingMode: false,
+        pendingReason: "",
       };
     }
     case "SET_FIELD_CORRECTED": {

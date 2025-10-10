@@ -29,6 +29,22 @@ export const getFieldControlProps = (
 ): IFieldControlProps => {
   const { state, actions } = context;
 
+  // Caso especial: Campo "Nome da Empresa" deve ser sempre desabilitado após criação do formulário
+  if (fieldPath === "dadosGerais.empresa" && state.formData?.id) {
+    console.log(
+      `[FIELD CONTROL] ${fieldPath}: BLOQUEADO - Formulário já existe (ID: ${state.formData.id})`
+    );
+    return {
+      disabled: true,
+      className: customClassName || "",
+      readOnly: true,
+      isRestricted: false,
+      isEditable: false,
+      description:
+        "🔐 Nome da empresa não pode ser alterado após a criação do formulário",
+    };
+  }
+
   // Verificar se o campo pode ser editado
   const isEditable = actions.canEditField(fieldPath);
 

@@ -23,6 +23,7 @@ import { ProgressIndicator as CustomProgressIndicator } from "./common/ProgressI
 import { LoadingSpinner } from "./common/LoadingSpinner/LoadingSpinner";
 import { FloatingSaveButton } from "./common/FloatingSaveButton/FloatingSaveButton";
 import { CorrectionProgressPanel } from "./common/CorrectionProgressPanel/CorrectionProgressPanel";
+import { PendingInfoPanel } from "./common/PendingInfoPanel/PendingInfoPanel";
 import { formSelectors } from "./context/formReducer";
 import { BackToHomeButton } from "./common/BackToHomeButton/BackToHomeButton";
 import { Footer } from "./common/Footer/Footer";
@@ -954,11 +955,14 @@ const HseNewSupplierContent: React.FC = () => {
         </div>
       </div>
 
-      {/* Botão flutuante de salvar - oculto no modo de correção */}
-      {!state.correctionMode && <FloatingSaveButton />}
+      {/* Botão flutuante de salvar - oculto no modo de correção e pendente */}
+      {!state.correctionMode && !state.pendingMode && <FloatingSaveButton />}
 
       {/* Painel de progresso das correções - visível apenas no modo de correção */}
       <CorrectionProgressPanel isOpen={state.correctionMode} />
+
+      {/* Painel de informações pendentes - visível apenas no modo pendente */}
+      <PendingInfoPanel isOpen={state.pendingMode} />
 
       {/* Rodapé do sistema */}
       <Footer />

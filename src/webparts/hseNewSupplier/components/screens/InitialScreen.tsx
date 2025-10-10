@@ -104,11 +104,27 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
   const [searchingCNPJ, setSearchingCNPJ] = React.useState<boolean>(false);
   const [restrictionModalOpen, setRestrictionModalOpen] =
     React.useState<boolean>(false);
+  const [pendingModalOpen, setPendingModalOpen] =
+    React.useState<boolean>(false);
   const [selectedFormRestrictions, setSelectedFormRestrictions] =
     React.useState<{
       form: IUserFormSummary;
       restrictions: ICampoRestricao[];
     } | null>(null);
+  const [selectedFormPending, setSelectedFormPending] = React.useState<{
+    form: IUserFormSummary;
+    motivo: string;
+  } | null>(null);
+
+  // Limpar sessionStorage quando a tela inicial for carregada
+  React.useEffect(() => {
+    console.log("=== LIMPANDO SESSION STORAGE NA TELA INICIAL ===");
+    sessionStorage.removeItem("modoCorrecao");
+    sessionStorage.removeItem("camposRestricao");
+    sessionStorage.removeItem("modoPendenteInfo");
+    sessionStorage.removeItem("motivoPendencia");
+    console.log("Session storage limpo com sucesso");
+  }, []);
 
   // Carregar formulários do usuário ao montar o componente
   React.useEffect(() => {
@@ -252,6 +268,55 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
       console.log("Formulário selecionado:", form);
       console.log("ID do formulário:", form.id);
       console.log("Status do formulário:", form.status);
+
+      // Limpar todos os modos especiais para garantir estado inicial limpo
+      sessionStorage.removeItem("modoCorrecao");
+      sessionStorage.removeItem("camposRestricao");
+      sessionStorage.removeItem("modoPendenteInfo");
+      sessionStorage.removeItem("motivoPendencia");
+
+      // Verificar se o formulário está com status "Pendente Info."
+      if (form.status === "Pendente Info.") {
+        console.log("Configurando modoPendenteInfo para o formulário");
+
+        // Buscar o comentário da avaliação mais recente
+        let motivo =
+          "Informações pendentes de verificação. Por favor, revise todos os campos do formulário.";
+
+        if (form.metadata?.Avaliacao) {
+          console.log("Buscando comentário na avaliação...");
+          // Encontrar a avaliação mais recente
+          const avaliacoes = form.metadata.Avaliacao;
+          const avaliacaoKeys = Object.keys(avaliacoes)
+            .filter((key) => !isNaN(parseInt(key)))
+            .map((key) => parseInt(key))
+            .sort((a, b) => b - a); // Ordenar do mais recente para o mais antigo
+
+          if (avaliacaoKeys.length > 0) {
+            const ultimaAvaliacaoKey = avaliacaoKeys[0].toString();
+            const ultimaAvaliacao = avaliacoes[ultimaAvaliacaoKey];
+
+            if (ultimaAvaliacao.Comentarios) {
+              console.log(
+                "Comentário da avaliação encontrado:",
+                ultimaAvaliacao.Comentarios
+              );
+              motivo = ultimaAvaliacao.Comentarios;
+            } else {
+              console.log(
+                "Nenhum comentário encontrado na avaliação mais recente"
+              );
+            }
+          }
+        } else {
+          console.log("Nenhuma avaliação encontrada no metadata");
+        }
+
+        // Preparar dados para o modal e abri-lo
+        setSelectedFormPending({ form, motivo });
+        setPendingModalOpen(true);
+        return; // Não carregar o formulário ainda
+      }
 
       console.log("Chamando actions.loadExistingForm...");
       await actions.loadExistingForm(form.id);
@@ -608,6 +673,48 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
                   style={{ color: oceaneeringColors.textSecondary }}
                 >
                   • Em caso de dúvidas, entre em contato com o time de HSE.
+                </Text>
+              </Stack>
+
+              {/* Link para Passo a Passo */}
+              <Stack
+                style={{
+                  padding: 12,
+                  backgroundColor: "#f3f9ff",
+                  border: "1px solid #d1e7ff",
+                  borderRadius: 4,
+                  marginTop: 8,
+                }}
+              >
+                <Text
+                  variant="medium"
+                  style={{
+                    fontWeight: 600,
+                    color: oceaneeringColors.primaryBlue,
+                    marginBottom: 4,
+                  }}
+                >
+                  📋 Guia de Preenchimento
+                </Text>
+                <Text
+                  variant="small"
+                  style={{ color: oceaneeringColors.textSecondary }}
+                >
+                  Acesse nosso{" "}
+                  <a
+                    href="https://oceaneering.sharepoint.com/:p:/r/sites/OPGSSRBrazilExternalWebapps/Shared%20Documents/Formul%C3%A1rio%20de%20Auto-Avalia%C3%A7%C3%A3o%20de%20HSE%20para%20Contratadas%20-%20Passo%20a%20Passo%20Preenchimento.pptx?d=w9463f6c7cb4f48fe82763f0f06c2a000&csf=1&web=1&e=1f72L1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: oceaneeringColors.primaryBlue,
+                      textDecoration: "underline",
+                      fontWeight: 600,
+                    }}
+                  >
+                    guia passo a passo de preenchimento
+                  </a>{" "}
+                  para orientações detalhadas sobre como preencher cada seção do
+                  formulário.
                 </Text>
               </Stack>
             </Stack>
@@ -1049,6 +1156,116 @@ export const InitialScreen: React.FC<IInitialScreenProps> = ({
 
       {/* Rodapé do sistema */}
       <Footer />
+
+      {/* Modal de Pendência Info */}
+      <Dialog
+        hidden={!pendingModalOpen}
+        onDismiss={() => setPendingModalOpen(false)}
+        dialogContentProps={{
+          type: DialogType.normal,
+          title: "Resolver Pendência",
+          subText: selectedFormPending
+            ? `Formulário: ${selectedFormPending.form.empresa} (${selectedFormPending.form.cnpj})`
+            : "",
+        }}
+        modalProps={{
+          isBlocking: true,
+          styles: { main: { maxWidth: 800, width: "90%" } },
+        }}
+      >
+        {selectedFormPending && (
+          <Stack tokens={{ childrenGap: 20 }}>
+            <MessageBar messageBarType={MessageBarType.warning}>
+              Este formulário possui informações pendentes que precisam ser
+              verificadas e atualizadas conforme solicitado na avaliação.
+            </MessageBar>
+
+            <Stack tokens={{ childrenGap: 15 }}>
+              <Text
+                variant="mediumPlus"
+                style={{
+                  fontWeight: 600,
+                  color: oceaneeringColors.primaryBlue,
+                }}
+              >
+                Motivo da Pendência
+              </Text>
+              <Stack
+                style={{
+                  padding: 16,
+                  backgroundColor: "#fff4e6",
+                  border: "1px solid #ff8c00",
+                  borderRadius: 4,
+                }}
+              >
+                <Text
+                  variant="medium"
+                  style={{ fontWeight: 600, color: "#ca5010" }}
+                >
+                  Comentários da Avaliação:
+                </Text>
+                <Text
+                  variant="medium"
+                  style={{ color: "#ca5010", marginTop: 8 }}
+                >
+                  {selectedFormPending.motivo}
+                </Text>
+              </Stack>
+            </Stack>
+
+            <MessageBar messageBarType={MessageBarType.info}>
+              Para resolver esta pendência, clique em &quot;Editar
+              Formulário&quot; para acessar o formulário completo e fazer as
+              correções necessárias. Todos os campos estarão disponíveis para
+              edição.
+            </MessageBar>
+          </Stack>
+        )}
+
+        <DialogFooter>
+          <PrimaryButton
+            text="Editar Formulário"
+            onClick={async () => {
+              if (selectedFormPending) {
+                console.log("=== INICIANDO CARREGAMENTO EM MODO PENDENTE ===");
+                console.log("Motivo da pendência:", selectedFormPending.motivo);
+
+                // Armazenar as informações de pendência no sessionStorage
+                sessionStorage.setItem("modoPendenteInfo", "true");
+                sessionStorage.setItem(
+                  "motivoPendencia",
+                  selectedFormPending.motivo
+                );
+
+                console.log("SessionStorage definido:");
+                console.log(
+                  "- modoPendenteInfo:",
+                  sessionStorage.getItem("modoPendenteInfo")
+                );
+                console.log(
+                  "- motivoPendencia:",
+                  sessionStorage.getItem("motivoPendencia")
+                );
+
+                // Carregar o formulário para edição
+                console.log(
+                  "Chamando loadExistingForm para o ID:",
+                  selectedFormPending.form.id
+                );
+                await actions.loadExistingForm(selectedFormPending.form.id);
+                setPendingModalOpen(false);
+                console.log(
+                  "Modal fechado, formulário deve estar carregando..."
+                );
+              }
+            }}
+          />
+          <DefaultButton
+            text="Cancelar"
+            onClick={() => setPendingModalOpen(false)}
+          />
+        </DialogFooter>
+      </Dialog>
 
       {/* Modal de Correção de Restrições */}
       <Dialog

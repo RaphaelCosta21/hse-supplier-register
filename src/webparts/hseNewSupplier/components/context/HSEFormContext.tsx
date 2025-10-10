@@ -67,6 +67,8 @@ export interface IHSEFormContext {
     // Funções para gerenciar correções manuais
     setFieldCorrected: (fieldPath: string, isCorrected: boolean) => void;
     clearManualCorrections: () => void;
+    // Funções para gerenciar modo de pendência
+    clearPendingMode: () => void;
   };
 }
 
@@ -761,6 +763,28 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
             // sessionStorage.removeItem("camposRestricao");
           }
 
+          // Verificar se estamos em modo de informações pendentes
+          const modoPendenteInfo = sessionStorage.getItem("modoPendenteInfo");
+          const motivoPendencia = sessionStorage.getItem("motivoPendencia");
+
+          if (modoPendenteInfo === "true" && motivoPendencia) {
+            console.log("=== ATIVANDO MODO PENDENTE INFO ===");
+            console.log("Motivo da pendência:", motivoPendencia);
+
+            // Ativar modo pendente
+            dispatch({
+              type: "SET_PENDING_MODE",
+              payload: {
+                enabled: true,
+                motivo: motivoPendencia,
+              },
+            });
+
+            // Não limpar session storage imediatamente para debug
+            // sessionStorage.removeItem("modoPendenteInfo");
+            // sessionStorage.removeItem("motivoPendencia");
+          }
+
           // AGORA definir os dados do formulário
           dispatch({ type: "SET_FORM_DATA", payload: formData });
 
@@ -985,6 +1009,9 @@ export const HSEFormProvider: React.FC<IHSEFormProviderProps> = ({
         },
         clearManualCorrections: (): void => {
           dispatch({ type: "CLEAR_MANUAL_CORRECTIONS" });
+        },
+        clearPendingMode: (): void => {
+          dispatch({ type: "CLEAR_PENDING_MODE" });
         },
       },
     }),

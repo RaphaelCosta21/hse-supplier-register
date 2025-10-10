@@ -1,0 +1,589 @@
+// =================================================================================
+// Minimized Panel Styles - PendingInfoPanel
+// =================================================================================
+
+.minimizedPanel {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 80px;
+  background: linear-gradient(135deg, #ff8c00 0%, #ffa500 100%);
+  border-radius: 40px 10px 10px 40px;
+  box-shadow: 0 8px 32px rgba(255, 140, 0, 0.3);
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 12px 40px rgba(255, 140, 0, 0.4);
+
+    .minimizedTooltip {
+      opacity: 1;
+      transform: translateX(-10px);
+    }
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+
+  // Estado quando a pendência está resolvida
+  &.completed {
+    background: linear-gradient(135deg, #17e317 0%, #185518 100%);
+    box-shadow: 0 8px 32px rgba(144, 238, 144, 0.3);
+
+    &:hover {
+      box-shadow: 0 12px 40px rgba(144, 238, 144, 0.4);
+    }
+  }
+}
+
+.minimizedContent {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.minimizedHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.expandIcon {
+  color: white;
+  font-size: 14px;
+  animation: pulse 2s infinite;
+}
+
+.minimizedIcon {
+  color: white;
+  font-size: 18px;
+}
+
+.minimizedProgress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.minimizedStats {
+  text-align: center;
+}
+
+.minimizedText {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.minimizedComplete {
+  width: 28px;
+  height: 28px;
+  background-color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bounce 1s infinite;
+}
+
+.minimizedCompleteIcon {
+  color: #17e317;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+  60% {
+    transform: translateY(-3px);
+  }
+}
+
+.minimizedTooltip {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  background-color: rgba(32, 31, 30, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  margin-right: 8px;
+
+  &:after {
+    content: "";
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-left-color: rgba(32, 31, 30, 0.9);
+  }
+}
+// =================================================================================
+// Separator
+// =================================================================================
+
+.separator {
+  margin: 0;
+
+  :global(.ms-Separator-content) {
+    background-color: #edebe9;
+  }
+}
+
+// Estilos adaptados do CorrectionProgressPanel
+.restrictionsSection {
+  margin: 0 24px 24px;
+}
+
+.sectionTitle {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.restrictionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.restrictionItem {
+  padding: 16px;
+  border-radius: 4px;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.3s ease;
+
+  &.pending {
+    border-color: #ff8c00;
+    background-color: #fff8ef;
+  }
+
+  &.corrected {
+    border-color: #107c10;
+    background-color: #dff6dd;
+  }
+}
+
+.restrictionReason {
+  margin-top: 4px;
+  padding: 8px 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+}
+
+.reasonText {
+  color: #333;
+}
+// =================================================================================
+// Status Section
+// =================================================================================
+
+.statusSection {
+  padding: 20px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #edebe9;
+}
+
+.completedStatus {
+  text-align: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #107c10 0%, #16c60c 100%);
+  border-radius: 8px;
+  color: white;
+}
+
+.completedIcon {
+  font-size: 24px;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.completedText {
+  color: white;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.completedSubtext {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pendingStatus {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: #fff4e6;
+  border: 1px solid #ffb300;
+  border-radius: 8px;
+}
+
+.pendingIcon {
+  font-size: 18px;
+  color: #ff8c00;
+  margin-top: 2px;
+}
+
+.pendingText {
+  color: #323130;
+  line-height: 1.4;
+}
+
+// =================================================================================
+// Expanded Panel Styles
+// =================================================================================
+
+.pendingPanel {
+  :global(.ms-Panel-main) {
+    top: 0 !important;
+    margin-top: 0 !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+.panelHeader {
+  padding: 16px 20px;
+  border-bottom: 1px solid #edebe9;
+  background: linear-gradient(135deg, #ff8c00 0%, #ffa500 100%);
+  color: white;
+  position: relative;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  justify-content: space-between;
+}
+
+.minimizeButton {
+  color: white !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  transition: all 0.3s ease-in-out !important;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: scale(1.1);
+  }
+
+  :global(.ms-Button-icon) {
+    color: white !important;
+  }
+}
+
+.headerIcon {
+  font-size: 20px;
+  color: white;
+}
+
+.headerTitle {
+  color: white;
+  font-weight: 600;
+}
+
+.statusSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statusText {
+  color: white;
+  font-weight: 500;
+}
+
+.panelContent {
+  padding: 0;
+  height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+// =================================================================================
+// Content Sections
+// =================================================================================
+
+.pendingSection {
+  padding: 20px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #edebe9;
+}
+
+.pendingInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  border-left: 4px solid #ff8c00;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+
+  &.resolved {
+    border-left-color: #107c10;
+    background-color: #f3f9f4;
+  }
+}
+
+.resolved {
+  border-left-color: #107c10 !important;
+  background-color: #f3f9f4 !important;
+}
+
+.pendingIcon {
+  font-size: 16px;
+  margin-top: 2px;
+  color: #ff8c00;
+
+  &.resolvedIcon {
+    color: #107c10;
+  }
+}
+
+.pendingDetails {
+  flex: 1;
+}
+
+.pendingTitle {
+  color: #323130;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.pendingReason {
+  color: #605e5c;
+  line-height: 1.4;
+  background-color: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 3px solid #0078d4;
+
+  strong {
+    color: #323130;
+  }
+}
+
+.resolvedBadge {
+  background-color: #107c10;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+
+  span {
+    color: white;
+    font-weight: 500;
+  }
+}
+
+// =================================================================================
+// Actions Section
+// =================================================================================
+
+.actionsSection {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #edebe9;
+}
+
+.actionsTitle {
+  color: #323130;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.resolveButton {
+  background-color: #107c10 !important;
+  border-color: #107c10 !important;
+  color: white !important;
+
+  &:hover {
+    background-color: #0e6e0e !important;
+    border-color: #0e6e0e !important;
+  }
+
+  :global(.ms-Button-label) {
+    color: white !important;
+  }
+}
+
+.cancelButton {
+  background-color: transparent !important;
+  border-color: #d2d0ce !important;
+  color: #323130 !important;
+
+  &:hover {
+    background-color: #f3f2f1 !important;
+    border-color: #c8c6c4 !important;
+  }
+}
+
+// =================================================================================
+// Instructions Section
+// =================================================================================
+
+.instructionsSection {
+  padding: 20px;
+  background-color: #f8f9fa;
+}
+
+.instructionsTitle {
+  color: #323130;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.instructionsList {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-left: 16px;
+    position: relative;
+
+    &:before {
+      content: "•";
+      color: #605e5c;
+      position: absolute;
+      left: 0;
+    }
+
+    span {
+      color: #605e5c;
+      line-height: 1.4;
+    }
+  }
+}
+
+.warningInline {
+  color: #ff8c00;
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+// =================================================================================
+// Classes adicionais necessárias
+// =================================================================================
+
+.messageBarSection {
+  padding: 20px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #edebe9;
+}
+
+.sectionTitle {
+  color: #323130;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.sectionIcon {
+  margin-right: 8px;
+  font-size: 16px;
+  color: #ff8c00;
+}
+
+.actionSection {
+  padding: 20px;
+  background-color: #f8f9fa;
+  text-align: center;
+}
+
+.completedMessage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: #f3f9f4;
+  border-radius: 6px;
+  border: 1px solid #107c10;
+}
+
+.pendingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pendingCheckbox {
+  :global(.ms-Checkbox) {
+    align-items: center;
+  }
+
+  :global(.ms-Checkbox-label) {
+    font-weight: 600;
+    color: #323130;
+  }
+
+  :global(.ms-Checkbox-checkbox) {
+    border-color: #ff8c00;
+
+    &:checked {
+      background-color: #107c10;
+      border-color: #107c10;
+    }
+  }
+
+  :global(.ms-Checkbox-checkmark) {
+    color: white;
+  }
+}

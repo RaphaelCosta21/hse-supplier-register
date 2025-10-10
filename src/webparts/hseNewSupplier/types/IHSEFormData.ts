@@ -315,6 +315,9 @@ export interface IFormState {
   restrictedFields: string[];
   // Campo para rastreamento manual de correções
   manualCorrectedFields: string[];
+  // Novos campos para modo pendente
+  pendingMode: boolean;
+  pendingReason: string;
 }
 
 // Interface para validação de erros

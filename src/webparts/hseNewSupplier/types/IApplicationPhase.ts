@@ -93,6 +93,7 @@ export interface IFormMetadata {
   tipoOperacao?: string;
   Avaliacao?: { [key: string]: IFormAvaliacao };
   QuantidadeAvaliacao?: number;
+  MotivoPendencia?: string; // Para formulários com status "Pendente Info."
 }
 
 // Interface para histórico de mudanças de status
